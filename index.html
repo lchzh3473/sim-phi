@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1">
+	<title>(っ °Д °;)っ</title>
+	<link rel="stylesheet" href="/style.css">
+	<style>
+		::-webkit-scrollbar {
+			display: none;
+		}
+
+		html,
+		body {
+			overflow: hidden;
+			user-select: none;
+			-webkit-user-select: none;
+			-moz-user-select: none;
+		}
+
+		#stage {
+			position: absolute;
+			width: 100vw;
+			left: 0;
+			top: 0;
+		}
+	</style>
+
+<body>
+	<div id="main" style="display: none">
+	</div>
+	<canvas id="stage"></canvas>
+	<noscript><strong style="color:red">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
+	<script>
+		document.oncontextmenu = e => {
+			e.returnValue = false;
+		}
+	</script>
+	<script src="./script.js"></script>
+	<script src="/script.js"></script>
+</body>
+
+</html>
