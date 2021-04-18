@@ -302,10 +302,10 @@ function draw() {
 		//i.y += canvas.height / 228; //test
 	}*/
 	for (const i of clickEvents) {
+		//打击特效
 		const tick = i.time / 30;
 		ctx.translate(i.x, i.y);
-		ctx.scale(scale * 5, scale * 5);
-		//打击特效
+		ctx.scale(scale * 3, scale * 3); //缩放
 		ctx.drawImage(imgClick[(i.time++).toFixed(0)], -128, -128); //停留约0.5秒
 		//四个方块
 		for (const j of i.rand) {
@@ -343,6 +343,7 @@ function test() {
 			//bufferSource.loop = true; //循环播放
 			bufferSource.connect(actx.destination);
 			bufferSource.start();
+			clickEvents.push(new clickEvent(canvas.width / 16 * (8 + i.positionX), canvas.height * 0.75));
 			console.log(i.type, ++aaa, (Array(7).join(0) + (1000000 / 2500 * aaa).toFixed(0)).slice(-7));
 		}, i.time * 6e4 / 200 / 32);
 	}
@@ -366,7 +367,7 @@ function init() {
 	//谱面(临时，以后改成json)
 	//bpmEvents.push(new bpmEvent(0, 170), new bpmEvent(127.14, 138));
 	bpmEvents.push(new bpmEvent(0, 200));
-	lines.push(new line(0, 0, 0, 0, 1));
+	lines.push(new line(0, -0.5, 0, 0, 1));
 	loadChart();
 	//加载谱面
 	function loadChart() {
