@@ -21,14 +21,27 @@
 		#stage {
 			position: absolute;
 			width: 100vw;
-			left: 0;
-			top: 0;
+			max-width: calc(100vh * 16 / 9);
+			height: 100vh;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -50%);
+		}
+
+		#bg {
+			position: absolute;
+			width: 100vw;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -50%);
+			filter: blur(5px)brightness(0.8);
 		}
 	</style>
 
 <body>
 	<div id="main" style="display: none">
 	</div>
+	<canvas id="bg"></canvas>
 	<canvas id="stage"></canvas>
 	<noscript><strong style="color:red">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
 	<script>
