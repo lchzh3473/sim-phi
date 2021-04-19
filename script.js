@@ -35,33 +35,9 @@ function resizeCanvas() {
 }
 //谱面默认信息
 let bpm, duration, frame = 0;
-//bpm事件
-const bpmEvents = []; //存放bpm事件
-class bpmEvent {
-	constructor(time, bpm) {
-		this.time = time;
-		this.bpm = bpm;
-	}
-}
-
-function bpm2beat(time) {
-	let beats = 0;
-	let timm = 0;
-	let bpmm = 0;
-	for (const i of bpmEvents) {
-		if (time < i.time) break;
-		beats += (i.time - timm) * bpmm / 60;
-		timm = i.time;
-		bpmm = i.bpm;
-	}
-	return beats + (time - timm) * bpmm / 60;
-}
 //点击特效(以后会改)
 const clicks = []; //存放点击事件，用于检测
 const clickEvents = []; //存放点击特效
-/*canvas.onclick = function(e) {
-	clickEvents.push(new clickEvent(e.pageX * window.devicePixelRatio, e.pageY * window.devicePixelRatio));
-}*/
 class clickEvent {
 	constructor(x, y) {
 		this.x = isNaN(x) ? 0 : x; //初始横坐标
@@ -76,7 +52,7 @@ let isMouseDown = [];
 canvas.addEventListener("mousedown", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
-	console.log("mousedown", idx); //test
+	///console.log("mousedown", idx); //test
 	clicks[idx] = {
 		x: (evt.pageX - canvas.offsetLeft) * window.devicePixelRatio + canvas.width / 2,
 		y: evt.pageY * window.devicePixelRatio,
@@ -98,7 +74,7 @@ canvas.addEventListener("mousemove", evt => {
 canvas.addEventListener("mouseup", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
-	console.log("mouseup", idx); //test
+	///console.log("mouseup", idx); //test
 	clearInterval(clicks[idx].t);
 	clicks[idx] = {};
 	isMouseDown[idx] = false;
@@ -107,7 +83,7 @@ canvas.addEventListener("mouseout", evt => {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			console.log("mouseout", idx); //test
+			///console.log("mouseout", idx); //test
 			clearInterval(clicks[idx].t);
 			clicks[idx] = {};
 			isMouseDown[idx] = false;
@@ -121,7 +97,7 @@ const passive = {
 canvas.addEventListener("touchstart", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		console.log("touchstart", idx); //test
+		///console.log("touchstart", idx); //test
 		clicks[idx] = {
 			x: (i.pageX - canvas.offsetLeft) * window.devicePixelRatio + canvas.width / 2,
 			y: i.pageY * window.devicePixelRatio
@@ -143,7 +119,7 @@ canvas.addEventListener("touchend", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		console.log("touchend", idx); //test
+		///console.log("touchend", idx); //test
 		clearInterval(clicks[idx].t);
 		clicks[idx] = {};
 	}
@@ -151,7 +127,7 @@ canvas.addEventListener("touchend", evt => {
 canvas.addEventListener("touchcancel", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		console.log("touchcancel", idx); //test
+		///console.log("touchcancel", idx); //test
 		clearInterval(clicks[idx].t);
 		clicks[idx] = {};
 	}
@@ -170,16 +146,92 @@ class line {
 }
 const showPoint = true; //显示控制点
 //判定线事件
-/*
 class lineEvent {
-	constructor(id, t1, x, y, r1, o1, a1, t2, x, y, r2, o2, a2, tween) {
-		this.id = id; //对应下标
-		this.t = [t1, t2];
-		this.s = new crd(x, y, r1, o1, a1);
-		this.e = new crd(x, y, r2, o2, a2);
-		this.tween = tween; //缓动类型
+	constructor(startTime, endTime, start, end, start2, end2) {
+		this.startTime = startTime;
+		this.endTime = endTime;
+		this.start = start;
+		this.end = end;
+		this.start2 = start2;
+		this.end2 = end2;
 	}
-}*/
+}
+
+function showNote(line, notes, time, num) {
+	const x = line.x;
+	const y = line.y;
+	const r = line.r / 180 * Math.PI;
+	for (const i of notes) {
+		if (i.time < time) continue;
+		ctx.translate(canvas.width * ((1 + x) / 2), canvas.height * ((1 - y) / 2));
+		ctx.rotate(-r);
+		ctx.translate(canvas.width * i.positionX / 18, -canvas.height * (i.time - time) * num * i.speed / 100);
+		ctx.scale(scale, scale); //缩放
+		//ctx.shadowBlur = i.isMulti ? 25 : 0;
+		switch (i.type) {
+			case 1:
+				//绘制蓝键
+				ctx.drawImage(img[1], -494.5, -50);
+				break;
+			case 2:
+				//绘制黄键
+				ctx.drawImage(img[2], -494.5, -30);
+				break;
+			case 4:
+				//绘制粉键
+				ctx.drawImage(img[4], -494.5, -100);
+				break;
+			case 3:
+				ctx.drawImage(img[1], -494.5, -50);
+				break;
+			default:
+		}
+		ctx.resetTransform();
+	}
+	ctx.resetTransform();
+	for (const i of notes) {
+		if (i.time > time) break;
+		if (!i.played) {
+			const bufferSource = actx.createBufferSource();
+			bufferSource.buffer = aud[type2idx(i.type)];
+			bufferSource.connect(actx.destination);
+			bufferSource.start();
+			const dx = i.positionX * Math.cos(r);
+			const dy = i.positionX * Math.sin(r);
+			clickEvents.push(new clickEvent(canvas.width * ((1 + x) / 2 + dx / 18), canvas.height * ((1 - y) / 2 - dy / 18)));
+			score = (Array(7).join(0) + (1e6 / chart.numOfNotes * (++combo)).toFixed(0)).slice(-7);
+			i.played = true;
+		}
+	}
+}
+
+function moveLine(line, judgeLineMoveEvents, time) {
+	for (const i of judgeLineMoveEvents) {
+		if (time < i.startTime || time > i.endTime) continue;
+		let dura = (time - i.startTime) / (i.endTime - i.startTime);
+		let ina = 1 - dura;
+		line.x = (i.start * ina + i.end * dura) * 2 - 1;
+		line.y = (i.start2 * ina + i.end2 * dura) * 2 - 1;
+	}
+}
+
+function rotateLine(line, judgeLineRotateEvents, time) {
+	for (const i of judgeLineRotateEvents) {
+		if (time < i.startTime || time > i.endTime) continue;
+		let dura = (time - i.startTime) / (i.endTime - i.startTime);
+		let ina = 1 - dura;
+		line.r = i.start * ina + i.end * dura;
+	}
+}
+
+function disappearLine(line, judgeLineDisappearEvents, time) {
+	for (const i of judgeLineDisappearEvents) {
+		if (time < i.startTime || time > i.endTime) continue;
+		let dura = (time - i.startTime) / (i.endTime - i.startTime);
+		let ina = 1 - dura;
+		line.a = i.start * ina + i.end * dura;
+	}
+}
 //note定义
 const notes = []; //存放note
 const noteEvents = []; //存放note事件
@@ -209,6 +261,8 @@ class note {
 const ctx = canvas.getContext("2d");
 const ctxbg = canvasbg.getContext("2d");
 let time = Date.now();
+let combo = 0; //test
+let score = "0000000"; //test
 
 function draw() {
 	//重置画面
@@ -231,35 +285,39 @@ function draw() {
 	ctx.fillText(`frame:${frame++}`, px * 0.6, px * 1.6);
 	let time = (Date.now() - curTimestamp) / 1e3 + curTime;
 	ctx.fillText(`time:${time.toFixed(2)}(${(time/duration*100).toFixed(2)}%)`, px * 0.6, px * 2.9);
-	let beat = bpm2beat(time); //(Date.now() - time) / 6e4 * bpm;
-	ctx.fillText(`beat:${beat.toFixed(2)}`, px * 0.6, px * 4.2);
+	ctx.textAlign = "end";
+	ctx.fillText(`score:${score}`, canvas.width - px * 0.6, px * 1.6);
+	ctx.fillText(`combo:${combo}`, canvas.width - px * 0.6, px * 2.9);
 	//遍历events
-	for (const i of lineEvents) {
-		if (beat >= i.t[0] && beat <= i.t[1]) {
-			const d2 = tween[i.tween || 'linear']((beat - i.t[0]) / (i.t[1] - i.t[0]));
-			let curLine = lines[i.id];
-			curLine = curLine.change(i.s, i.e, d2);
+	chart.judgeLineList.forEach((val, idx) => {
+		const i = lines[idx];
+		if (i) { //避免加载失败报错
+			const numOfNotes = val.numOfNotes;
+			const numOfNotesAbove = val.numOfNotesAbove;
+			const numOfNotesBelow = val.numOfNotesBelow;
+			const beat32 = time * val.bpm / 1.875;
+			const speedEvents = val.speedEvents;
+			showNote(i, val.notesAbove, beat32, 1);
+			showNote(i, val.notesBelow, beat32, -1);
+			disappearLine(i, val.judgeLineDisappearEvents, beat32);
+			moveLine(i, val.judgeLineMoveEvents, beat32);
+			rotateLine(i, val.judgeLineRotateEvents, beat32);
 		}
-	}
-	for (const i of noteEvents) {
-		if (beat >= i.t[0] && beat <= i.t[1]) {
-			const d2 = tween[i.tween || 'linear']((beat - i.t[0]) / (i.t[1] - i.t[0]));
-			let curNote = notes[i.id];
-			curNote = curNote.change(i.s, i.e, d2);
-		}
-	}
+	});
 	//绘制判定线
 	for (const i of lines) {
+		ctx.globalAlpha = i.a;
 		ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
 		ctx.rotate(-i.r * Math.PI / 180);
 		ctx.beginPath();
 		ctx.translate(0, -mlen * i.o);
-		ctx.strokeStyle = `rgba(254,254,169,${i.a})`;
+		ctx.strokeStyle = "#fefea9";
 		ctx.lineWidth = 3;
 		ctx.moveTo(-maxlen, 0);
 		ctx.lineTo(maxlen, 0);
 		ctx.stroke();
 		ctx.closePath();
+		ctx.globalAlpha = 1;
 		ctx.resetTransform();
 	}
 	//绘制控制点
@@ -305,7 +363,7 @@ function draw() {
 		//打击特效
 		const tick = i.time / 30;
 		ctx.translate(i.x, i.y);
-		ctx.scale(scale * 3, scale * 3); //缩放
+		ctx.scale(scale * 6, scale * 6); //缩放
 		ctx.drawImage(imgClick[(i.time++).toFixed(0)], -128, -128); //停留约0.5秒
 		//四个方块
 		for (const j of i.rand) {
@@ -324,68 +382,56 @@ function draw() {
 	}
 	requestAnimationFrame(draw);
 }
+
 const actx = new AudioContext();
 const img = {};
 const imgClick = [];
 let curTime = 0;
 let curTimestamp = 0;
 const aud = [];
-let json = {};
 //test start
-let aaa = 0;
+let chart = {};
 
-function test() {
-	for (const i of json.judgeLineList[0].notesAbove) {
-		//console.log(i.time);
-		setTimeout(() => {
-			const bufferSource = actx.createBufferSource();
-			bufferSource.buffer = aud[type2idx(i.type)];
-			//bufferSource.loop = true; //循环播放
-			bufferSource.connect(actx.destination);
-			bufferSource.start();
-			clickEvents.push(new clickEvent(canvas.width / 16 * (8 + i.positionX), canvas.height * 0.75));
-			console.log(i.type, ++aaa, (Array(7).join(0) + (1000000 / 2500 * aaa).toFixed(0)).slice(-7));
-		}, i.time * 6e4 / 200 / 32);
-	}
-
-	function type2idx(type) {
-		switch (type) {
-			case 1:
-			case 3:
-				return 0;
-			case 2:
-				return 1;
-			case 4:
-				return 2;
-			default:
-				return 0;
-		}
+function type2idx(type) {
+	switch (type) {
+		case 1:
+		case 3:
+			return 0;
+		case 2:
+			return 1;
+		case 4:
+			return 2;
+		default:
+			return 0;
 	}
 }
 //test end
 function init() {
 	//谱面(临时，以后改成json)
 	//bpmEvents.push(new bpmEvent(0, 170), new bpmEvent(127.14, 138));
-	bpmEvents.push(new bpmEvent(0, 200));
-	lines.push(new line(0, -0.5, 0, 0, 1));
+	//bpmEvents.push(new bpmEvent(0, 200));
+	//lines.push(new line(0, -0.5, 0, 0, 1));
 	loadChart();
 	//加载谱面
 	function loadChart() {
 		let xhr = new XMLHttpRequest();
-		xhr.open("get", "test.json");
+		xhr.open("get", "src/test.json");
 		xhr.send();
 		xhr.onload = () => {
-			json = JSON.parse(xhr.responseText);
+			chart = JSON.parse(xhr.responseText);
 			loadImage();
-			console.log(json);
-			console.log(json.judgeLineList[0].notesAbove); //test
+			console.log(chart);
 		}
 	}
 	//加载图片
 	function loadImage() {
 		const imgsrc = {
-			click: "1.png",
-			bg: "bg.png"
+			bg: "src/bg.png",
+			click: "src/0.png",
+			1: "src/1.png",
+			2: "src/2.png",
+			3: "src/1.png",
+			4: "src/4.png",
 		};
 		let imgNum = 0;
 		for ({} in imgsrc) imgNum++;
@@ -394,14 +440,13 @@ function init() {
 			img[i].src = imgsrc[i];
 			img[i].onload = () => {
 				//loading.innerText = `加载图片资源...(还剩${imgNum}个文件)`;
-				if (--imgNum <= 0) {
-					loadImage2();
-				}
+				if (--imgNum <= 0) loadImage2();
 			}
 		}
 	}
-	//加载点击动画
+	//调整图片
 	function loadImage2() {
+		//调整背景图尺寸
 		if (img.bg.width * 9 > img.bg.height * 16) {
 			sx = (img.bg.width - img.bg.height * 16 / 9) / 2;
 			sy = 0;
@@ -413,6 +458,7 @@ function init() {
 			sw = img.bg.width;
 			sh = img.bg.width * 9 / 16;
 		}
+		//加载打击动画
 		const canvas2 = document.createElement("canvas");
 		canvas2.width = 512;
 		canvas2.height = 7680;
@@ -431,9 +477,9 @@ function init() {
 		}
 		loadAudio();
 	}
-
+	//加载打击音效
 	function loadAudio() {
-		const audsrc = ["./HitSong_0.ogg", "./HitSong_1.ogg", "./HitSong_2.ogg"];
+		const audsrc = ["src/HitSong_0.ogg", "src/HitSong_1.ogg", "src/HitSong_2.ogg"];
 		let audNum = 0;
 		for ({} in audsrc) audNum++;
 		for (const i in audsrc) {
@@ -442,268 +488,46 @@ function init() {
 			xhr.responseType = 'arraybuffer';
 			xhr.onload = () => { //下载完成
 				actx.decodeAudioData(xhr.response, data => aud[i] = data);
-				if (--audNum <= 0) {
-					loadAudio2();
-				}
+				if (--audNum <= 0) loadBgm();
 			};
 			xhr.send();
 		}
 	}
-	//初始化bgm
-	function loadAudio2() {
+	//加载bgm
+	function loadBgm() {
 		let xhr = new XMLHttpRequest(); //通过XHR下载音频文件
-		xhr.open("get", 'test.ogg', true);
+		xhr.open("get", 'src/test.ogg', true);
 		xhr.responseType = 'arraybuffer';
 		xhr.onload = () => { //下载完成
 			actx.decodeAudioData(xhr.response, data => {
+				for (const i of chart.judgeLineList) lines.push(new line(0, 0, 0, 0, 0));
 				duration = data.duration;
 				playBgm(data);
 				draw();
-				test(); //test
+				for (const i of chart.judgeLineList) console.log(i); //test
 			});
 		};
 		xhr.send();
-
-		function playBgm(data, offset) {
-			let times = 0;
-			if (!offset) offset = 0;
-			curTimestamp = Date.now();
-			const bufferSource = actx.createBufferSource();
-			bufferSource.buffer = data;
-			//bufferSource.loop = true; //循环播放
-			bufferSource.connect(actx.destination);
-			bufferSource.start(0, offset);
-			document.addEventListener("visibilitychange", () => {
-				if (times == 0) {
-					bufferSource.stop();
-					curTime = offset + (Date.now() - curTimestamp) / 1e3;
-					curTimestamp = Date.now();
-				}
-				if (times == 1) playBgm(data, curTime);
-				times++;
-			});
-		}
+	}
+	//播放bgm
+	function playBgm(data, offset) {
+		let times = 0;
+		if (!offset) offset = 0;
+		curTimestamp = Date.now();
+		const bufferSource = actx.createBufferSource();
+		bufferSource.buffer = data;
+		//bufferSource.loop = true; //循环播放
+		bufferSource.connect(actx.destination);
+		bufferSource.start(0, offset);
+		document.addEventListener("visibilitychange", () => {
+			if (times == 0) {
+				bufferSource.stop();
+				curTime = offset + (Date.now() - curTimestamp) / 1e3;
+				curTimestamp = Date.now();
+			}
+			if (times == 1) playBgm(data, curTime);
+			times++;
+		});
 	}
 }
 init();
-
-function drawTapNote(crd1, crd2) {
-	ctx.translate(wlen + crd1.wx * wlen + crd1.hx * hlen + crd1.mx * mlen, hlen - crd1.wy * wlen - crd1.hy * hlen - crd1.my * mlen);
-	//ctx.translate(wlen * (100 + i.vx) + mlen * i.mx, hlen * (100 - i.vy) - mlen * i.my);
-	ctx.rotate(-crd1.r * Math.PI / 180);
-	ctx.translate(0, -mlen * crd1.o);
-	ctx.translate(crd2.wx * wlen + crd2.hx * hlen + crd2.mx * mlen, crd2.wy * wlen + crd2.hy * hlen + crd2.my * mlen);
-	ctx.rotate(-crd2.r * Math.PI / 180);
-	/*ctx.translate(i.x, i.y);
-	ctx.rotate(i.r);*/
-	ctx.scale(scale, scale);
-	ctx.beginPath();
-	ctx.fillStyle = "#fff";
-	ctx.moveTo(420, 50);
-	ctx.lineTo(444, 0);
-	ctx.lineTo(420, -50);
-	ctx.lineTo(-420, -50);
-	ctx.lineTo(-444, 0);
-	ctx.lineTo(-420, 50);
-	ctx.moveTo(470, 50);
-	ctx.lineTo(494, 0);
-	ctx.lineTo(470, -50);
-	ctx.lineTo(444, -50);
-	ctx.lineTo(470, 0);
-	ctx.lineTo(444, 50);
-	ctx.moveTo(-470, 50);
-	ctx.lineTo(-494, 0);
-	ctx.lineTo(-470, -50);
-	ctx.lineTo(-444, -50);
-	ctx.lineTo(-470, 0);
-	ctx.lineTo(-444, 50);
-	ctx.fill();
-	ctx.closePath();
-	ctx.beginPath();
-	ctx.fillStyle = "#1cf";
-	ctx.moveTo(395, 25);
-	ctx.lineTo(407, 0);
-	ctx.lineTo(395, -25);
-	ctx.lineTo(-395, -25);
-	ctx.lineTo(-407, 0);
-	ctx.lineTo(-395, 25);
-	ctx.fill();
-	ctx.closePath();
-}
-
-function drawDragNote(i) {
-	ctx.translate(i.x, i.y);
-	ctx.rotate(i.r);
-	ctx.scale(scale, scale);
-	ctx.beginPath();
-	ctx.fillStyle = "#fff";
-	ctx.moveTo(424, 30);
-	ctx.lineTo(444, 0);
-	ctx.lineTo(424, -30);
-	ctx.lineTo(-424, -30);
-	ctx.lineTo(-444, 0);
-	ctx.lineTo(-424, 30);
-	ctx.moveTo(474, 30);
-	ctx.lineTo(494, 0);
-	ctx.lineTo(474, -30);
-	ctx.lineTo(448, -30);
-	ctx.lineTo(468, 0);
-	ctx.lineTo(448, 30);
-	ctx.moveTo(-474, 30);
-	ctx.lineTo(-494, 0);
-	ctx.lineTo(-474, -30);
-	ctx.lineTo(-448, -30);
-	ctx.lineTo(-468, 0);
-	ctx.lineTo(-448, 30);
-	ctx.fill();
-	ctx.closePath();
-	ctx.beginPath();
-	ctx.fillStyle = "#ee6";
-	ctx.moveTo(394, 20);
-	ctx.lineTo(404, 0);
-	ctx.lineTo(394, -20);
-	ctx.lineTo(-394, -20);
-	ctx.lineTo(-404, 0);
-	ctx.lineTo(-394, 20);
-	ctx.fill();
-	ctx.closePath();
-}
-
-function drawFlickNote(i) {
-	ctx.translate(i.x, i.y);
-	ctx.rotate(i.r);
-	ctx.scale(scale, scale);
-	ctx.beginPath();
-	ctx.fillStyle = "#fff";
-	ctx.moveTo(420, 50);
-	ctx.lineTo(444, 0);
-	ctx.lineTo(420, -50);
-	ctx.lineTo(74, -50);
-	ctx.lineTo(74, 20);
-	ctx.lineTo(32, -4);
-	ctx.lineTo(32, 50);
-	ctx.moveTo(-420, -50);
-	ctx.lineTo(-444, 0);
-	ctx.lineTo(-420, 50);
-	ctx.lineTo(-74, 50);
-	ctx.lineTo(-74, -20);
-	ctx.lineTo(-32, 4);
-	ctx.lineTo(-32, -50);
-	ctx.moveTo(21, 100);
-	ctx.lineTo(21, -24);
-	ctx.lineTo(62, 0);
-	ctx.lineTo(62, -50);
-	ctx.lineTo(-21, -100);
-	ctx.lineTo(-21, 24);
-	ctx.lineTo(-62, 0);
-	ctx.lineTo(-62, 50);
-	ctx.moveTo(470, 50);
-	ctx.lineTo(494, 0);
-	ctx.lineTo(470, -50);
-	ctx.lineTo(444, -50);
-	ctx.lineTo(470, 0);
-	ctx.lineTo(444, 50);
-	ctx.moveTo(-470, 50);
-	ctx.lineTo(-494, 0);
-	ctx.lineTo(-470, -50);
-	ctx.lineTo(-444, -50);
-	ctx.lineTo(-470, 0);
-	ctx.lineTo(-444, 50);
-	ctx.fill();
-	ctx.closePath();
-	ctx.beginPath();
-	ctx.fillStyle = "#f46";
-	ctx.moveTo(403, 22);
-	ctx.lineTo(414, 0);
-	ctx.lineTo(403, -22);
-	ctx.lineTo(101, -22);
-	ctx.lineTo(101, 22);
-	ctx.moveTo(-403, -22);
-	ctx.lineTo(-414, 0);
-	ctx.lineTo(-403, 22);
-	ctx.lineTo(-101, 22);
-	ctx.lineTo(-101, -22);
-	ctx.moveTo(1, -36);
-	ctx.lineTo(1, -60);
-	ctx.lineTo(20, -48);
-	ctx.arcTo(1, -60, 1, -36, 24);
-	ctx.moveTo(-1, 36);
-	ctx.lineTo(-1, 60);
-	ctx.lineTo(-20, 48);
-	ctx.arcTo(-1, 60, -1, 36, 24);
-	ctx.fill();
-	ctx.closePath();
-}
-const s = 1.70158;
-const tween = {
-	easeInQuad: pos => Math.pow(pos, 2),
-	easeOutQuad: pos => 1 - Math.pow((pos - 1), 2),
-	easeInOutQuad: pos => (pos *= 2) < 1 ? Math.pow(pos, 2) / 2 : -((pos -= 2) * pos - 2) / 2,
-	easeInCubic: pos => Math.pow(pos, 3),
-	easeOutCubic: pos => 1 + Math.pow((pos - 1), 3),
-	easeInOutCubic: pos => ((pos *= 2) < 1) ? Math.pow(pos, 3) / 2 : (Math.pow((pos - 2), 3) + 2) / 2,
-	easeInQuart: pos => Math.pow(pos, 4),
-	easeOutQuart: pos => 1 - Math.pow((pos - 1), 4),
-	easeInOutQuart: pos => ((pos *= 2) < 1) ? Math.pow(pos, 4) / 2 : -((pos -= 2) * Math.pow(pos, 3) - 2) / 2,
-	easeInQuint: pos => Math.pow(pos, 5),
-	easeOutQuint: pos => 1 + Math.pow((pos - 1), 5),
-	easeInOutQuint: pos => ((pos *= 2) < 1) ? Math.pow(pos, 5) / 2 : (Math.pow((pos - 2), 5) + 2) / 2,
-	easeInSine: pos => 1 - Math.cos(pos * (Math.PI / 2)),
-	easeOutSine: pos => Math.sin(pos * (Math.PI / 2)),
-	easeInOutSine: pos => (1 - Math.cos(Math.PI * pos)) / 2,
-	easeInExpo: pos => pos == 0 ? 0 : Math.pow(2, 10 * (pos - 1)),
-	easeOutExpo: pos => pos == 1 ? 1 : 1 - Math.pow(2, -10 * pos),
-	easeInOutExpo: pos => {
-		if (pos == 0) return 0;
-		if (pos == 1) return 1;
-		return (pos *= 2) < 1 ? Math.pow(2, 10 * (pos - 1)) / 2 : 1 - Math.pow(2, -10 * (pos - 1)) / 2;
-	},
-	easeInCirc: pos => -(Math.sqrt(1 - (pos * pos)) - 1),
-	easeOutCirc: pos => Math.sqrt(1 - Math.pow((pos - 1), 2)),
-	easeInOutCirc: pos => ((pos *= 2) < 1) ? -(Math.sqrt(1 - pos * pos) - 1) / 2 : (Math.sqrt(1 - (pos -= 2) * pos) + 1) / 2,
-	easeOutBounce: pos => {
-		if (pos < 1 / 2.75) return 7.5625 * pos ** 2;
-		if (pos < 2 / 2.75) return 7.5625 * (pos - 1.5 / 2.75) ** 2 + .75;
-		if (pos < 2.5 / 2.75) return 7.5625 * (pos - 2.25 / 2.75) ** 2 + .9375;
-		return 7.5625 * (pos - 2.625 / 2.75) ** 2 + .984375;
-	},
-	easeInBack: pos => pos * pos * ((s + 1) * pos - s),
-	easeOutBack: pos => (pos = pos - 1) * pos * ((s + 1) * pos + s) + 1,
-	easeInOutBack: pos => ((pos *= 2) < 1) ? (pos * pos * (((s *= (1.525)) + 1) * pos - s)) / 2 : ((pos -= 2) * pos * (((s *= (1.525)) + 1) * pos + s) + 2) / 2,
-	elastic: pos => -1 * Math.pow(4, -8 * pos) * Math.sin((pos * 6 - 1) * (2 * Math.PI) / 2) + 1,
-	swingFromTo: pos => ((pos *= 2) < 1) ? (pos * pos * (((s *= (1.525)) + 1) * pos - s)) / 2 : ((pos -= 2) * pos * (((s *= (1.525)) + 1) * pos + s) + 2) / 2,
-	swingFrom: pos => pos * pos * ((s + 1) * pos - s),
-	swingTo: pos => (pos -= 1) * pos * ((s + 1) * pos + s) + 1,
-	bounce: pos => {
-		if (pos < 1 / 2.75) return 7.5625 * pos ** 2;
-		if (pos < 2 / 2.75) return 7.5625 * (pos - 1.5 / 2.75) ** 2 + .75;
-		if (pos < 2.5 / 2.75) return 7.5625 * (pos - 2.25 / 2.75) ** 2 + .9375;
-		return 7.5625 * (pos - 2.625 / 2.75) ** 2 + .984375;
-	},
-	bouncePast: pos => {
-		if (pos < 1 / 2.75) return 7.5625 * pos ** 2;
-		if (pos < 2 / 2.75) return 2 - (7.5625 * (pos - 1.5 / 2.75) ** 2 + .75);
-		if (pos < 2.5 / 2.75) return 2 - (7.5625 * (pos - 2.25 / 2.75) ** 2 + .9375);
-		return 2 - (7.5625 * (pos - 2.625 / 2.75) ** 2 + .984375);
-	},
-	easeFromTo: pos => (pos *= 2) < 1 ? Math.pow(pos, 4) / 2 : 1 - (pos -= 2) * Math.pow(pos, 3) / 2,
-	easeFrom: pos => Math.pow(pos, 4),
-	easeTo: pos => Math.pow(pos, 0.25),
-	linear: pos => pos,
-	sinusoidal: pos => 0.5 - Math.cos(pos * Math.PI) / 2,
-	reverse: pos => 1 - pos,
-	mirror: (pos, transition) => {
-		transition = transition || tween.sinusoidal;
-		return pos < 0.5 ? transition(pos * 2) : transition(1 - (pos - 0.5) * 2);
-	},
-	flicker: pos => {
-		pos += (Math.random() - 0.5) / 5;
-		return tween.sinusoidal(pos < 0 ? 0 : pos > 1 ? 1 : pos);
-	},
-	wobble: pos => 0.5 - Math.cos(pos * Math.PI * (9 * pos)) / 2,
-	pulse: (pos, pulses) => 0.5 - Math.cos((pos * ((pulses || 5) - .5) * 2) * Math.PI) / 2,
-	blink: (pos, blinks) => Math.round(pos * (blinks || 5)) % 2,
-	spring: pos => 1 - (Math.cos(pos * 4.5 * Math.PI) * Math.exp(-pos * 6)),
-	none: () => 0,
-	full: () => 1
-}
