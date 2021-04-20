@@ -144,7 +144,7 @@ class line {
 		this.a = alpha;
 	}
 }
-const showPoint = true; //显示控制点
+const showPoint = !true; //显示控制点
 //判定线事件
 class lineEvent {
 	constructor(startTime, endTime, start, end, start2, end2) {
@@ -157,38 +157,49 @@ class lineEvent {
 	}
 }
 
-function showNote(line, notes, time, num) {
-	const x = line.x;
-	const y = line.y;
+function showNote(line, notes, time, num, speedEvents, bpm) {
+	const sx = canvas.width / 2 * (1 + line.x);
+	const sy = canvas.height / 2 * (1 - line.y);
 	const r = line.r / 180 * Math.PI;
 	for (const i of notes) {
-		if (i.time < time) continue;
-		ctx.translate(canvas.width * ((1 + x) / 2), canvas.height * ((1 - y) / 2));
+		if (i.played && i.type != 3) continue;
+		ctx.translate(sx, sy);
 		ctx.rotate(-r);
-		ctx.translate(canvas.width * i.positionX / 18, -canvas.height * (i.time - time) * num * i.speed / 100);
+		ctx.translate(canvas.width * i.positionX / 18, -canvas.height / 2 * (i.floorPosition - line.positionY) * num); //暂时忽略i.speed
 		ctx.scale(scale, scale); //缩放
 		//ctx.shadowBlur = i.isMulti ? 25 : 0;
 		switch (i.type) {
 			case 1:
 				//绘制蓝键
-				ctx.drawImage(img[1], -494.5, -50);
+				ctx.drawImage(img.tap1, -494.5, -50);
 				break;
 			case 2:
 				//绘制黄键
-				ctx.drawImage(img[2], -494.5, -30);
+				ctx.drawImage(img.drag1, -494.5, -30);
+				break;
+			case 3:
+				//绘制长条
+				if (num == -1) ctx.rotate(Math.PI);
+				const rL = canvas.height / 2 / bpm * 1.875 / scale * i.speed;
+				const holdL = rL * i.holdTime;
+				if (i.time > time) {
+					ctx.drawImage(img.hold1, -494.5, 0);
+					ctx.drawImage(img.hold2, -494.5, -holdL, 989, holdL);
+					ctx.drawImage(img.hold3, -494.5, -holdL - 50);
+				} else if (i.time + i.holdTime > time) {
+					ctx.drawImage(img.hold3, -494.5, -holdL - 50);
+					ctx.drawImage(img.hold2, -494.5, -holdL, 989, holdL - rL * (time - i.time));
+				}
 				break;
 			case 4:
 				//绘制粉键
-				ctx.drawImage(img[4], -494.5, -100);
-				break;
-			case 3:
-				ctx.drawImage(img[1], -494.5, -50);
+				ctx.drawImage(img.flick1, -494.5, -100);
 				break;
 			default:
 		}
 		ctx.resetTransform();
 	}
-	ctx.resetTransform();
+	//播放打击音效
 	for (const i of notes) {
 		if (i.time > time) break;
 		if (!i.played) {
@@ -196,9 +207,8 @@ function showNote(line, notes, time, num) {
 			bufferSource.buffer = aud[type2idx(i.type)];
 			bufferSource.connect(actx.destination);
 			bufferSource.start();
-			const dx = i.positionX * Math.cos(r);
-			const dy = i.positionX * Math.sin(r);
-			clickEvents.push(new clickEvent(canvas.width * ((1 + x) / 2 + dx / 18), canvas.height * ((1 - y) / 2 - dy / 18)));
+			const d = canvas.width * i.positionX / 18;
+			clickEvents.push(new clickEvent(sx + d * Math.cos(r), sy - d * Math.sin(r)));
 			score = (Array(7).join(0) + (1e6 / chart.numOfNotes * (++combo)).toFixed(0)).slice(-7);
 			i.played = true;
 		}
@@ -207,7 +217,8 @@ function showNote(line, notes, time, num) {
 
 function moveLine(line, judgeLineMoveEvents, time) {
 	for (const i of judgeLineMoveEvents) {
-		if (time < i.startTime || time > i.endTime) continue;
+		if (time < i.startTime) break;
+		if (time > i.endTime) continue;
 		let dura = (time - i.startTime) / (i.endTime - i.startTime);
 		let ina = 1 - dura;
 		line.x = (i.start * ina + i.end * dura) * 2 - 1;
@@ -217,7 +228,8 @@ function moveLine(line, judgeLineMoveEvents, time) {
 
 function rotateLine(line, judgeLineRotateEvents, time) {
 	for (const i of judgeLineRotateEvents) {
-		if (time < i.startTime || time > i.endTime) continue;
+		if (time < i.startTime) break;
+		if (time > i.endTime) continue;
 		let dura = (time - i.startTime) / (i.endTime - i.startTime);
 		let ina = 1 - dura;
 		line.r = i.start * ina + i.end * dura;
@@ -226,10 +238,31 @@ function rotateLine(line, judgeLineRotateEvents, time) {
 
 function disappearLine(line, judgeLineDisappearEvents, time) {
 	for (const i of judgeLineDisappearEvents) {
-		if (time < i.startTime || time > i.endTime) continue;
+		if (time < i.startTime) break;
+		if (time > i.endTime) continue;
 		let dura = (time - i.startTime) / (i.endTime - i.startTime);
 		let ina = 1 - dura;
 		line.a = i.start * ina + i.end * dura;
+	}
+}
+
+function speedLine(line, speedEvents, time, bpm) {
+	let y = 0;
+	for (const i of speedEvents) {
+		if (time < i.startTime) break;
+		if (time > i.endTime) y += (i.endTime - i.startTime) * i.value; // + i.floorPosition;
+		else line.positionY = (y + (time - i.startTime) * i.value) / bpm * 1.875; //+ i.floorPosition;
+		//if (time > i.endTime) continue;
+		//line.positionY = y + time * i.value + i.floorPosition;
+	}
+}
+
+function calcY(time, speedEvents, bpm) {
+	let y = 0;
+	for (const i of speedEvents) {
+		if (time < i.startTime) break;
+		if (time > i.endTime) y += (i.endTime - i.startTime) * i.value; // + i.floorPosition;
+		return (y + (time - i.startTime) * i.value) / bpm * 1.875; //+ i.floorPosition;
 	}
 }
 //note定义
@@ -248,16 +281,7 @@ class note {
 		this.isMulti = false; //是否多押
 	}
 }
-//note事件
-/*class noteEvent {
-	constructor(id, t1, x, y, r1, o1, a1, t2, x, y, r2, o2, a2, tween) {
-		this.id = id; //对应下标
-		this.t = [t1, t2];
-		this.s = new crd(x, y, r1, o1, a1);
-		this.e = new crd(x, y, r2, o2, a2);
-		this.tween = tween; //缓动类型
-	}
-}*/
+//
 const ctx = canvas.getContext("2d");
 const ctxbg = canvasbg.getContext("2d");
 let time = Date.now();
@@ -272,7 +296,7 @@ function draw() {
 	ctxbg.drawImage(img.bg, sx, sy, sw, sh, dx1, dy1, dw1, dh1);
 	//背景变暗
 	ctx.fillStyle = "#000";
-	ctx.globalAlpha = 0.5;
+	ctx.globalAlpha = 0.6;
 	ctx.fillRect(0, 0, dw1, dh1);
 	ctx.globalAlpha = 1;
 	//多押阴影
@@ -288,22 +312,6 @@ function draw() {
 	ctx.textAlign = "end";
 	ctx.fillText(`score:${score}`, canvas.width - px * 0.6, px * 1.6);
 	ctx.fillText(`combo:${combo}`, canvas.width - px * 0.6, px * 2.9);
-	//遍历events
-	chart.judgeLineList.forEach((val, idx) => {
-		const i = lines[idx];
-		if (i) { //避免加载失败报错
-			const numOfNotes = val.numOfNotes;
-			const numOfNotesAbove = val.numOfNotesAbove;
-			const numOfNotesBelow = val.numOfNotesBelow;
-			const beat32 = time * val.bpm / 1.875;
-			const speedEvents = val.speedEvents;
-			showNote(i, val.notesAbove, beat32, 1);
-			showNote(i, val.notesBelow, beat32, -1);
-			disappearLine(i, val.judgeLineDisappearEvents, beat32);
-			moveLine(i, val.judgeLineMoveEvents, beat32);
-			rotateLine(i, val.judgeLineRotateEvents, beat32);
-		}
-	});
 	//绘制判定线
 	for (const i of lines) {
 		ctx.globalAlpha = i.a;
@@ -320,6 +328,23 @@ function draw() {
 		ctx.globalAlpha = 1;
 		ctx.resetTransform();
 	}
+	//遍历events
+	chart.judgeLineList.forEach((val, idx) => {
+		const i = lines[idx];
+		if (i) { //避免加载失败报错
+			const numOfNotes = val.numOfNotes;
+			const numOfNotesAbove = val.numOfNotesAbove;
+			const numOfNotesBelow = val.numOfNotesBelow;
+			const beat32 = time * val.bpm / 1.875;
+			const speedEvents = val.speedEvents;
+			showNote(i, val.notesAbove, beat32, 1, speedEvents, val.bpm);
+			showNote(i, val.notesBelow, beat32, -1, speedEvents, val.bpm);
+			disappearLine(i, val.judgeLineDisappearEvents, beat32);
+			moveLine(i, val.judgeLineMoveEvents, beat32);
+			rotateLine(i, val.judgeLineRotateEvents, beat32);
+			speedLine(i, val.speedEvents, beat32, val.bpm);
+		}
+	});
 	//绘制控制点
 	if (showPoint) {
 		for (const i of lines) {
@@ -333,34 +358,8 @@ function draw() {
 			ctx.resetTransform();
 		}
 	}
-	//绘制note
-	/*for (const i of notes) {
-		if (i.beat >= beat) {
-			ctx.shadowBlur = i.isMulti ? 25 : 0;
-			let crdxdui = [lines[i.from], i];
-			switch (i.type) {
-				case 0:
-					//绘制蓝键
-					drawTapNote(..xdui);
-					break;
-				case 1:
-					//绘制黄键
-					drawDragNote(..xdui);
-					break;
-				case 2:
-					//绘制粉键
-					drawFlickNote(..xdui);
-					break;
-				case 3:
-					break;
-				default:
-			}
-			ctx.resetTransform();
-		}
-		//i.y += canvas.height / 228; //test
-	}*/
+	//绘制打击特效
 	for (const i of clickEvents) {
-		//打击特效
 		const tick = i.time / 30;
 		ctx.translate(i.x, i.y);
 		ctx.scale(scale * 6, scale * 6); //缩放
@@ -428,10 +427,12 @@ function init() {
 		const imgsrc = {
 			bg: "src/bg.png",
 			click: "src/0.png",
-			1: "src/1.png",
-			2: "src/2.png",
-			3: "src/1.png",
-			4: "src/4.png",
+			tap1: "src/tap1.png",
+			drag1: "src/drag1.png",
+			hold1: "src/hold1.png",
+			hold2: "src/hold2.png",
+			hold3: "src/hold3.png",
+			flick1: "src/flick1.png",
 		};
 		let imgNum = 0;
 		for ({} in imgsrc) imgNum++;
