@@ -1,5 +1,6 @@
 "use strict";
 const _i = ['Phigros模拟器', [1, 0, 1], 1618728604, 1611795955];
+document.oncontextmenu = e => e.returnValue = false;
 const canvas = document.getElementById("stage");
 const canvasbg = document.getElementById("bg");
 //调节尺寸
@@ -14,7 +15,7 @@ function resizeCanvas() {
 	wlen = canvas.width / 2;
 	hlen = canvas.height / 2;
 	mlen = Math.min(wlen, hlen);
-	scale = canvas.width / 6e3; //note缩放
+	scale = canvas.width / 7e3; //note缩放
 	canvasbg.width = window.innerWidth * window.devicePixelRatio;
 	canvasbg.height = window.innerHeight * window.devicePixelRatio;
 	if (canvasbg.width * 9 > canvasbg.height * 16) {
@@ -34,7 +35,12 @@ function resizeCanvas() {
 	}
 }
 //谱面默认信息
-let bpm, duration, frame = 0;
+let duration = 0;
+let tick = 0;
+let start = Date.now();
+let fps = 0;
+let songName = "SpasModic(Haocore Mix)";
+let level = "SP  Lv.?";
 //点击特效(以后会改)
 const clicks = []; //存放点击事件，用于检测
 const clickEvents = []; //存放点击特效
@@ -136,12 +142,13 @@ canvas.addEventListener("touchcancel", evt => {
 const lines = []; //存放判定线
 const lineEvents = []; //存放判定线事件
 class line {
-	constructor(x, y, rotation, offset, alpha) {
+	constructor(x, y, rotation, alpha, bpm) {
 		this.x = x;
 		this.y = y;
 		this.r = rotation;
-		this.o = offset;
+		//this.o = offset;
 		this.a = alpha;
+		this.bpm = bpm;
 	}
 }
 const showPoint = !true; //显示控制点
@@ -156,50 +163,11 @@ class lineEvent {
 		this.end2 = end2;
 	}
 }
-
-function showNote(line, notes, time, num, speedEvents, bpm) {
+//播放打击音效
+function playNote(line, notes, time) {
 	const sx = canvas.width / 2 * (1 + line.x);
 	const sy = canvas.height / 2 * (1 - line.y);
 	const r = line.r / 180 * Math.PI;
-	for (const i of notes) {
-		if (i.played && i.type != 3) continue;
-		ctx.translate(sx, sy);
-		ctx.rotate(-r);
-		ctx.translate(canvas.width * i.positionX / 18, -canvas.height / 2 * (i.floorPosition - line.positionY) * num); //暂时忽略i.speed
-		ctx.scale(scale, scale); //缩放
-		//ctx.shadowBlur = i.isMulti ? 25 : 0;
-		switch (i.type) {
-			case 1:
-				//绘制蓝键
-				ctx.drawImage(img.tap1, -494.5, -50);
-				break;
-			case 2:
-				//绘制黄键
-				ctx.drawImage(img.drag1, -494.5, -30);
-				break;
-			case 3:
-				//绘制长条
-				if (num == -1) ctx.rotate(Math.PI);
-				const rL = canvas.height / 2 / bpm * 1.875 / scale * i.speed;
-				const holdL = rL * i.holdTime;
-				if (i.time > time) {
-					ctx.drawImage(img.hold1, -494.5, 0);
-					ctx.drawImage(img.hold2, -494.5, -holdL, 989, holdL);
-					ctx.drawImage(img.hold3, -494.5, -holdL - 50);
-				} else if (i.time + i.holdTime > time) {
-					ctx.drawImage(img.hold3, -494.5, -holdL - 50);
-					ctx.drawImage(img.hold2, -494.5, -holdL, 989, holdL - rL * (time - i.time));
-				}
-				break;
-			case 4:
-				//绘制粉键
-				ctx.drawImage(img.flick1, -494.5, -100);
-				break;
-			default:
-		}
-		ctx.resetTransform();
-	}
-	//播放打击音效
 	for (const i of notes) {
 		if (i.time > time) break;
 		if (!i.played) {
@@ -209,9 +177,87 @@ function showNote(line, notes, time, num, speedEvents, bpm) {
 			bufferSource.start();
 			const d = canvas.width * i.positionX / 18;
 			clickEvents.push(new clickEvent(sx + d * Math.cos(r), sy - d * Math.sin(r)));
-			score = (Array(7).join(0) + (1e6 / chart.numOfNotes * (++combo)).toFixed(0)).slice(-7);
+			setTimeout(() => score = (Array(7).join(0) + (1e6 / chart.numOfNotes * (++combo)).toFixed(0)).slice(-7), i.holdTime / line.bpm * 1875); //test
 			i.played = true;
 		}
+	}
+}
+//绘制蓝键
+function drawTapNote(line, notes, time, num) {
+	for (const i of notes) {
+		if (i.type != 1) continue;
+		if (i.time < time) continue;
+		//if (i.floorPosition - line.positionY < 0) continue;
+		ctx.translate(canvas.width / 2 * (1 + line.x), canvas.height / 2 * (1 - line.y));
+		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
+		ctx.translate(canvas.width * i.positionX / 18 * num, -canvas.height / 2 * (i.floorPosition - line.positionY)); //暂时忽略i.speed
+		ctx.scale(scale, scale); //缩放
+		if (!i.multi) ctx.drawImage(img.tap1, -494.5, -50);
+		else ctx.drawImage(img.tap2, -544.5, -100);
+		ctx.resetTransform();
+	}
+}
+//绘制黄键
+function drawDragNote(line, notes, time, num) {
+	for (const i of notes) {
+		if (i.type != 2) continue;
+		if (i.time < time) continue;
+		//if (i.floorPosition - line.positionY < 0) continue;
+		ctx.translate(canvas.width / 2 * (1 + line.x), canvas.height / 2 * (1 - line.y));
+		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
+		ctx.translate(canvas.width * i.positionX / 18 * num, -canvas.height / 2 * (i.floorPosition - line.positionY)); //暂时忽略i.speed
+		ctx.scale(scale, scale); //缩放
+		if (!i.multi) ctx.drawImage(img.drag1, -494.5, -30);
+		else ctx.drawImage(img.drag2, -544.5, -80);
+		ctx.resetTransform();
+	}
+}
+
+function drawHoldNote(line, notes, time, num) {
+	const sx = canvas.width / 2 * (1 + line.x);
+	const sy = canvas.height / 2 * (1 - line.y);
+	const r = line.r / 180 * Math.PI;
+	for (const i of notes) {
+		if (i.type != 3) continue;
+		if (i.time + i.holdTime < time) continue;
+		//if (i.floorPosition - line.positionY < 0) continue;
+		ctx.translate(sx, sy);
+		ctx.rotate((num - 1) * Math.PI / 2 - r);
+		ctx.translate(canvas.width * i.positionX / 18 * num, -canvas.height / 2 * (i.floorPosition - line.positionY)); //暂时忽略i.speed
+		ctx.scale(scale, scale); //缩放
+		const rL = canvas.height / 2 / line.bpm * 1.875 / scale * i.speed;
+		const holdL = rL * i.holdTime;
+		const reL = rL * (i.holdTime + i.time - time); //test
+		if (i.time > time) {
+			ctx.drawImage(img.hold1, -494.5, 0);
+			ctx.drawImage(img.hold2, -494.5, -holdL, 989, holdL);
+			ctx.drawImage(img.hold3, -494.5, -holdL - 50);
+		} else {
+			ctx.drawImage(img.hold3, -494.5, -holdL - 50);
+			ctx.drawImage(img.hold2, -494.5, -holdL, 989, reL);
+			//绘制持续打击动画
+			i.playing = i.playing ? i.playing + 1 : 1;
+			if (i.playing % 12 == 0) {
+				const d = canvas.width * i.positionX / 18;
+				clickEvents.push(new clickEvent(sx + d * Math.cos(r), sy - d * Math.sin(r)));
+			}
+		}
+		ctx.resetTransform();
+	}
+}
+//绘制粉键
+function drawFlickNote(line, notes, time, num) {
+	for (const i of notes) {
+		if (i.type != 4) continue;
+		if (i.time < time) continue;
+		//if (i.floorPosition - line.positionY < 0) continue;
+		ctx.translate(canvas.width / 2 * (1 + line.x), canvas.height / 2 * (1 - line.y));
+		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
+		ctx.translate(canvas.width * i.positionX / 18 * num, -canvas.height / 2 * (i.floorPosition - line.positionY)); //暂时忽略i.speed
+		ctx.scale(scale, scale); //缩放
+		if (!i.multi) ctx.drawImage(img.flick1, -494.5, -100);
+		else ctx.drawImage(img.flick2, -544.5, -150);
+		ctx.resetTransform();
 	}
 }
 
@@ -219,10 +265,20 @@ function moveLine(line, judgeLineMoveEvents, time) {
 	for (const i of judgeLineMoveEvents) {
 		if (time < i.startTime) break;
 		if (time > i.endTime) continue;
-		let dura = (time - i.startTime) / (i.endTime - i.startTime);
-		let ina = 1 - dura;
-		line.x = (i.start * ina + i.end * dura) * 2 - 1;
-		line.y = (i.start2 * ina + i.end2 * dura) * 2 - 1;
+		const t2 = (time - i.startTime) / (i.endTime - i.startTime);
+		const t1 = 1 - t2;
+		switch (chart.formatVersion) {
+			case 1:
+				line.x = (parseInt(i.start / 1000) * t1 + parseInt(i.end / 1000) * t2) / 440 - 1;
+				line.y = ((i.start % 1000) * t1 + (i.end % 1000) * t2) / 260 - 1;
+				break;
+			case 3:
+				line.x = (i.start * t1 + i.end * t2) * 2 - 1;
+				line.y = (i.start2 * t1 + i.end2 * t2) * 2 - 1;
+				break;
+			default:
+				throw "Unsupported formatVersion";
+		}
 	}
 }
 
@@ -230,9 +286,9 @@ function rotateLine(line, judgeLineRotateEvents, time) {
 	for (const i of judgeLineRotateEvents) {
 		if (time < i.startTime) break;
 		if (time > i.endTime) continue;
-		let dura = (time - i.startTime) / (i.endTime - i.startTime);
-		let ina = 1 - dura;
-		line.r = i.start * ina + i.end * dura;
+		const t2 = (time - i.startTime) / (i.endTime - i.startTime);
+		const t1 = 1 - t2;
+		line.r = i.start * t1 + i.end * t2;
 	}
 }
 
@@ -240,55 +296,42 @@ function disappearLine(line, judgeLineDisappearEvents, time) {
 	for (const i of judgeLineDisappearEvents) {
 		if (time < i.startTime) break;
 		if (time > i.endTime) continue;
-		let dura = (time - i.startTime) / (i.endTime - i.startTime);
-		let ina = 1 - dura;
-		line.a = i.start * ina + i.end * dura;
+		const t2 = (time - i.startTime) / (i.endTime - i.startTime);
+		const t1 = 1 - t2;
+		line.a = i.start * t1 + i.end * t2;
 	}
 }
 
-function speedLine(line, speedEvents, time, bpm) {
-	let y = 0;
-	for (const i of speedEvents) {
-		if (time < i.startTime) break;
-		if (time > i.endTime) y += (i.endTime - i.startTime) * i.value; // + i.floorPosition;
-		else line.positionY = (y + (time - i.startTime) * i.value) / bpm * 1.875; //+ i.floorPosition;
-		//if (time > i.endTime) continue;
-		//line.positionY = y + time * i.value + i.floorPosition;
-	}
-}
-
-function calcY(time, speedEvents, bpm) {
-	let y = 0;
-	for (const i of speedEvents) {
-		if (time < i.startTime) break;
-		if (time > i.endTime) y += (i.endTime - i.startTime) * i.value; // + i.floorPosition;
-		return (y + (time - i.startTime) * i.value) / bpm * 1.875; //+ i.floorPosition;
-	}
-}
-//note定义
-const notes = []; //存放note
-const noteEvents = []; //存放note事件
-class note {
-	constructor(from, type, beat, inverse) {
-		//this.id = id; //对应下标
-		this.from = from; //所属line下标
-		this.type = type; //note类型
-		this.beat = beat; //打击时间
-		this.inverse = inverse; //是否倒打
-		this.x = 0;
-		this.y = 0;
-		this.r = 0;
-		this.isMulti = false; //是否多押
+function speedLine(line, speedEvents, time) {
+	switch (chart.formatVersion) {
+		case 1:
+			let y = 0;
+			for (const i of speedEvents) {
+				if (time < i.startTime) break;
+				if (time > i.endTime) y += (i.endTime - i.startTime) * i.value;
+				else line.positionY = (y + (time - i.startTime) * i.value) / line.bpm * 1.875;
+			}
+			break;
+		case 3:
+			for (const i of speedEvents) {
+				if (time < i.startTime) break;
+				if (time > i.endTime) continue;
+				line.positionY = (time - i.startTime) * i.value / line.bpm * 1.875 + i.floorPosition;
+			}
+			break;
+		default:
+			throw "Unsupported formatVersion"
 	}
 }
 //
 const ctx = canvas.getContext("2d");
 const ctxbg = canvasbg.getContext("2d");
-let time = Date.now();
 let combo = 0; //test
 let score = "0000000"; //test
 
 function draw() {
+	const timeRaw = (Date.now() - curTimestamp) / 1e3 + curTime;
+	const time = Math.max(timeRaw - chart.offset, 0);
 	//重置画面
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	//绘制背景
@@ -296,22 +339,9 @@ function draw() {
 	ctxbg.drawImage(img.bg, sx, sy, sw, sh, dx1, dy1, dw1, dh1);
 	//背景变暗
 	ctx.fillStyle = "#000";
-	ctx.globalAlpha = 0.6;
+	ctx.globalAlpha = 0.6; //背景不透明度
 	ctx.fillRect(0, 0, dw1, dh1);
 	ctx.globalAlpha = 1;
-	//多押阴影
-	ctx.shadowColor = "#ff7";
-	//显示文字（时刻）
-	const px = 25 * window.devicePixelRatio;
-	ctx.font = `${px}px monospace`;
-	ctx.fillStyle = "rgba(255,255,255,0.6)";
-	ctx.textAlign = "start";
-	ctx.fillText(`frame:${frame++}`, px * 0.6, px * 1.6);
-	let time = (Date.now() - curTimestamp) / 1e3 + curTime;
-	ctx.fillText(`time:${time.toFixed(2)}(${(time/duration*100).toFixed(2)}%)`, px * 0.6, px * 2.9);
-	ctx.textAlign = "end";
-	ctx.fillText(`score:${score}`, canvas.width - px * 0.6, px * 1.6);
-	ctx.fillText(`combo:${combo}`, canvas.width - px * 0.6, px * 2.9);
 	//绘制判定线
 	for (const i of lines) {
 		ctx.globalAlpha = i.a;
@@ -330,19 +360,48 @@ function draw() {
 	}
 	//遍历events
 	chart.judgeLineList.forEach((val, idx) => {
+		const beat32 = time * val.bpm / 1.875;
 		const i = lines[idx];
 		if (i) { //避免加载失败报错
-			const numOfNotes = val.numOfNotes;
-			const numOfNotesAbove = val.numOfNotesAbove;
-			const numOfNotesBelow = val.numOfNotesBelow;
-			const beat32 = time * val.bpm / 1.875;
-			const speedEvents = val.speedEvents;
-			showNote(i, val.notesAbove, beat32, 1, speedEvents, val.bpm);
-			showNote(i, val.notesBelow, beat32, -1, speedEvents, val.bpm);
+			playNote(i, val.notesAbove, beat32);
+			playNote(i, val.notesBelow, beat32);
 			disappearLine(i, val.judgeLineDisappearEvents, beat32);
 			moveLine(i, val.judgeLineMoveEvents, beat32);
 			rotateLine(i, val.judgeLineRotateEvents, beat32);
-			speedLine(i, val.speedEvents, beat32, val.bpm);
+			speedLine(i, val.speedEvents, beat32);
+		}
+	});
+	//绘制note
+	chart.judgeLineList.forEach((val, idx) => {
+		const beat32 = time * val.bpm / 1.875;
+		const i = lines[idx];
+		if (i) { //避免加载失败报错
+			drawHoldNote(i, val.notesAbove, beat32, 1);
+			drawHoldNote(i, val.notesBelow, beat32, -1);
+		}
+	});
+	chart.judgeLineList.forEach((val, idx) => {
+		const beat32 = time * val.bpm / 1.875;
+		const i = lines[idx];
+		if (i) { //避免加载失败报错
+			drawDragNote(i, val.notesAbove, beat32, 1);
+			drawDragNote(i, val.notesBelow, beat32, -1);
+		}
+	});
+	chart.judgeLineList.forEach((val, idx) => {
+		const beat32 = time * val.bpm / 1.875;
+		const i = lines[idx];
+		if (i) { //避免加载失败报错
+			drawTapNote(i, val.notesAbove, beat32, 1);
+			drawTapNote(i, val.notesBelow, beat32, -1);
+		}
+	});
+	chart.judgeLineList.forEach((val, idx) => {
+		const beat32 = time * val.bpm / 1.875;
+		const i = lines[idx];
+		if (i) { //避免加载失败报错
+			drawFlickNote(i, val.notesAbove, beat32, 1);
+			drawFlickNote(i, val.notesBelow, beat32, -1);
 		}
 	});
 	//绘制控制点
@@ -363,7 +422,7 @@ function draw() {
 		const tick = i.time / 30;
 		ctx.translate(i.x, i.y);
 		ctx.scale(scale * 6, scale * 6); //缩放
-		ctx.drawImage(imgClick[(i.time++).toFixed(0)], -128, -128); //停留约0.5秒
+		ctx.drawImage(imgClick.perfect[(i.time++).toFixed(0)], -128, -128); //停留约0.5秒
 		//四个方块
 		for (const j of i.rand) {
 			ctx.fillStyle = `rgba(254,254,169,${(1-tick)})`;
@@ -379,17 +438,55 @@ function draw() {
 			i--;
 		}
 	}
+	//绘制进度条
+	ctx.scale(canvas.width / 1920, canvas.width / 1920);
+	ctx.drawImage(img.bar1, Math.min(timeRaw / duration - 1, 0) * 1920, 0);
+	ctx.resetTransform();
+	//显示文字（时刻）
+	const fontSize = Math.max(canvas.width, canvas.height, 854 * window.devicePixelRatio) * 0.03;
+	ctx.fillStyle = "#fff";
+	if (++tick % 10 == 0) {
+		fps = Math.round(1e4 / (Date.now() - start));
+		start = Date.now();
+	}
+	ctx.textBaseline = "top";
+	ctx.font = `${fontSize*0.4}px Exo,monospace`;
+	ctx.textAlign = "left";
+	ctx.fillText(`${time2Str(timeRaw)}/${time2Str(duration)}`, 0, fontSize * 0.3);
+	ctx.textAlign = "right";
+	ctx.fillText(`${fps}`, canvas.width, fontSize * 0.3);
+	ctx.textBaseline = "alphabetic";
+	ctx.font = `${fontSize}px Exo,monospace`;
+	ctx.textAlign = "right";
+	ctx.fillText(`${score}`, canvas.width - fontSize * 0.9, fontSize * 1.5);
+	ctx.font = `${fontSize*0.75}px Exo,monospace`;
+	ctx.fillText(level, canvas.width - fontSize * 0.9, canvas.height - fontSize * 0.9);
+	ctx.drawImage(img.bar2, fontSize * 0.9, canvas.height - fontSize * 1.8, fontSize * 7 / 36, fontSize);
+	ctx.textAlign = "left";
+	ctx.fillText(songName, fontSize * 1.5, canvas.height - fontSize * 0.9);
+	if (combo > 2) {
+		ctx.textAlign = "center";
+		ctx.font = `${fontSize*1.5}px Exo,monospace`;
+		ctx.fillText(`${combo}`, canvas.width / 2, fontSize * 1.5);
+		ctx.textBaseline = "top";
+		ctx.font = `${fontSize*0.75}px Exo,monospace`;
+		ctx.fillText(`combo`, canvas.width / 2, fontSize * 1.6);
+	}
 	requestAnimationFrame(draw);
 }
-
+const time2Str = time => `${`00${parseInt(time/60)}`.slice(-2)}:${`00${parseInt(time%60)}`.slice(-2)}`;
 const actx = new AudioContext();
 const img = {};
-const imgClick = [];
+const imgClick = {
+	perfect: [],
+	good: []
+};
 let curTime = 0;
 let curTimestamp = 0;
 const aud = [];
 //test start
 let chart = {};
+let multi = {};
 
 function type2idx(type) {
 	switch (type) {
@@ -406,10 +503,6 @@ function type2idx(type) {
 }
 //test end
 function init() {
-	//谱面(临时，以后改成json)
-	//bpmEvents.push(new bpmEvent(0, 170), new bpmEvent(127.14, 138));
-	//bpmEvents.push(new bpmEvent(0, 200));
-	//lines.push(new line(0, -0.5, 0, 0, 1));
 	loadChart();
 	//加载谱面
 	function loadChart() {
@@ -418,21 +511,45 @@ function init() {
 		xhr.send();
 		xhr.onload = () => {
 			chart = JSON.parse(xhr.responseText);
-			loadImage();
+			//note预加载(双押提示)
+			for (const i of chart.judgeLineList) {
+				for (const j of i.notesAbove) {
+					if (!multi[j.time]) multi[j.time] = 1;
+					else multi[j.time] = 2;
+				}
+				for (const j of i.notesBelow) {
+					if (!multi[j.time]) multi[j.time] = 1;
+					else multi[j.time] = 2;
+				}
+			}
+			for (const i of chart.judgeLineList) {
+				for (const j of i.notesAbove) {
+					if (multi[j.time] == 2) j.multi = true;
+				}
+				for (const j of i.notesBelow) {
+					if (multi[j.time] == 2) j.multi = true;
+				}
+			}
 			console.log(chart);
+			loadImage();
 		}
 	}
 	//加载图片
 	function loadImage() {
 		const imgsrc = {
 			bg: "src/bg.png",
-			click: "src/0.png",
+			bar1: "src/bar1.png",
+			bar2: "src/bar2.png",
+			click: "src/click.png",
 			tap1: "src/tap1.png",
+			tap2: "src/tap2.png",
 			drag1: "src/drag1.png",
+			drag2: "src/drag2.png",
 			hold1: "src/hold1.png",
 			hold2: "src/hold2.png",
 			hold3: "src/hold3.png",
 			flick1: "src/flick1.png",
+			flick2: "src/flick2.png",
 		};
 		let imgNum = 0;
 		for ({} in imgsrc) imgNum++;
@@ -461,20 +578,34 @@ function init() {
 		}
 		//加载打击动画
 		const canvas2 = document.createElement("canvas");
-		canvas2.width = 512;
+		canvas2.width = 256;
 		canvas2.height = 7680;
-		const ctx = canvas2.getContext("2d");
-		ctx.drawImage(img.click, 0, 0);
-		for (let i = 0; i < 2; i++) {
-			for (let j = 0; j < 30; j++) {
-				const canvas3 = document.createElement("canvas");
-				canvas3.width = 256;
-				canvas3.height = 256;
-				canvas3.getContext("2d").putImageData(ctx.getImageData(i * 256, j * 256, 256, 256), 0, 0);
-				const img3 = new Image();
-				img3.src = canvas3.toDataURL('image/png', 1);
-				imgClick[i * 30 + j] = img3;
+		const ctx2 = canvas2.getContext("2d");
+		ctx2.drawImage(img.click, 0, 0);
+		for (let i = 0; i < 30; i++) {
+			const canvas3 = document.createElement("canvas");
+			canvas3.width = 256;
+			canvas3.height = 256;
+			const imgP = ctx2.getImageData(0, i * 256, 256, 256);
+			for (let i = 0; i < imgP.data.length / 4; i++) {
+				imgP.data[i * 4] *= 1;
+				imgP.data[i * 4 + 1] *= 1;
+				imgP.data[i * 4 + 2] *= 0.67;
 			}
+			const imgG = ctx2.getImageData(0, i * 256, 256, 256);
+			for (let i = 0; i < imgG.data.length / 4; i++) {
+				imgG.data[i * 4] *= 0.63;
+				imgG.data[i * 4 + 1] *= 0.93;
+				imgG.data[i * 4 + 2] *= 1;
+			}
+			const img3 = new Image();
+			canvas3.getContext("2d").putImageData(imgP, 0, 0);
+			img3.src = canvas3.toDataURL('image/png', 1);
+			imgClick.perfect[i] = img3;
+			const img4 = new Image();
+			canvas3.getContext("2d").putImageData(imgG, 0, 0);
+			img4.src = canvas3.toDataURL('image/png', 1);
+			imgClick.good[i] = img4;
 		}
 		loadAudio();
 	}
@@ -501,7 +632,7 @@ function init() {
 		xhr.responseType = 'arraybuffer';
 		xhr.onload = () => { //下载完成
 			actx.decodeAudioData(xhr.response, data => {
-				for (const i of chart.judgeLineList) lines.push(new line(0, 0, 0, 0, 0));
+				for (const i of chart.judgeLineList) lines.push(new line(0, 0, 0, 0, i.bpm));
 				duration = data.duration;
 				playBgm(data);
 				draw();

@@ -6,6 +6,11 @@
 	<title>(っ °Д °;)っ</title>
 	<link rel="stylesheet" href="/style.css">
 	<style>
+		@font-face {
+			font-family: Exo;
+			src: url('src/Exo-Regular.otf');
+		}
+
 		::-webkit-scrollbar {
 			display: none;
 		}
@@ -44,11 +49,6 @@
 	<canvas id="bg"></canvas>
 	<canvas id="stage"></canvas>
 	<noscript><strong style="color:red">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
-	<script>
-		document.oncontextmenu = e => {
-			e.returnValue = false;
-		}
-	</script>
 	<script src="./script.js"></script>
 	<script src="/script.js"></script>
 </body>
