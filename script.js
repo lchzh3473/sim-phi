@@ -1,5 +1,4 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 0, 1], 1618728604, 1611795955];
 document.oncontextmenu = e => e.returnValue = false;
 const canvas = document.getElementById("stage");
 const canvasbg = document.getElementById("bg");
@@ -506,7 +505,7 @@ function init() {
 	loadChart();
 	//加载谱面
 	function loadChart() {
-		let xhr = new XMLHttpRequest();
+		const xhr = new XMLHttpRequest();
 		xhr.open("get", "src/test.json");
 		xhr.send();
 		xhr.onload = () => {
@@ -615,7 +614,7 @@ function init() {
 		let audNum = 0;
 		for ({} in audsrc) audNum++;
 		for (const i in audsrc) {
-			let xhr = new XMLHttpRequest(); //通过XHR下载音频文件
+			const xhr = new XMLHttpRequest(); //通过XHR下载音频文件
 			xhr.open("get", audsrc[i], true);
 			xhr.responseType = 'arraybuffer';
 			xhr.onload = () => { //下载完成
@@ -627,7 +626,7 @@ function init() {
 	}
 	//加载bgm
 	function loadBgm() {
-		let xhr = new XMLHttpRequest(); //通过XHR下载音频文件
+		const xhr = new XMLHttpRequest(); //通过XHR下载音频文件
 		xhr.open("get", 'src/test.ogg', true);
 		xhr.responseType = 'arraybuffer';
 		xhr.onload = () => { //下载完成
