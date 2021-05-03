@@ -15,42 +15,86 @@
 			display: none;
 		}
 
-		html,
+		/*html,
 		body {
 			overflow: hidden;
 			user-select: none;
 			-webkit-user-select: none;
 			-moz-user-select: none;
-		}
+		}*/
 
 		#stage {
-			position: absolute;
-			width: 100vw;
-			max-width: calc(100vh * 16 / 9);
-			height: 100vh;
-			left: 50%;
-			top: 50%;
-			transform: translate(-50%, -50%);
+			position: relative;
+			margin: auto;
+			width: 80vw;
+			max-width: 854px;
 		}
 
-		#bg {
+		#canvas-bg {
 			position: absolute;
 			width: 100vw;
 			left: 50%;
 			top: 50%;
 			transform: translate(-50%, -50%);
 			filter: brightness(0.8);
+			z-index: -1;
+		}
+
+		#canvas {
+			background-color: #000;
+			margin: auto;
+			width: 100%;
+		}
+
+		.upload {
+			width: 80vw;
+			max-width: 500px;
+			display: inline-flex;
+			justify-content: center;
 		}
 	</style>
 
 <body>
 	<div id="main" style="display: none">
+		<h1 class="title"></h1>
+		<p class="info"></p>
+		<p class="profile">
+			上传zip需包含谱面(json)、背景音乐(支持mp3/wav/ogg)、背景图片(支持png/jpeg/jpg)；<br>
+			<!--文件名任意(符合"曲名+难度+数字"格式的文件名会自动填充，例：Destination AT 15.zip)；<br>-->
+			然后调节相关参数，最后点击“播放”按钮。点击画面可以全屏，再次点击退出全屏。
+		</p>
+		<div id="uploads" class="upload">
+			<input type="file" accept="application/x-zip-compressed" id="upload">
+			<label for="upload">选择zip</label>
+			<input type="text" style="width:0;flex-grow:1;flex-shrink:1;pointer-events:none" id="filename">
+		</div>
+		<input type="button" value="重置" onclick="location.reload()">
+		<!--<input type="button" value="Demo" onclick="playDemo()">-->
+		<div id="select">
+			谱面：<select id="select-chart" style="min-width:5em"></select>
+			音乐：<select id="select-bgm" style="min-width:5em"></select>
+			背景：<select id="select-bg" style="min-width:5em"></select><br>
+			<input id="songName" class="input" placeholder="songName">
+			<input id="songLevel" class="input" placeholder="SP  Lv.?"><br>
+			<input type="checkbox" id="hitSong" checked>
+			<label for="hitSong">开启打击音效</label>
+			<input type="checkbox" id="highLight" checked>
+			<label for="highLight">多押高亮</label>
+			<input type="checkbox" id="showPoint">
+			<label for="showPoint">显示控制点</label>
+			<!--<input type="checkbox" id="lineColor">
+			<label for="lineColor" >FC/AP指示器</label>-->
+			<input type="button" value="播放" onclick="playChart()">
+		</div><strong id="output"></strong>
+		<div id="stage">
+			<canvas id="canvas-bg"></canvas>
+			<canvas id="canvas"></canvas>
+		</div>
 	</div>
-	<canvas id="bg"></canvas>
-	<canvas id="stage"></canvas>
 	<noscript><strong style="color:red">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
-	<script src="./script.js"></script>
+	<script src="https://gildas-lormeau.github.io/zip.js/demos/lib/zip.min.js"></script>
 	<script src="/script.js"></script>
+	<script src="./script.js"></script>
 </body>
 
 </html>

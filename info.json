@@ -1,8 +1,19 @@
 {
 	"data": {
 		"title": "Phigros模拟器",
-		"version": [1, 0, 1],
+		"version": [1, 1],
 		"pubdate": 1611795955,
-		"update": 1618728604
+		"update": 1620062319,
+		"changelog": [{
+			"version": [1, 1],
+			"date": 1620062319,
+			"type": 1,
+			"desc": "支持导入zip、选择谱面及一些基本操作"
+		}, {
+			"version": [1, 0, 1],
+			"date": 1618728604,
+			"type": 1,
+			"desc": "用js/canvas模拟Phigros愚人节谱Spasmodic SP"
+		}]
 	}
 }
