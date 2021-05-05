@@ -6,6 +6,9 @@ const out = document.getElementById("output");
 const stage = document.getElementById("stage");
 const select = document.getElementById("select");
 const selectbg = document.getElementById("select-bg");
+const btnPlay = document.getElementById("btn-play");
+const btnPause = document.getElementById("btn-pause");
+
 selectbg.onchange = () => {
 	backgroundImage = bgs[selectbg.value];
 	resizeImagebg();
@@ -220,10 +223,7 @@ function init() {
 				};
 			}
 		})));
-		loadImageClick();
-	}
-	//加载打击动画
-	async function loadImageClick() {
+		//加载打击动画
 		const clickPerfect = imgShader(res.clickRaw, "#fefea9");
 		const clickGood = imgShader(res.clickRaw, "#a1ecff");
 		res.JudgeLineAP = await createImageBitmap(imgShader(res.JudgeLine, "#fefea9"));
@@ -261,11 +261,10 @@ function init() {
 	}
 }
 //必要组件
-let isPlaying = 0;
-let stopPlaying;
+let stopPlaying, stopDrawing;
 //存放谱面默认信息
 //let songName // = "CROSS†SOUL"; //"SpasModic(Haocore Mix)";
-let level // = "IN  Lv.15"; //"SP  Lv.?";
+//let level // = "IN  Lv.15"; //"SP  Lv.?";
 let combo = 0; //实时连击次数
 let score = "0000000"; //实时分数
 //读取文件
@@ -286,9 +285,11 @@ let fps = 0;
 let tick = 0;
 let curTime = 0;
 let curTimestamp = 0;
+let timeBgm = 0;
+let timeChart = 0;
 let duration = 0;
+let isPaused = true;
 let chart, backgroundMusic, backgroundImage; //存放谱面
-let timeOfMulti = {}; //存放多押时间
 //加载文件
 function loadFile(file) {
 	const reader = new FileReader();
@@ -299,7 +300,6 @@ function loadFile(file) {
 		out.innerText = `加载文件：${Math.floor(progress.loaded / size * 100)}%`;
 	};
 	reader.onload = async function() {
-		wipeData();
 		//加载zip(https://gildas-lormeau.github.io/zip.js)
 		const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(this.result)));
 		reader.getEntries().then(async zipData => {
@@ -328,7 +328,7 @@ function loadFile(file) {
 					});
 				} else if (/\.(json)$/i.test(i.filename)) {
 					return i.getData(new zip.TextWriter()).then(async data => {
-						const jsonData = await JSON.parse(data);
+						const jsonData = await prerenderChart(chart123(JSON.parse(data)));
 						const option = document.createElement("option");
 						option.innerHTML = i.filename;
 						option.value = charts.push(jsonData) - 1;
@@ -355,27 +355,10 @@ function loadFile(file) {
 		reader.close();
 	}
 }
-//清除原有数据(仍有bug不建议使用)
-function wipeData() {
-	start = Date.now();
-	fps = 0;
-	tick = 0;
-	curTime = 0;
-	curTimestamp = 0;
-	duration = 0;
-	timeOfMulti = {};
-	if (stopPlaying) stopPlaying(); //test
-	combo = 0;
-	score = "0000000";
-}
-//play
-function playChart() {
-	wipeData();
-	chart = JSON.parse(JSON.stringify(charts[selectchart.value]));
-	backgroundImage = bgs[selectbg.value];
-	backgroundMusic = bgms[selectbgm.value];
-	stage.classList.remove("hide");
-	//note预处理(双押提示)
+//note预处理
+function prerenderChart(chart) {
+	//(双押提示)
+	const timeOfMulti={};
 	for (const i of chart.judgeLineList) {
 		for (const j of i.notesAbove) timeOfMulti[j.time] = timeOfMulti[j.time] ? 2 : 1;
 		for (const j of i.notesBelow) timeOfMulti[j.time] = timeOfMulti[j.time] ? 2 : 1;
@@ -430,9 +413,57 @@ function playChart() {
 			}
 		}
 	}
-	console.log(chart);
-	resizeImagebg();
-	loadBgm();
+	return JSON.parse(JSON.stringify(chart));
+}
+
+document.addEventListener("visibilitychange", () => {
+	if (document.visibilityState == "hidden" && btnPause.value == "暂停") btnPause.click();
+});
+//play
+btnPlay.onclick = function() {
+	btnPause.value = "暂停";
+	switch (this.value) {
+		case "播放":
+			chart = JSON.parse(JSON.stringify(charts[selectchart.value]));
+			backgroundImage = bgs[selectbg.value];
+			backgroundMusic = bgms[selectbgm.value];
+			stage.classList.remove("disabled");
+			this.value = "停止";
+			resizeImagebg();
+			loadBgm();
+			draw();
+			break;
+		default:
+			cancelAnimationFrame(stopDrawing);
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctxbg.clearRect(0, 0, canvasbg.width, canvasbg.height);
+			//清除原有数据(仍有bug不建议使用)
+			if (stopPlaying) stopPlaying(); //test
+			start = Date.now();
+			fps = 0;
+			tick = 0;
+			curTime = 0;
+			curTimestamp = 0;
+			duration = 0;
+			combo = 0;
+			score = "0000000";
+			stage.classList.add("disabled");
+			this.value = "播放";
+	}
+}
+btnPause.onclick = function() {
+	if (btnPlay.value == "播放") return;
+	switch (this.value) {
+		case "暂停":
+			isPaused = true;
+			this.value = "继续";
+			curTime = timeBgm;
+			if (stopPlaying) stopPlaying(); //test
+			break;
+		default:
+			playBgm(backgroundMusic, timeBgm);
+			this.value = "暂停";
+	}
 }
 //调整背景图尺寸
 function resizeImagebg() {
@@ -448,19 +479,18 @@ function resizeImagebg() {
 		sh = backgroundImage.width / aspectRatio;
 	}
 }
-
 //加载bgm
 function loadBgm() {
+	lines.length = 0;
 	for (const i of chart.judgeLineList) lines.push(new line(0, 0, 0, 0, i.bpm));
 	duration = backgroundMusic.duration;
 	playBgm(backgroundMusic);
 	stage.classList.remove("disabled");
-	draw(++isPlaying);
 	//for (const i of chart.judgeLineList) console.log(i); //test);, 
 }
 //播放bgm
 function playBgm(data, offset) {
-	let times = 0;
+	isPaused = false;
 	if (!offset) offset = 0;
 	curTimestamp = Date.now();
 	const bufferSource = actx.createBufferSource();
@@ -469,20 +499,11 @@ function playBgm(data, offset) {
 	bufferSource.connect(actx.destination);
 	bufferSource.start(0, offset);
 	stopPlaying = () => bufferSource.stop();
-	document.addEventListener("visibilitychange", () => {
-		if (times == 0) {
-			bufferSource.stop();
-			curTime = offset + (Date.now() - curTimestamp) / 1e3;
-			curTimestamp = Date.now();
-		}
-		if (times == 1) playBgm(data, curTime);
-		times++;
-	});
 }
 //作图
-function draw(idPlaying) {
-	const timeRaw = (Date.now() - curTimestamp) / 1e3 + curTime;
-	const time = Math.max(timeRaw - chart.offset, 0);
+function draw() {
+	if (!isPaused) timeBgm = (Date.now() - curTimestamp) / 1e3 + curTime;
+	timeChart = Math.max(timeBgm - chart.offset, 0);
 	//重置画面
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	//绘制背景
@@ -505,7 +526,7 @@ function draw(idPlaying) {
 	//遍历events
 	chart.judgeLineList.forEach((val, idx) => {
 		const i = lines[idx];
-		const beat32 = time * val.bpm / 1.875;
+		const beat32 = timeChart * val.bpm / 1.875;
 		playNote(i, val.notesAbove, beat32);
 		playNote(i, val.notesBelow, beat32);
 		disappearLine(i, val.judgeLineDisappearEvents, beat32);
@@ -516,25 +537,25 @@ function draw(idPlaying) {
 	//绘制note
 	chart.judgeLineList.forEach((val, idx) => {
 		const i = lines[idx];
-		const beat32 = time * val.bpm / 1.875;
+		const beat32 = timeChart * val.bpm / 1.875;
 		drawHoldNote(i, val.notesHoldAbove, beat32, 1);
 		drawHoldNote(i, val.notesHoldBelow, beat32, -1);
 	});
 	chart.judgeLineList.forEach((val, idx) => {
 		const i = lines[idx];
-		const beat32 = time * val.bpm / 1.875;
+		const beat32 = timeChart * val.bpm / 1.875;
 		drawDragNote(i, val.notesDragAbove, beat32, 1);
 		drawDragNote(i, val.notesDragBelow, beat32, -1);
 	});
 	chart.judgeLineList.forEach((val, idx) => {
 		const i = lines[idx];
-		const beat32 = time * val.bpm / 1.875;
+		const beat32 = timeChart * val.bpm / 1.875;
 		drawTapNote(i, val.notesTapAbove, beat32, 1);
 		drawTapNote(i, val.notesTapBelow, beat32, -1);
 	});
 	chart.judgeLineList.forEach((val, idx) => {
 		const i = lines[idx];
-		const beat32 = time * val.bpm / 1.875;
+		const beat32 = timeChart * val.bpm / 1.875;
 		drawFlickNote(i, val.notesFlickAbove, beat32, 1);
 		drawFlickNote(i, val.notesFlickBelow, beat32, -1);
 	});
@@ -572,7 +593,7 @@ function draw(idPlaying) {
 	}
 	//绘制进度条
 	ctx.scale(canvas.width / 1920, canvas.width / 1920);
-	ctx.drawImage(res.ProgressBar, Math.min(timeRaw / duration - 1, 0) * 1920, 0);
+	ctx.drawImage(res.ProgressBar, Math.min(timeBgm / duration - 1, 0) * 1920, 0);
 	ctx.resetTransform();
 	//显示文字（时刻）
 	ctx.fillStyle = "#fff";
@@ -583,7 +604,7 @@ function draw(idPlaying) {
 	ctx.textBaseline = "top";
 	ctx.font = `${lineScale*0.4}px Exo`;
 	ctx.textAlign = "left";
-	ctx.fillText(`${time2Str(Math.min(timeRaw,duration))}/${time2Str(duration)}`, 0, lineScale * 0.3);
+	ctx.fillText(`${time2Str(Math.min(timeBgm,duration))}/${time2Str(duration)}`, 0, lineScale * 0.3);
 	ctx.textAlign = "right";
 	ctx.fillText(`${fps}`, canvas.width, lineScale * 0.3);
 	//
@@ -605,7 +626,7 @@ function draw(idPlaying) {
 		ctx.font = `${lineScale*0.75}px Exo`;
 		ctx.fillText(`combo`, wlen, lineScale * 1.6);
 	}
-	if (idPlaying == isPlaying) requestAnimationFrame(() => draw(idPlaying));
+	stopDrawing = requestAnimationFrame(draw);
 }
 //判定线定义
 const lines = []; //存放判定线
@@ -700,7 +721,7 @@ function drawHoldNote(line, notes, time, num) {
 	const r = line.r / 180 * Math.PI;
 	for (const i of notes) {
 		if (i.time + i.holdTime < time) continue;
-		if (i.floorPosition - line.positionY < -1e-3 && !i.played) continue;
+		//if (i.floorPosition - line.positionY < -1 && !i.played) continue;//喵喵喵
 		ctx.translate(sx, sy);
 		ctx.rotate((num - 1) * Math.PI / 2 - r);
 		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY));
@@ -713,7 +734,7 @@ function drawHoldNote(line, notes, time, num) {
 			ctx.drawImage(res.HoldEnd, -494.5, -holdLength - 50);
 		} else {
 			ctx.drawImage(res.HoldEnd, -494.5, -holdLength - 50);
-			ctx.drawImage(res.Hold, -494.5, -holdLength, 989, baseLength * (i.holdTime + i.time - time));
+			ctx.drawImage(res.Hold, -494.5, -holdLength, 989, holdLength - baseLength * (time - i.time));
 			//绘制持续打击动画
 			i.playing = i.playing ? i.playing + 1 : 1;
 			if (i.playing % 12 == 0) {
@@ -745,18 +766,8 @@ function moveLine(line, judgeLineMoveEvents, time) {
 		if (time > i.endTime) continue;
 		const t2 = (time - i.startTime) / (i.endTime - i.startTime);
 		const t1 = 1 - t2;
-		switch (chart.formatVersion) {
-			case 1:
-				line.x = (parseInt(i.start / 1000) * t1 + parseInt(i.end / 1000) * t2) / 440 - 1;
-				line.y = ((i.start % 1000) * t1 + (i.end % 1000) * t2) / 260 - 1;
-				break;
-			case 3:
-				line.x = (i.start * t1 + i.end * t2) * 2 - 1;
-				line.y = (i.start2 * t1 + i.end2 * t2) * 2 - 1;
-				break;
-			default:
-				throw "Unsupported formatVersion";
-		}
+		line.x = (i.start * t1 + i.end * t2) * 2 - 1;
+		line.y = (i.start2 * t1 + i.end2 * t2) * 2 - 1;
 	}
 }
 
@@ -781,23 +792,38 @@ function disappearLine(line, judgeLineDisappearEvents, time) {
 }
 
 function speedLine(line, speedEvents, time) {
-	switch (chart.formatVersion) {
-		case 1:
-			let y = 0;
-			for (const i of speedEvents) {
-				if (time < i.startTime) break;
-				if (time > i.endTime) y += (i.endTime - Math.max(i.startTime, 0)) * i.value;
-				else line.positionY = (y + (time - Math.max(i.startTime, 0)) * i.value) / line.bpm * 1.875;
+	for (const i of speedEvents) {
+		if (time < i.startTime) break;
+		if (time > i.endTime) continue;
+		line.positionY = (time - i.startTime) * i.value / line.bpm * 1.875 + i.floorPosition;
+	}
+}
+//test
+function chart123(chart) {
+	let oldchart = JSON.parse(JSON.stringify(chart)); //深拷贝
+	switch (oldchart.formatVersion) { //beautify缩进bug加{}
+		case 1: {
+			oldchart.formatVersion = 3;
+			for (const i of oldchart.judgeLineList) {
+				let y = 0;
+				for (const j of i.speedEvents) {
+					if (j.startTime < 0) j.startTime = 0;
+					j.floorPosition = y;
+					y += (j.endTime - j.startTime) * j.value / i.bpm * 1.875;
+				}
+				for (const j of i.judgeLineMoveEvents) {
+					j.start2 = j.start % 1000 / 520;
+					j.end2 = j.end % 1000 / 520;
+					j.start = parseInt(j.start / 1000) / 880;
+					j.end = parseInt(j.end / 1000) / 880;
+				}
 			}
-			break;
-		case 3:
-			for (const i of speedEvents) {
-				if (time < i.startTime) break;
-				if (time > i.endTime) continue;
-				line.positionY = (time - i.startTime) * i.value / line.bpm * 1.875 + i.floorPosition;
-			}
+		}
+		case 3: {}
+		case 3473:
 			break;
 		default:
 			throw "Unsupported formatVersion"
 	}
+	return JSON.parse(JSON.stringify(oldchart));
 }
