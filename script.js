@@ -358,7 +358,7 @@ function loadFile(file) {
 //note预处理
 function prerenderChart(chart) {
 	//(双押提示)
-	const timeOfMulti={};
+	const timeOfMulti = {};
 	for (const i of chart.judgeLineList) {
 		for (const j of i.notesAbove) timeOfMulti[j.time] = timeOfMulti[j.time] ? 2 : 1;
 		for (const j of i.notesBelow) timeOfMulti[j.time] = timeOfMulti[j.time] ? 2 : 1;
@@ -519,7 +519,7 @@ function draw() {
 		ctx.globalAlpha = i.a;
 		ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
 		ctx.rotate(-i.r * Math.PI / 180);
-		ctx.drawImage(res.JudgeLineAP, -lineScale * 38.4, -lineScale * 0.06, lineScale * 76.8, lineScale * 0.12);
+		ctx.drawImage(res.JudgeLineAP, -lineScale * 19.2 * 3, -lineScale * 0.03 * 2.5, lineScale * 38.4 * 3, lineScale * 0.06 * 2.5); //(3,2.5,0)
 		ctx.globalAlpha = 1;
 		ctx.resetTransform();
 	}
