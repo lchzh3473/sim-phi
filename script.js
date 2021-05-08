@@ -607,6 +607,9 @@ function draw() {
 	ctx.fillText(`${time2Str(Math.min(timeBgm,duration))}/${time2Str(duration)}`, 0, lineScale * 0.3);
 	ctx.textAlign = "right";
 	ctx.fillText(`${fps}`, canvas.width, lineScale * 0.3);
+	//Copyright
+	ctx.textBaseline = "bottom";
+	ctx.fillText("Powered by lch\zh3473", canvas.width, canvas.height);
 	//
 	const padding = lineScale * 0.9;
 	ctx.textBaseline = "alphabetic";
