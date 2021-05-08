@@ -565,8 +565,9 @@ function draw() {
 			ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
 			ctx.rotate(-i.r * Math.PI / 180);
 			ctx.fillStyle = "lime";
-			ctx.fillRect(-5, -5, 10, 10);
+			ctx.fillRect(-10, -10, 20, 20);
 			ctx.fillStyle = "yellow";
+			ctx.font = `${lineScale}px Exo`;
 			ctx.textAlign = "center";
 			ctx.textBaseline = "bottom";
 			ctx.fillText(val, 0, 0);
@@ -607,9 +608,6 @@ function draw() {
 	ctx.fillText(`${time2Str(Math.min(timeBgm,duration))}/${time2Str(duration)}`, 0, lineScale * 0.3);
 	ctx.textAlign = "right";
 	ctx.fillText(`${fps}`, canvas.width, lineScale * 0.3);
-	//Copyright
-	ctx.textBaseline = "bottom";
-	ctx.fillText("Powered by lch\zh3473", canvas.width, canvas.height);
 	//
 	const padding = lineScale * 0.9;
 	ctx.textBaseline = "alphabetic";
@@ -629,6 +627,14 @@ function draw() {
 		ctx.font = `${lineScale*0.75}px Exo`;
 		ctx.fillText(`combo`, wlen, lineScale * 1.6);
 	}
+	//Copyright
+	ctx.font = `${lineScale*0.4}px Exo`;
+	ctx.globalAlpha = 0.4;
+	ctx.textAlign = "right";
+	ctx.textBaseline = "bottom";
+	ctx.fillText("Code by lch\zh3473", canvas.width - lineScale * 0.1, canvas.height - lineScale * 0.1);
+	ctx.globalAlpha = 1;
+	//回调更新动画
 	stopDrawing = requestAnimationFrame(draw);
 }
 //判定线定义
