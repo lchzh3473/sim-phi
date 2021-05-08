@@ -25,6 +25,9 @@ let wlen, hlen, noteScale, lineScale, sx, sy, sw, sh, dx1, dy1, dw1, dh1, dx2, d
 const aspectRatio = 16 / 9;
 canvas.style.cssText = `max-width:calc(100vh*${aspectRatio});`
 const scaleRatio = 7e3;
+//qwq
+let qwq = 1;
+document.querySelector(".title").onclick = () => qwq = !qwq;
 //全屏相关
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
@@ -598,17 +601,6 @@ function draw() {
 	ctx.resetTransform();
 	//显示文字（时刻）
 	ctx.fillStyle = "#fff";
-	if (++tick % 10 == 0) {
-		fps = Math.round(1e4 / (Date.now() - start));
-		start = Date.now();
-	}
-	ctx.textBaseline = "top";
-	ctx.font = `${lineScale*0.4}px Exo`;
-	ctx.textAlign = "left";
-	ctx.fillText(`${time2Str(Math.min(timeBgm,duration))}/${time2Str(duration)}`, 0, lineScale * 0.3);
-	ctx.textAlign = "right";
-	ctx.fillText(`${fps}`, canvas.width, lineScale * 0.3);
-	//
 	const padding = lineScale * 0.9;
 	ctx.textBaseline = "alphabetic";
 	ctx.font = `${lineScale}px Exo`;
@@ -627,13 +619,26 @@ function draw() {
 		ctx.font = `${lineScale*0.75}px Exo`;
 		ctx.fillText(`combo`, wlen, lineScale * 1.6);
 	}
-	//Copyright
-	ctx.font = `${lineScale*0.4}px Exo`;
-	ctx.globalAlpha = 0.4;
-	ctx.textAlign = "right";
-	ctx.textBaseline = "bottom";
-	ctx.fillText("Code by lch\zh3473", canvas.width - lineScale * 0.1, canvas.height - lineScale * 0.1);
-	ctx.globalAlpha = 1;
+	//
+	if (++tick % 10 == 0) {
+		fps = Math.round(1e4 / (Date.now() - start));
+		start = Date.now();
+	}
+	if (qwq) {
+		ctx.textBaseline = "top";
+		ctx.font = `${lineScale*0.4}px Exo`;
+		ctx.textAlign = "left";
+		ctx.fillText(`${time2Str(Math.min(timeBgm,duration))}/${time2Str(duration)}`, 0, lineScale * 0.3);
+		ctx.textAlign = "right";
+		ctx.fillText(`${fps}`, canvas.width, lineScale * 0.3);
+		//Copyright
+		ctx.font = `${lineScale*0.4}px Exo`;
+		ctx.globalAlpha = 0.4;
+		ctx.textAlign = "right";
+		ctx.textBaseline = "bottom";
+		ctx.fillText("Code by lch\zh3473", canvas.width - lineScale * 0.1, canvas.height - lineScale * 0.1);
+		ctx.globalAlpha = 1;
+	}
 	//回调更新动画
 	stopDrawing = requestAnimationFrame(draw);
 }
