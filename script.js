@@ -568,12 +568,12 @@ function draw() {
 			ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
 			ctx.rotate(-i.r * Math.PI / 180);
 			ctx.fillStyle = "lime";
-			ctx.fillRect(-10, -10, 20, 20);
+			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 			ctx.fillStyle = "yellow";
 			ctx.font = `${lineScale}px Exo`;
 			ctx.textAlign = "center";
 			ctx.textBaseline = "bottom";
-			ctx.fillText(val, 0, 0);
+			ctx.fillText(val, 0, -lineScale * 0.1);
 			ctx.resetTransform();
 		});
 	}
