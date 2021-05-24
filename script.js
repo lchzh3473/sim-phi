@@ -1,4 +1,5 @@
 "use strict";
+const _i = ['Phigros模拟器', [1, 1], 1611795955, 1620062319];
 //document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
@@ -707,7 +708,7 @@ function drawTapNote(line, notes, time, num) {
 		if (i.floorPosition - line.positionY < -1e-3 && !i.played) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed);
+		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
 		ctx.scale(noteScale, noteScale); //缩放
 		if (i.isMulti && document.getElementById("highLight").checked) ctx.drawImage(res.TapHL, -544.5, -100);
 		else ctx.drawImage(res.Tap, -494.5, -50);
@@ -721,7 +722,7 @@ function drawDragNote(line, notes, time, num) {
 		if (i.floorPosition - line.positionY < -1e-3 && !i.played) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed);
+		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
 		ctx.scale(noteScale, noteScale); //缩放
 		if (i.isMulti && document.getElementById("highLight").checked) ctx.drawImage(res.DragHL, -544.5, -80);
 		else ctx.drawImage(res.Drag, -494.5, -30);
@@ -738,9 +739,9 @@ function drawHoldNote(line, notes, time, num) {
 		//if (i.floorPosition - line.positionY < -1 && !i.played) continue;//喵喵喵
 		ctx.translate(sx, sy);
 		ctx.rotate((num - 1) * Math.PI / 2 - r);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY));
+		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * 1.0);
 		ctx.scale(noteScale, noteScale); //缩放
-		const baseLength = hlen / line.bpm * 1.875 / noteScale * i.speed;
+		const baseLength = hlen / line.bpm * 1.875 / noteScale * i.speed * 1.0;
 		const holdLength = baseLength * i.holdTime;
 		if (i.time > time) {
 			ctx.drawImage(res.HoldHead, -494.5, 0);
@@ -766,7 +767,7 @@ function drawFlickNote(line, notes, time, num) {
 		if (i.floorPosition - line.positionY < -1e-3 && !i.played) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed);
+		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
 		ctx.scale(noteScale, noteScale); //缩放
 		if (i.isMulti && document.getElementById("highLight").checked) ctx.drawImage(res.FlickHL, -544.5, -150);
 		else ctx.drawImage(res.Flick, -494.5, -100);
@@ -841,3 +842,10 @@ function chart123(chart) {
 	}
 	return JSON.parse(JSON.stringify(oldchart));
 }
+
+window.addEventListener("keydown", function(event) {
+	if (event.key == ' ' && btnPause.disabled == false) {
+		event.preventDefault();
+		btnPause.click();
+	}
+}, false);
