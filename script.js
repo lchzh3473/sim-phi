@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 1], 1611795955, 1620062319];
+const _i = ['Phigros模拟器', [1, 2], 1611795955, 1623489050];
 //document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
@@ -330,9 +330,26 @@ function loadFile(file) {
 						loading(++loadedNum);
 						resolve(audioData);
 					});
-				} else if (/\.(json)$/i.test(i.filename)) {
+				} else if (/\.(json|txt)$/i.test(i.filename)) {
 					return i.getData(new zip.TextWriter()).then(async data => {
-						const jsonData = await prerenderChart(chart123(JSON.parse(data)));
+						try {
+							console.log(JSON.parse(data)); //test
+							const jsonData = await prerenderChart(chart123(JSON.parse(data)));
+							const option = document.createElement("option");
+							option.innerHTML = i.filename;
+							option.value = charts.push(jsonData) - 1;
+							selectchart.appendChild(option);
+							loading(++loadedNum);
+							resolve(jsonData);
+						} catch {
+							loading(++loadedNum);
+							resolve(undefined);
+						}
+					});
+				} else if (/\.(pec)$/i.test(i.filename)) {
+					return i.getData(new zip.TextWriter()).then(async data => {
+						//test
+						const jsonData = await prerenderChart(chart123(chartp23(data)));
 						const option = document.createElement("option");
 						option.innerHTML = i.filename;
 						option.value = charts.push(jsonData) - 1;
@@ -340,7 +357,7 @@ function loadFile(file) {
 						loading(++loadedNum);
 						resolve(jsonData);
 					});
-				}
+				} //test
 				console.log(done);
 			})));
 
@@ -510,14 +527,6 @@ function draw() {
 	timeChart = Math.max(timeBgm - chart.offset, 0);
 	//重置画面
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	//绘制背景
-	ctxbg.drawImage(backgroundImage, sx, sy, sw, sh, dx2, dy2, dw2, dh2);
-	ctx.drawImage(backgroundImage, sx, sy, sw, sh, dx1, dy1, dw1, dh1);
-	//背景变暗
-	ctx.fillStyle = "#000";
-	ctx.globalAlpha = 0.6; //背景不透明度
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	ctx.globalAlpha = 1;
 	//绘制判定线
 	for (const i of lines) {
 		ctx.globalAlpha = i.a;
@@ -596,6 +605,15 @@ function draw() {
 	for (let i = 0; i < clickEvents.length; i++) {
 		if (clickEvents[i].time >= 30) clickEvents.splice(i--, 1);
 	}
+	//绘制背景
+	ctx.globalCompositeOperation = "destination-over";
+	ctx.fillStyle = "#000"; //背景变暗
+	ctx.globalAlpha = 0.6; //背景不透明度
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.globalAlpha = 1;
+	ctx.drawImage(backgroundImage, sx, sy, sw, sh, dx1, dy1, dw1, dh1);
+	ctxbg.drawImage(backgroundImage, sx, sy, sw, sh, dx2, dy2, dw2, dh2);
+	ctx.globalCompositeOperation = "source-over";
 	//绘制进度条
 	ctx.scale(canvas.width / 1920, canvas.width / 1920);
 	ctx.drawImage(res.ProgressBar, Math.min(timeBgm / duration - 1, 0) * 1920, 0);
@@ -826,11 +844,13 @@ function chart123(chart) {
 					j.floorPosition = y;
 					y += (j.endTime - j.startTime) * j.value / i.bpm * 1.875;
 				}
+			}
+			for (const i of oldchart.judgeLineList) {
 				for (const j of i.judgeLineMoveEvents) {
-					j.start2 = j.start % 1000 / 520;
-					j.end2 = j.end % 1000 / 520;
-					j.start = parseInt(j.start / 1000) / 880;
-					j.end = parseInt(j.end / 1000) / 880;
+					j.start2 = j.start % 1e3 / 520;
+					j.end2 = j.end % 1e3 / 520;
+					j.start = parseInt(j.start / 1e3) / 880;
+					j.end = parseInt(j.end / 1e3) / 880;
 				}
 			}
 		}
@@ -843,9 +863,343 @@ function chart123(chart) {
 	return JSON.parse(JSON.stringify(oldchart));
 }
 
+function chartp23(pec) {
+	let pectest = []; //test
+
+	class Chart {
+		constructor() {
+			this.formatVersion = 3;
+			this.offset = 0;
+			this.numOfNotes = 0;
+			this.judgeLineList = [];
+		}
+		setOffset(offset) {
+			this.offset = offset;
+			return offset;
+		}
+		pushLine(judgeLine) {
+			this.judgeLineList.push(judgeLine);
+			this.numOfNotes += judgeLine.numOfNotes;
+			return judgeLine;
+		}
+	}
+	class JudgeLine {
+		constructor(bpm) {
+			this.numOfNotes = 0;
+			this.numOfNotesAbove = 0;
+			this.numOfNotesBelow = 0;
+			this.bpm = bpm;
+			this.speedEvents = [];
+			this.notesAbove = [];
+			this.notesBelow = [];
+			this.judgeLineDisappearEvents = [];
+			this.judgeLineMoveEvents = [];
+			this.judgeLineRotateEvents = [];
+			this.judgeLineMoveEventsPec = [];
+			this.judgeLineRotateEventsPec = [];
+		}
+		addNote(note, pos) {
+			switch (pos) {
+				case undefined:
+				case 1:
+					this.notesAbove.push(note);
+					this.numOfNotes++;
+					this.numOfNotesAbove++;
+					break;
+				case 2:
+					this.notesBelow.push(note);
+					this.numOfNotes++;
+					this.numOfNotesBelow++;
+					break;
+				default:
+					throw "wrong note position"
+			}
+		}
+		addEvents(type, startTime, endTime, val00, val01, val10, val11) {
+			let evt = {
+				startTime: startTime,
+				endTime: endTime,
+			}
+			switch (type) {
+				case 0:
+					evt.value = val00;
+					this.speedEvents.push(evt);
+					break;
+				case 1:
+					evt.start = val00;
+					evt.end = val01;
+					this.judgeLineDisappearEvents.push(evt);
+					break;
+				case 2:
+					evt.start = val00;
+					evt.end = val01;
+					evt.start2 = val10;
+					evt.end2 = val11;
+					this.judgeLineMoveEvents.push(evt);
+					break;
+				case 3:
+					evt.start = val00;
+					evt.end = val01;
+					this.judgeLineRotateEvents.push(evt);
+					break;
+				case -2:
+					evt.end = val00;
+					evt.end2 = val01;
+					evt.motionType = val10;
+					this.judgeLineMoveEventsPec.push(evt);
+					break;
+				case -3:
+					evt.end = val00;
+					evt.motionType = val01;
+					this.judgeLineRotateEventsPec.push(evt);
+					break;
+				default:
+					throw "wrong event type"
+			}
+		}
+	}
+	class Note {
+		constructor(type, time, x, holdTime) {
+			this.type = type;
+			this.time = time;
+			this.positionX = x;
+			this.holdTime = type == 3 ? holdTime : 0;
+			this.speed = 1;
+			this.floorPosition = time / 104 * 1.0;
+		}
+	}
+	//test start
+	pectest = pec.split(/[ \n\r]+/).map(i => isNaN(i) ? String(i) : Number(i)); //可能没必要
+	let qwqChart = new Chart();
+	let raw = {};
+	let rawarr = [];
+	let rawstr = "";
+	let baseBpm = 120;
+	if (!isNaN(pectest[0])) qwqChart.setOffset(pectest.shift() / 1e3 - 0.15);
+	for (let i = 0; i < pectest.length; i++) {
+		let p = pectest[i];
+		if (isNaN(p)) {
+			if (raw[rawstr]) raw[rawstr].push(JSON.parse(JSON.stringify(rawarr)));
+			rawarr.length = 0;
+			if (!raw[p]) raw[p] = [];
+			rawstr = p;
+		} else rawarr.push(p);
+	}
+	baseBpm = raw.bp[0][1];
+	let qwqLines = [];
+	for (const i of raw.n1) {
+		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+		if (!i[4]) qwqLines[i[0]].addNote(new Note(1, i[1] * 32, i[2] / 1024 * 9), i[3]);
+	}
+	for (const i of raw.n2) {
+		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+		if (!i[5]) qwqLines[i[0]].addNote(new Note(3, i[1] * 32, i[3] / 1024 * 9, (i[2] - i[1]) * 32), i[4]);
+	}
+	for (const i of raw.n3) {
+		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+		if (!i[4]) qwqLines[i[0]].addNote(new Note(4, i[1] * 32, i[2] / 1024 * 9), i[3]);
+	}
+	for (const i of raw.n4) {
+		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+		if (!i[4]) qwqLines[i[0]].addNote(new Note(2, i[1] * 32, i[2] / 1024 * 9), i[3]);
+	}
+	//变速
+	if (raw.cv) {
+		for (const i of raw.cv) {
+			if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+			qwqLines[i[0]].addEvents(0, i[1] * 32, null, i[2] / 5.0); //为什么/10??
+		}
+	}
+	//不透明度
+	if (raw.ca) {
+		for (const i of raw.ca) {
+			if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+			qwqLines[i[0]].addEvents(1, i[1] * 32, null, null, i[2] / 255);
+			qwqLines[i[0]].addEvents(1, i[1] * 32, null, null, i[2] / 255);
+		}
+	}
+	if (raw.cf) {
+		for (const i of raw.cf) {
+			if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+			qwqLines[i[0]].addEvents(1, i[1] * 32, null, null, i[3] / 255);
+			qwqLines[i[0]].addEvents(1, i[2] * 32, null, null, i[3] / 255);
+		}
+	}
+	//移动
+	if (raw.cp) {
+		for (const i of raw.cp) {
+			if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+			qwqLines[i[0]].addEvents(-2, i[1] * 32, null, i[2] / 2048, i[3] / 1400, 1);
+			qwqLines[i[0]].addEvents(-2, i[1] * 32, null, i[2] / 2048, i[3] / 1400, 1);
+		}
+	}
+	if (raw.cm) {
+		for (const i of raw.cm) {
+			if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+			/*for(let j=parseInt(i[1]*32);j<parseInt(i[2]*32);j++){
+				qwqLines[i[0]].addEvents(2, j, null, null, i[3] / 2048, null, i[4] / 1400);
+			}*/
+			qwqLines[i[0]].addEvents(-2, i[1] * 32, null, i[3] / 2048, i[4] / 1400, i[5]);
+			qwqLines[i[0]].addEvents(-2, i[2] * 32, null, i[3] / 2048, i[4] / 1400, 1);
+		}
+	}
+	//旋转
+	if (raw.cd) {
+		for (const i of raw.cd) {
+			if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+			qwqLines[i[0]].addEvents(-3, i[1] * 32, null, -i[2], 1); //??
+			qwqLines[i[0]].addEvents(-3, i[1] * 32, null, -i[2], 1); //??
+		}
+	}
+	if (raw.cr) {
+		for (const i of raw.cr) {
+			if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
+			qwqLines[i[0]].addEvents(-3, i[1] * 32, null, -i[3], i[4]);
+			qwqLines[i[0]].addEvents(-3, i[2] * 32, null, -i[3], 1); //??
+		}
+	}
+	for (const i of qwqLines) {
+		if (i) {
+			i.notesAbove.sort((a, b) => a.time - b.time); //以后移到123函数
+			i.notesBelow.sort((a, b) => a.time - b.time); //以后移到123函数
+			let s = i.speedEvents;
+			let ld = i.judgeLineDisappearEvents;
+			let lmp = i.judgeLineMoveEventsPec;
+			let lrp = i.judgeLineRotateEventsPec;
+			s.sort((a, b) => a.startTime - b.startTime); //以后移到123函数
+			ld.sort((a, b) => a.startTime - b.startTime); //以后移到123函数
+			lmp.sort((a, b) => a.startTime - b.startTime); //以后移到123函数
+			lrp.sort((a, b) => a.startTime - b.startTime); //以后移到123函数
+			//cv和floorPosition一并处理
+			let y = 0;
+			for (let j = 0; j < s.length; j++) {
+				s[j].endTime = j < s.length - 1 ? s[j + 1].startTime : 1e9;
+				//if (s[j].startTime == s[j].endTime) s.splice(j--, 1);
+				//
+				if (s[j].startTime < 0) s[j].startTime = 0;
+				s[j].floorPosition = y;
+				y += (s[j].endTime - s[j].startTime) * s[j].value / i.bpm * 1.875;
+				//
+			}
+			for (const j of i.notesAbove) {
+				let qwqwq = 0;
+				let qwqwq2 = 0;
+				let qwqwq3 = 0;
+				for (const k of i.speedEvents) {
+					if (j.time > k.endTime) continue;
+					if (j.time < k.startTime) break;
+					qwqwq = k.floorPosition;
+					qwqwq2 = k.value;
+					qwqwq3 = j.time - k.startTime;
+				}
+				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
+				if (j.type == 3) j.speed *= qwqwq2;
+			}
+			for (const j of i.notesBelow) {
+				let qwqwq = 0;
+				let qwqwq2 = 0;
+				let qwqwq3 = 0;
+				for (const k of i.speedEvents) {
+					if (j.time > k.endTime) continue;
+					if (j.time < k.startTime) break;
+					qwqwq = k.floorPosition;
+					qwqwq2 = k.value;
+					qwqwq3 = j.time - k.startTime;
+				}
+				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
+				if (j.type == 3) j.speed *= qwqwq2;
+			}
+			//
+			for (let j = 0; j < ld.length; j++) {
+				ld[j].start = j > 0 ? ld[j - 1].end : ld[j].end;
+				ld[j].endTime = j < ld.length - 1 ? ld[j + 1].startTime : 1e9;
+				//if (ld[j].startTime == ld[j].endTime) ld.splice(j--, 1);
+			}
+			for (let j = 0; j < lmp.length; j++) {
+				lmp[j].start = j > 0 ? lmp[j - 1].end : lmp[j].end;
+				lmp[j].start2 = j > 0 ? lmp[j - 1].end2 : lmp[j].end2;
+				lmp[j].endTime = j < lmp.length - 1 ? lmp[j + 1].startTime : 1e9;
+				//if (lmp[j].startTime == lmp[j].endTime) lmp.splice(j--, 1);
+			}
+			for (let j = 0; j < lrp.length; j++) {
+				lrp[j].start = j > 0 ? lrp[j - 1].end : lrp[j].end;
+				lrp[j].endTime = j < lrp.length - 1 ? lrp[j + 1].startTime : 1e9;
+				//if (lrp[j].startTime == lrp[j].endTime) lrp.splice(j--, 1);
+			}
+			//整合motionType
+			for (const j of lmp) {
+				if (j.motionType < 2 || j.motionType > 29) {
+					i.addEvents(2, j.startTime, j.endTime, j.start, j.end, j.start2, j.end2);
+				} else {
+					for (let k = parseInt(j.startTime); k < parseInt(j.endTime); k++) {
+						let ptt1 = (k - j.startTime) / (j.endTime - j.startTime);
+						let ptt2 = (k + 1 - j.startTime) / (j.endTime - j.startTime);
+						let pt1 = j.end - j.start;
+						let pt2 = j.end2 - j.start2;
+						i.addEvents(2, k, k + 1, j.start + tween[j.motionType](ptt1) * pt1, j.start + tween[j.motionType](ptt2) * pt1, j.start2 + tween[j.motionType](ptt1) * pt2, j.start2 + tween[j.motionType](ptt2) * pt2);
+					}
+				}
+			}
+			for (const j of lrp) {
+				if (j.motionType < 2 || j.motionType > 29) {
+					i.addEvents(3, j.startTime, j.endTime, j.start, j.end);
+				} else {
+					for (let k = parseInt(j.startTime); k < parseInt(j.endTime); k++) {
+						let ptt1 = (k - j.startTime) / (j.endTime - j.startTime);
+						let ptt2 = (k + 1 - j.startTime) / (j.endTime - j.startTime);
+						let pt1 = j.end - j.start;
+						i.addEvents(3, k, k + 1, j.start + tween[j.motionType](ptt1) * pt1, j.start + tween[j.motionType](ptt2) * pt1);
+					}
+				}
+			}
+			/*i.speedEvents.push({
+				"startTime": 0,
+				"endTime": 1e9,
+				"floorPosition": 0,
+				"value": 1.0
+			});*/
+			qwqChart.pushLine(i);
+		}
+	}
+	//qwq
+	console.log(qwqChart);
+	console.log(baseBpm, raw);
+	//test end
+	return JSON.parse(JSON.stringify(qwqChart));
+}
 window.addEventListener("keydown", function(event) {
 	if (event.key == ' ' && btnPause.disabled == false) {
 		event.preventDefault();
 		btnPause.click();
 	}
 }, false);
+const tween = [null, null,
+	pos => Math.sin(pos * Math.PI / 2), //2
+	pos => 1 - Math.cos(pos * Math.PI / 2), //3
+	pos => 1 - (pos - 1) ** 2, //4
+	pos => pos ** 2, //5
+	pos => (1 - Math.cos(pos * Math.PI)) / 2, //6
+	pos => ((pos *= 2) < 1 ? pos ** 2 : -((pos - 2) ** 2 - 2)) / 2, //7
+	pos => 1 + (pos - 1) ** 3, //8
+	pos => pos ** 3, //9
+	pos => 1 - (pos - 1) ** 4, //10
+	pos => pos ** 4, //11
+	pos => ((pos *= 2) < 1 ? pos ** 3 : ((pos - 2) ** 3 + 2)) / 2, //12
+	pos => ((pos *= 2) < 1 ? pos ** 4 : -((pos - 2) ** 4 - 2)) / 2, //13
+	pos => 1 + (pos - 1) ** 5, //14
+	pos => pos ** 5, //15
+	pos => 1 - 2 ** (-10 * pos), //16
+	pos => 2 ** (10 * (pos - 1)), //17
+	pos => Math.sqrt(1 - (pos - 1) ** 2), //18
+	pos => 1 - Math.sqrt(1 - pos ** 2), //19
+	pos => (2.70158 * pos - 1) * (pos - 1) ** 2 + 1, //20
+	pos => (2.70158 * pos - 1.70158) * pos ** 2, //21
+	pos => ((pos *= 2) < 1 ? (1 - Math.sqrt(1 - pos ** 2)) : (Math.sqrt(1 - (pos - 2) ** 2) + 1)) / 2, //22
+	pos => pos < 0.5 ? (14.379638 * pos - 5.189819) * pos ** 2 : (14.379638 * pos - 9.189819) * (pos - 1) ** 2 + 1, //23
+	pos => 1 - 2 ** (-10 * pos) * Math.cos(pos * Math.PI / .15), //24
+	pos => 2 ** (10 * (pos - 1)) * Math.cos((pos - 1) * Math.PI / .15), //25
+	pos => ((pos *= 11) < 4 ? pos ** 2 : pos < 8 ? (pos - 6) ** 2 + 12 : pos < 10 ? (pos - 9) ** 2 + 15 : (pos - 10.5) ** 2 + 15.75) / 16, //26
+	pos => 1 - tween[26](1 - pos), //27
+	pos => (pos *= 2) < 1 ? tween[26](pos) / 2 : tween[27](pos - 1) / 2 + .5, //28
+	pos => pos < 0.5 ? 2 ** (20 * pos - 11) * Math.sin((160 * pos + 1) * Math.PI / 18) : 1 - 2 ** (9 - 20 * pos) * Math.sin((160 * pos + 1) * Math.PI / 18) //29
+]
