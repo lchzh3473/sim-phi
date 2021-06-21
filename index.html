@@ -59,7 +59,7 @@
 		<h1 class="title"></h1>
 		<p class="info"></p>
 		<p class="profile">
-			上传zip需包含谱面(json/pec/txt)、背景音乐(支持mp3/wav/ogg)、背景图片(支持png/jpeg/jpg)；<br>
+			上传zip需包含谱面(支持json/pec/txt)、背景音乐(支持mp3/wav/ogg)、背景图片(支持png/jpeg/jpg)；<br>
 			<!--文件名任意(符合"曲名+难度+数字"格式的文件名会自动填充，例：Destination AT 15.zip)；<br>-->
 			然后调节相关参数，最后点击“播放”按钮。点击画面可以全屏，再次点击退出全屏。
 		</p>
@@ -73,7 +73,15 @@
 		<div id="select">
 			谱面：<select id="select-chart" style="min-width:5em"></select>
 			音乐：<select id="select-bgm" style="min-width:5em"></select>
-			背景：<select id="select-bg" style="min-width:5em"></select><br>
+			背景：<select id="select-bg" style="min-width:5em"></select>
+			宽高比：<select id="select-aspect-ratio" style="min-width:5em">
+				<option value="1.25">5:4</option>
+				<option value="1.333333">4:3</option>
+				<option value="1.462857">256:175</option>
+				<option value="1.6">16:10</option>
+				<option value="1.666667">5:3</option>
+				<option value="1.777778" selected>16:9</option>
+			</select><br>
 			<input id="songName" class="input" placeholder="songName">
 			<input id="songLevel" class="input" placeholder="SP  Lv.?"><br>
 			<input type="checkbox" id="hitSong" checked>
