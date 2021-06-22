@@ -16,7 +16,9 @@ selectbg.onchange = () => {
 }
 const selectbgm = document.getElementById("select-bgm");
 const selectchart = document.getElementById("select-chart");
+const selectscaleratio = document.getElementById("select-scale-ratio");
 const selectaspectratio = document.getElementById("select-aspect-ratio");
+const selectglobalalpha = document.getElementById("select-global-alpha");
 const bgs = [];
 const bgms = [];
 const charts = [];
@@ -26,13 +28,16 @@ const canvasbg = document.getElementById("canvas-bg");
 let wlen, hlen, noteScale, lineScale, sx, sy, sw, sh, dx1, dy1, dw1, dh1, dx2, dy2, dw2, dh2; //背景图相关
 const aspectRatio = 16 / 9;
 canvas.style.cssText = `max-width:calc(100vh*${aspectRatio});`
-const scaleRatio = 7e3;
+let scaleRatio = 7e3; //数值越大note越小
 //qwq
 let qwq = 1;
 document.querySelector(".title").onclick = () => qwq = !qwq;
+//pec假note
+const showFakeNotes = false;
 //全屏相关
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
+selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
 stage.onclick = () => {
 	if (document.fullscreenElement) document.exitFullscreen().then(resizeCanvas);
@@ -41,6 +46,7 @@ stage.onclick = () => {
 }
 
 function resizeCanvas() {
+	scaleRatio = Number(selectscaleratio.value);
 	const width = window.innerWidth * window.devicePixelRatio;
 	const height = window.innerHeight * window.devicePixelRatio;
 	if (document.fullscreenElement) {
@@ -610,7 +616,7 @@ function draw() {
 	//绘制背景
 	ctx.globalCompositeOperation = "destination-over";
 	ctx.fillStyle = "#000"; //背景变暗
-	ctx.globalAlpha = 0.6; //背景不透明度
+	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.globalAlpha = 1;
 	ctx.drawImage(backgroundImage, sx, sy, sw, sh, dx1, dy1, dw1, dh1);
@@ -724,8 +730,8 @@ function playNote(line, notes, time) {
 //绘制蓝键
 function drawTapNote(line, notes, time, num) {
 	for (const i of notes) {
-		if (i.time < time) continue;
-		if (i.floorPosition - line.positionY < -1e-3 && !i.played) continue;
+		if (i.time % 1e9 < time) continue;
+		if (i.floorPosition - line.positionY < -1e-3 && !i.played && !showFakeNotes) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
 		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
@@ -738,8 +744,8 @@ function drawTapNote(line, notes, time, num) {
 //绘制黄键
 function drawDragNote(line, notes, time, num) {
 	for (const i of notes) {
-		if (i.time < time) continue;
-		if (i.floorPosition - line.positionY < -1e-3 && !i.played) continue;
+		if (i.time % 1e9 < time) continue;
+		if (i.floorPosition - line.positionY < -1e-3 && !i.played && !showFakeNotes) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
 		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
@@ -755,8 +761,8 @@ function drawHoldNote(line, notes, time, num) {
 	const sy = hlen * (1 - line.y);
 	const r = line.r / 180 * Math.PI;
 	for (const i of notes) {
-		if (i.time + i.holdTime < time) continue;
-		//if (i.floorPosition - line.positionY < -1 && !i.played) continue;//喵喵喵
+		if (i.time % 1e9 + i.holdTime < time) continue;
+		//if (i.floorPosition - line.positionY < -1 && !i.played && !showFakeNotes) continue;//喵喵喵
 		ctx.translate(sx, sy);
 		ctx.rotate((num - 1) * Math.PI / 2 - r);
 		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * 1.0);
@@ -783,8 +789,8 @@ function drawHoldNote(line, notes, time, num) {
 //绘制粉键
 function drawFlickNote(line, notes, time, num) {
 	for (const i of notes) {
-		if (i.time < time) continue;
-		if (i.floorPosition - line.positionY < -1e-3 && !i.played) continue;
+		if (i.time % 1e9 < time) continue;
+		if (i.floorPosition - line.positionY < -1e-3 && !i.played && !showFakeNotes) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
 		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
@@ -901,21 +907,21 @@ function chartp23(pec) {
 			this.judgeLineMoveEventsPec = [];
 			this.judgeLineRotateEventsPec = [];
 		}
-		addNote(note, pos) {
+		addNote(note, pos, isFake) {
 			switch (pos) {
 				case undefined:
 				case 1:
 					this.notesAbove.push(note);
-					this.numOfNotes++;
-					this.numOfNotesAbove++;
 					break;
 				case 2:
 					this.notesBelow.push(note);
-					this.numOfNotes++;
-					this.numOfNotesBelow++;
 					break;
 				default:
 					throw "wrong note position"
+			}
+			if (!isFake) {
+				this.numOfNotes++;
+				this.numOfNotesAbove++;
 			}
 		}
 		addEvents(type, startTime, endTime, n1, n2, n3, n4) {
@@ -967,51 +973,62 @@ function chartp23(pec) {
 		}
 	}
 	class Note {
-		constructor(type, time, x, holdTime) {
+		constructor(type, time, x, holdTime, speed) {
 			this.type = type;
 			this.time = time;
 			this.positionX = x;
 			this.holdTime = type == 3 ? holdTime : 0;
-			this.speed = 1;
-			this.floorPosition = time / 104 * 1.0;
+			this.speed = isNaN(speed) ? 1 : speed;
+			this.floorPosition = time % 1e9 / 104 * 1.0;
 		}
 	}
 	//test start
-	rawChart = pec.split(/[ \n\r]+/).map(i => isNaN(i) ? String(i) : Number(i)); //可能没必要
+	rawChart = pec.split(/[ \n\r]+/).map(i => isNaN(i) ? String(i) : Number(i)); //必要性有待研究
 	let qwqChart = new Chart();
 	let raw = {};
-	for (const i of ["bp", "n1", "n2", "n3", "n4", "cv", "cp", "cd", "ca", "cm", "cr", "cf", "#", "&"]) raw[i] = [];
+	for (const i of ["bp", "n1", "n2", "n3", "n4", "cv", "cp", "cd", "ca", "cm", "cr", "cf"]) raw[i] = [];
 	let rawarr = [];
+	let fuckarr = [1, 1]; //n指令的#和&
 	let rawstr = "";
 	let baseBpm = 120;
-	if (!isNaN(rawChart[0])) qwqChart.setOffset(rawChart.shift() / 1e3 - 0.15); //0.14
+	if (!isNaN(rawChart[0])) qwqChart.setOffset(rawChart.shift() / 1e3 - 0.15); //官方转谱似乎是0.14
 	for (let i = 0; i < rawChart.length; i++) {
 		let p = rawChart[i];
 		if (!isNaN(p)) rawarr.push(p);
+		else if (p == "#" && rawstr[0] == "n") fuckarr[0] = rawChart[++i];
+		else if (p == "&" && rawstr[0] == "n") fuckarr[1] = rawChart[++i];
+		else if (!raw[p]) throw `Unknown Command: ${p}`;
 		else {
-			if (raw[rawstr]) raw[rawstr].push(JSON.parse(JSON.stringify(rawarr)));
+			if (raw[rawstr]) {
+				if (rawstr[0] == "n") {
+					rawarr.push(...fuckarr);
+					fuckarr = [1, 1];
+				}
+				raw[rawstr].push(JSON.parse(JSON.stringify(rawarr)));
+			}
 			rawarr.length = 0;
 			rawstr = p;
 		}
 	}
+	if (raw[rawstr]) raw[rawstr].push(JSON.parse(JSON.stringify(rawarr))); //补充最后一个(bug)
 	baseBpm = raw.bp[0][1];
 	let qwqLines = [];
 	for (const i of raw.n1) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		if (!i[4]) qwqLines[i[0]].addNote(new Note(1, i[1] * 32, i[2] * 9 / 1024), i[3]);
+		qwqLines[i[0]].addNote(new Note(1, i[1] * 32 + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		if (!i[5]) qwqLines[i[0]].addNote(new Note(3, i[1] * 32, i[3] * 9 / 1024, (i[2] - i[1]) * 32), i[4]);
+		qwqLines[i[0]].addNote(new Note(3, i[1] * 32 + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, (i[2] - i[1]) * 32, i[6]), i[4], i[5]);
 	}
 
 	for (const i of raw.n3) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		if (!i[4]) qwqLines[i[0]].addNote(new Note(4, i[1] * 32, i[2] * 9 / 1024), i[3]);
+		qwqLines[i[0]].addNote(new Note(4, i[1] * 32 + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
 	}
 	for (const i of raw.n4) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		if (!i[4]) qwqLines[i[0]].addNote(new Note(2, i[1] * 32, i[2] * 9 / 1024), i[3]);
+		qwqLines[i[0]].addNote(new Note(2, i[1] * 32 + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
 	}
 	//变速
 	for (const i of raw.cv) {
@@ -1021,11 +1038,11 @@ function chartp23(pec) {
 	//不透明度
 	for (const i of raw.ca) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-1, i[1] * 32, i[1] * 32, i[2] / 255);
+		qwqLines[i[0]].addEvents(-1, i[1] * 32, i[1] * 32, i[2] > 0 ? (i[2] + 1) / 256 : 0); //暂不支持alpha值扩展
 	}
 	for (const i of raw.cf) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-1, i[1] * 32, i[2] * 32, i[3] / 255);
+		qwqLines[i[0]].addEvents(-1, i[1] * 32, i[2] * 32, i[3] > 0 ? (i[3] + 1) / 256 : 0);
 	}
 	//移动
 	for (const i of raw.cp) {
@@ -1074,11 +1091,11 @@ function chartp23(pec) {
 				let qwqwq2 = 0;
 				let qwqwq3 = 0;
 				for (const k of i.speedEvents) {
-					if (j.time > k.endTime) continue;
-					if (j.time < k.startTime) break;
+					if (j.time % 1e9 > k.endTime) continue;
+					if (j.time % 1e9 < k.startTime) break;
 					qwqwq = k.floorPosition;
 					qwqwq2 = k.value;
-					qwqwq3 = j.time - k.startTime;
+					qwqwq3 = j.time % 1e9 - k.startTime;
 				}
 				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
 				if (j.type == 3) j.speed *= qwqwq2;
@@ -1088,11 +1105,11 @@ function chartp23(pec) {
 				let qwqwq2 = 0;
 				let qwqwq3 = 0;
 				for (const k of i.speedEvents) {
-					if (j.time > k.endTime) continue;
-					if (j.time < k.startTime) break;
+					if (j.time % 1e9 > k.endTime) continue;
+					if (j.time % 1e9 < k.startTime) break;
 					qwqwq = k.floorPosition;
 					qwqwq2 = k.value;
-					qwqwq3 = j.time - k.startTime;
+					qwqwq3 = j.time % 1e9 - k.startTime;
 				}
 				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
 				if (j.type == 3) j.speed *= qwqwq2;

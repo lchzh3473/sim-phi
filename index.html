@@ -73,14 +73,29 @@
 		<div id="select">
 			谱面：<select id="select-chart" style="min-width:5em"></select>
 			音乐：<select id="select-bgm" style="min-width:5em"></select>
-			背景：<select id="select-bg" style="min-width:5em"></select>
+			图片：<select id="select-bg" style="min-width:5em"></select><br>
 			宽高比：<select id="select-aspect-ratio" style="min-width:5em">
 				<option value="1.25">5:4</option>
 				<option value="1.333333">4:3</option>
 				<option value="1.462857">256:175</option>
 				<option value="1.6">16:10</option>
 				<option value="1.666667">5:3</option>
+				<option value="1.692308">22:13</option>
 				<option value="1.777778" selected>16:9</option>
+			</select>
+			按键缩放：<select id="select-scale-ratio" style="min-width:5em">
+				<option value="1e4">极小</option>
+				<option value="9e3">较小</option>
+				<option value="8e3" selected>默认</option>
+				<option value="7e3">较大</option>
+				<option value="6e3">极大</option>
+			</select>
+			背景变暗：<select id="select-global-alpha" style="min-width:5em">
+				<option value="1">黑暗</option>
+				<option value="0.8">昏暗</option>
+				<option value="0.6" selected>默认</option>
+				<option value="0.4">较亮</option>
+				<option value="0.2">明亮</option>
 			</select><br>
 			<input id="songName" class="input" placeholder="songName">
 			<input id="songLevel" class="input" placeholder="SP  Lv.?"><br>
@@ -103,7 +118,8 @@
 		</div>
 	</div>
 	<noscript><strong style="color:red">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
-	<script src="https://gildas-lormeau.github.io/zip.js/demos/lib/zip.min.js"></script>
+	<!--<script src="https://gildas-lormeau.github.io/zip.js/demos/lib/zip.min.js"></script>-->
+	<script src="./src/zip.min.js"></script>
 	<script src="/script.js"></script>
 	<script src="./script.js"></script>
 </body>
