@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 2, 1], 1611795955, 1624291979];
+const _i = ['Phigros模拟器', [1, 2, 2], 1611795955, 1625297837];
 //document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
@@ -235,10 +235,10 @@ function init() {
 			}
 		})));
 		//加载打击动画
-		const clickPerfect = imgShader(res.clickRaw, "#fefea9");
-		const clickGood = imgShader(res.clickRaw, "#a1ecff");
-		res.JudgeLineAP = await createImageBitmap(imgShader(res.JudgeLine, "#fefea9"));
-		res.JudgeLineFC = await createImageBitmap(imgShader(res.JudgeLine, "#a1ecff"));
+		const clickPerfect = imgShader(res.clickRaw, "#fce491");
+		const clickGood = imgShader(res.clickRaw, "#9ed5f3");
+		res.JudgeLineAP = await createImageBitmap(imgShader(res.JudgeLine, "#feffa9"));
+		res.JudgeLineFC = await createImageBitmap(imgShader(res.JudgeLine, "#a2eeff"));
 		for (let i = 0; i < 30; i++) {
 			res[`clickPerfect${i}`] = await createImageBitmap(clickPerfect, 0, i * 256, 256, 256);
 			res[`clickGood${i}`] = await createImageBitmap(clickGood, 0, i * 256, 256, 256);
@@ -313,37 +313,44 @@ function loadFile(file) {
 	reader.onload = async function() {
 		//加载zip(https://gildas-lormeau.github.io/zip.js)
 		const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(this.result)));
-		reader.getEntries().then(async zipData => {
+		reader.getEntries().then(async zipDataRaw => {
+			const zipData = [];
+			for (const i of zipDataRaw) {
+				if (i.filename.replace(/.*\//, "")) zipData.push(i);
+			}
 			console.log(zipData);
 			let loadedNum = 0;
 			const zipRaw = await Promise.all(zipData.map(i => new Promise(resolve => {
-				if (/\.(png|jpeg|jpg)$/i.test(i.filename)) {
+				const fName = i.filename.replace(/.*\//, "");
+
+				//
+				if (/\.(png|jpeg|jpg)$/i.test(fName)) {
 					return i.getData(new zip.BlobWriter()).then(async data => {
 						const imageData = await createImageBitmap(data);
 						const option = document.createElement("option");
-						option.innerHTML = i.filename;
+						option.innerHTML = fName;
 						option.value = bgs.push(imageData) - 1;
 						selectbg.appendChild(option);
 						loading(++loadedNum);
 						resolve(imageData);
 					});
-				} else if (/\.(mp3|wav|ogg)$/i.test(i.filename)) {
+				} else if (/\.(mp3|wav|ogg)$/i.test(fName)) {
 					return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
 						const audioData = await actx.decodeAudioData(data.buffer);
 						const option = document.createElement("option");
-						option.innerHTML = i.filename;
+						option.innerHTML = fName;
 						option.value = bgms.push(audioData) - 1;
 						selectbgm.appendChild(option);
 						loading(++loadedNum);
 						resolve(audioData);
 					});
-				} else if (/\.(json|txt)$/i.test(i.filename)) {
+				} else if (/\.(json|txt)$/i.test(fName)) {
 					return i.getData(new zip.TextWriter()).then(async data => {
 						try {
 							console.log(JSON.parse(data)); //test
 							const jsonData = await prerenderChart(chart123(JSON.parse(data)));
 							const option = document.createElement("option");
-							option.innerHTML = i.filename;
+							option.innerHTML = fName;
 							option.value = charts.push(jsonData) - 1;
 							selectchart.appendChild(option);
 							loading(++loadedNum);
@@ -353,13 +360,13 @@ function loadFile(file) {
 							resolve(undefined);
 						}
 					});
-				} else if (/\.(pec)$/i.test(i.filename)) {
+				} else if (/\.(pec)$/i.test(fName)) {
 					return i.getData(new zip.TextWriter()).then(async data => {
 						//test
 						const jsonData = await prerenderChart(chart123(chartp23(data)));
 						//chartPec(data);
 						const option = document.createElement("option");
-						option.innerHTML = i.filename;
+						option.innerHTML = fName;
 						option.value = charts.push(jsonData) - 1;
 						selectchart.appendChild(option);
 						loading(++loadedNum);
@@ -557,35 +564,31 @@ function draw() {
 	});
 	//绘制note
 	chart.judgeLineList.forEach((val, idx) => {
-		const i = lines[idx];
 		const beat32 = timeChart * val.bpm / 1.875;
-		drawHoldNote(i, val.notesHoldAbove, beat32, 1);
-		drawHoldNote(i, val.notesHoldBelow, beat32, -1);
+		drawHoldNote(idx, val.notesHoldAbove, beat32, 1);
+		drawHoldNote(idx, val.notesHoldBelow, beat32, -1);
 	});
 	chart.judgeLineList.forEach((val, idx) => {
-		const i = lines[idx];
 		const beat32 = timeChart * val.bpm / 1.875;
-		drawDragNote(i, val.notesDragAbove, beat32, 1);
-		drawDragNote(i, val.notesDragBelow, beat32, -1);
+		drawDragNote(idx, val.notesDragAbove, beat32, 1);
+		drawDragNote(idx, val.notesDragBelow, beat32, -1);
 	});
 	chart.judgeLineList.forEach((val, idx) => {
-		const i = lines[idx];
 		const beat32 = timeChart * val.bpm / 1.875;
-		drawTapNote(i, val.notesTapAbove, beat32, 1);
-		drawTapNote(i, val.notesTapBelow, beat32, -1);
+		drawTapNote(idx, val.notesTapAbove, beat32, 1);
+		drawTapNote(idx, val.notesTapBelow, beat32, -1);
 	});
 	chart.judgeLineList.forEach((val, idx) => {
-		const i = lines[idx];
 		const beat32 = timeChart * val.bpm / 1.875;
-		drawFlickNote(i, val.notesFlickAbove, beat32, 1);
-		drawFlickNote(i, val.notesFlickBelow, beat32, -1);
+		drawFlickNote(idx, val.notesFlickAbove, beat32, 1);
+		drawFlickNote(idx, val.notesFlickBelow, beat32, -1);
 	});
 	//绘制控制点
 	if (document.getElementById("showPoint").checked) {
 		lines.forEach((i, val) => {
 			ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
 			ctx.rotate(-i.r * Math.PI / 180);
-			ctx.fillStyle = "lime";
+			ctx.fillStyle = "violet";
 			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 			ctx.fillStyle = "yellow";
 			ctx.font = `${lineScale}px Exo`;
@@ -603,10 +606,12 @@ function draw() {
 		ctx.drawImage(res[`clickPerfect${[(i.time++).toFixed(0)]}`], -128, -128); //停留约0.5秒
 		//四个方块
 		for (const j of i.rand) {
-			ctx.fillStyle = `rgba(254,254,169,${(1-tick)})`;
+			ctx.globalAlpha = 1 - tick;
+			ctx.fillStyle = "#fce491";
 			const r3 = tick ** 0.1 * 40;
 			const ds = tick ** 0.2 * j[0];
 			ctx.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
+			ctx.globalAlpha = 1;
 		}
 		ctx.resetTransform();
 	}
@@ -728,35 +733,68 @@ function playNote(line, notes, time) {
 	}
 }
 //绘制蓝键
-function drawTapNote(line, notes, time, num) {
+function drawTapNote(idx, notes, time, num) {
+	let line = lines[idx];
 	for (const i of notes) {
 		if (i.time % 1e9 < time) continue;
 		if (i.floorPosition - line.positionY < -1e-3 && !i.played && !showFakeNotes) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
+		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.2);
 		ctx.scale(noteScale, noteScale); //缩放
 		if (i.isMulti && document.getElementById("highLight").checked) ctx.drawImage(res.TapHL, -544.5, -100);
 		else ctx.drawImage(res.Tap, -494.5, -50);
 		ctx.resetTransform();
 	}
+	if (document.getElementById("showPoint").checked) {
+		notes.forEach((i, val) => {
+			ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
+			ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
+			ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.2);
+			ctx.fillStyle = "lime";
+			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+			ctx.fillStyle = "cyan";
+			ctx.font = `${lineScale}px Exo`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "bottom";
+			ctx.fillText(`${idx}-${val}`, 0, -lineScale * 0.1);
+			ctx.resetTransform();
+		});
+	}
 }
 //绘制黄键
-function drawDragNote(line, notes, time, num) {
+function drawDragNote(idx, notes, time, num) {
+	let line = lines[idx];
 	for (const i of notes) {
 		if (i.time % 1e9 < time) continue;
 		if (i.floorPosition - line.positionY < -1e-3 && !i.played && !showFakeNotes) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
+		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.2);
 		ctx.scale(noteScale, noteScale); //缩放
 		if (i.isMulti && document.getElementById("highLight").checked) ctx.drawImage(res.DragHL, -544.5, -80);
 		else ctx.drawImage(res.Drag, -494.5, -30);
 		ctx.resetTransform();
 	}
+	if (document.getElementById("showPoint").checked) {
+		notes.forEach((i, val) => {
+			ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
+			ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
+			ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.2);
+			ctx.fillStyle = "lime";
+			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+			ctx.fillStyle = "cyan";
+			ctx.font = `${lineScale}px Exo`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "bottom";
+			ctx.fillText(`${idx}-${val}`, 0, -lineScale * 0.1);
+			ctx.resetTransform();
+		});
+	}
 }
 //绘制长条
-function drawHoldNote(line, notes, time, num) {
+function drawHoldNote(idx, notes, time, num) {
+	let line = lines[idx];
 	const sx = wlen * (1 + line.x);
 	const sy = hlen * (1 - line.y);
 	const r = line.r / 180 * Math.PI;
@@ -765,17 +803,18 @@ function drawHoldNote(line, notes, time, num) {
 		//if (i.floorPosition - line.positionY < -1 && !i.played && !showFakeNotes) continue;//喵喵喵
 		ctx.translate(sx, sy);
 		ctx.rotate((num - 1) * Math.PI / 2 - r);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * 1.0);
+		if (i.playing) ctx.translate(wlen * i.positionX / 9 * num, hlen * (time - i.time) * i.speed / line.bpm * 1.875 * 1.2);
+		else ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * 1.2);
 		ctx.scale(noteScale, noteScale); //缩放
-		const baseLength = hlen / line.bpm * 1.875 / noteScale * i.speed * 1.0;
+		const baseLength = hlen / line.bpm * 1.875 / noteScale * i.speed * 1.2;
 		const holdLength = baseLength * i.holdTime;
 		if (i.time > time) {
 			ctx.drawImage(res.HoldHead, -494.5, 0);
 			ctx.drawImage(res.Hold, -494.5, -holdLength, 989, holdLength);
 			ctx.drawImage(res.HoldEnd, -494.5, -holdLength - 50);
 		} else {
-			ctx.drawImage(res.HoldEnd, -494.5, -holdLength - 50);
 			ctx.drawImage(res.Hold, -494.5, -holdLength, 989, holdLength - baseLength * (time - i.time));
+			ctx.drawImage(res.HoldEnd, -494.5, -holdLength - 50);
 			//绘制持续打击动画
 			i.playing = i.playing ? i.playing + 1 : 1;
 			if (i.playing % 12 == 0) {
@@ -785,19 +824,50 @@ function drawHoldNote(line, notes, time, num) {
 		}
 		ctx.resetTransform();
 	}
+	if (document.getElementById("showPoint").checked) {
+		notes.forEach((i, val) => {
+			ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
+			ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
+			ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.2);
+			ctx.fillStyle = "lime";
+			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+			ctx.fillStyle = "cyan";
+			ctx.font = `${lineScale}px Exo`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "bottom";
+			ctx.fillText(`${idx}-${val}`, 0, -lineScale * 0.1);
+			ctx.resetTransform();
+		});
+	}
 }
 //绘制粉键
-function drawFlickNote(line, notes, time, num) {
+function drawFlickNote(idx, notes, time, num) {
+	let line = lines[idx];
 	for (const i of notes) {
 		if (i.time % 1e9 < time) continue;
 		if (i.floorPosition - line.positionY < -1e-3 && !i.played && !showFakeNotes) continue;
 		ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
 		ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
-		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.0);
+		ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.2);
 		ctx.scale(noteScale, noteScale); //缩放
 		if (i.isMulti && document.getElementById("highLight").checked) ctx.drawImage(res.FlickHL, -544.5, -150);
 		else ctx.drawImage(res.Flick, -494.5, -100);
 		ctx.resetTransform();
+	}
+	if (document.getElementById("showPoint").checked) {
+		notes.forEach((i, val) => {
+			ctx.translate(wlen * (1 + line.x), hlen * (1 - line.y));
+			ctx.rotate(((num - 1) / 2 - line.r / 180) * Math.PI);
+			ctx.translate(wlen * i.positionX / 9 * num, -hlen * (i.floorPosition - line.positionY) * i.speed * 1.2);
+			ctx.fillStyle = "lime";
+			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+			ctx.fillStyle = "cyan";
+			ctx.font = `${lineScale}px Exo`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "bottom";
+			ctx.fillText(`${idx}-${val}`, 0, -lineScale * 0.1);
+			ctx.resetTransform();
+		});
 	}
 }
 
@@ -979,7 +1049,7 @@ function chartp23(pec) {
 			this.positionX = x;
 			this.holdTime = type == 3 ? holdTime : 0;
 			this.speed = isNaN(speed) ? 1 : speed;
-			this.floorPosition = time % 1e9 / 104 * 1.0;
+			this.floorPosition = time % 1e9 / 104 * 1.2;
 		}
 	}
 	//test start
@@ -1033,7 +1103,7 @@ function chartp23(pec) {
 	//变速
 	for (const i of raw.cv) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(0, i[1] * 32, null, i[2] / 5.75); //6.0??
+		qwqLines[i[0]].addEvents(0, i[1] * 32, null, i[2] / 7.0); //6.0??
 	}
 	//不透明度
 	for (const i of raw.ca) {
@@ -1234,3 +1304,84 @@ const tween = [null, null,
 	pos => (pos *= 2) < 1 ? tween[26](pos) / 2 : tween[27](pos - 1) / 2 + .5, //28
 	pos => pos < 0.5 ? 2 ** (20 * pos - 11) * Math.sin((160 * pos + 1) * Math.PI / 18) : 1 - 2 ** (9 - 20 * pos) * Math.sin((160 * pos + 1) * Math.PI / 18) //29
 ];
+
+function chartify(json) {
+	let newChart = {};
+	newChart.formatVersion = 3;
+	newChart.offset = json.offset;
+	newChart.numOfNotes = json.numOfNotes;
+	newChart.judgeLineList = [];
+	for (const i of json.judgeLineList) {
+		let newLine = {};
+		newLine.numOfNotes = i.numOfNotes;
+		newLine.numOfNotesAbove = i.numOfNotesAbove;
+		newLine.numOfNotesBelow = i.numOfNotesBelow;
+		newLine.bpm = i.bpm;
+		newLine.speedEvents = [];
+		newLine.notesAbove = [];
+		newLine.notesBelow = [];
+		newLine.judgeLineDisappearEvents = [];
+		newLine.judgeLineMoveEvents = [];
+		newLine.judgeLineRotateEvents = [];
+		for (const j of i.speedEvents) {
+			if (j.startTime == j.endTime) continue;
+			let newEvent = {};
+			newEvent.startTime = j.startTime;
+			newEvent.endTime = j.endTime;
+			newEvent.value = Number(j.value.toFixed(6));
+			newEvent.floorPosition = Number(j.floorPosition.toFixed(6));
+			newLine.speedEvents.push(newEvent);
+		}
+		for (const j of i.notesAbove) {
+			let newNote = {};
+			newNote.type = j.type;
+			newNote.time = j.time;
+			newNote.positionX = Number(j.positionX.toFixed(6));
+			newNote.holdTime = j.holdTime;
+			newNote.speed = Number(j.speed.toFixed(6));
+			newNote.floorPosition = Number(j.floorPosition.toFixed(6));
+			newLine.notesAbove.push(newNote);
+		}
+		for (const j of i.notesBelow) {
+			let newNote = {};
+			newNote.type = j.type;
+			newNote.time = j.time;
+			newNote.positionX = Number(j.positionX.toFixed(6));
+			newNote.holdTime = j.holdTime;
+			newNote.speed = Number(j.speed.toFixed(6));
+			newNote.floorPosition = Number(j.floorPosition.toFixed(6));
+			newLine.notesBelow.push(newNote);
+		}
+		for (const j of i.judgeLineDisappearEvents) {
+			if (j.startTime == j.endTime) continue;
+			let newEvent = {};
+			newEvent.startTime = j.startTime;
+			newEvent.endTime = j.endTime;
+			newEvent.start = Number(j.start.toFixed(6));
+			newEvent.end = Number(j.end.toFixed(6));
+			newLine.judgeLineDisappearEvents.push(newEvent);
+		}
+		for (const j of i.judgeLineMoveEvents) {
+			if (j.startTime == j.endTime) continue;
+			let newEvent = {};
+			newEvent.startTime = j.startTime;
+			newEvent.endTime = j.endTime;
+			newEvent.start = Number(j.start.toFixed(6));
+			newEvent.end = Number(j.end.toFixed(6));
+			newEvent.start2 = Number(j.start2.toFixed(6));
+			newEvent.end2 = Number(j.end2.toFixed(6));
+			newLine.judgeLineMoveEvents.push(newEvent);
+		}
+		for (const j of i.judgeLineRotateEvents) {
+			if (j.startTime == j.endTime) continue;
+			let newEvent = {};
+			newEvent.startTime = j.startTime;
+			newEvent.endTime = j.endTime;
+			newEvent.start = Number(j.start.toFixed(6));
+			newEvent.end = Number(j.end.toFixed(6));
+			newLine.judgeLineRotateEvents.push(newEvent);
+		}
+		newChart.judgeLineList.push(newLine);
+	}
+	return newChart;
+}
