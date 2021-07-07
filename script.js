@@ -43,7 +43,7 @@ function playDemo() {
 	document.getElementById("demo").classList.add("hide");
 	uploads.classList.add("disabled");
 	const xhr = new XMLHttpRequest();
-	xhr.open("get", "./src/demo.zip", true);
+	xhr.open("get", "./src/demo.png", true); //避免gitee的404
 	xhr.responseType = 'blob';
 	xhr.send();
 	xhr.onload = () => {
