@@ -64,12 +64,12 @@
 			然后调节相关参数，最后点击“播放”按钮。点击画面可以全屏，再次点击退出全屏。
 		</p>
 		<div id="uploads" class="upload">
+			<input type="button" id="demo" class="hide" value="Demo" onclick="playDemo()">
 			<input type="file" accept="application/x-zip-compressed" id="upload">
 			<label for="upload">选择zip</label>
 			<input type="text" style="width:0;flex-grow:1;flex-shrink:1;pointer-events:none" id="filename">
 		</div>
 		<input type="button" value="重置" onclick="location.reload()">
-		<!--<input type="button" value="Demo" onclick="playDemo()">-->
 		<div id="select">
 			谱面：<select id="select-chart" style="min-width:5em"></select>
 			音乐：<select id="select-bgm" style="min-width:5em"></select>

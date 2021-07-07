@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 2, 2], 1611795955, 1625297837];
+const _i = ['Phigros模拟器', [1, 2, 3], 1611795955, 1625672029];
 //document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
@@ -19,9 +19,10 @@ const selectchart = document.getElementById("select-chart");
 const selectscaleratio = document.getElementById("select-scale-ratio");
 const selectaspectratio = document.getElementById("select-aspect-ratio");
 const selectglobalalpha = document.getElementById("select-global-alpha");
-const bgs = [];
-const bgms = [];
-const charts = [];
+const bgs = {};
+const bgms = {};
+const charts = {};
+const csvLineData = [];
 const canvas = document.getElementById("canvas");
 const canvasbg = document.getElementById("canvas-bg");
 //调节画面尺寸
@@ -30,8 +31,26 @@ const aspectRatio = 16 / 9;
 canvas.style.cssText = `max-width:calc(100vh*${aspectRatio});`
 let scaleRatio = 7e3; //数值越大note越小
 //qwq
-let qwq = 1;
-document.querySelector(".title").onclick = () => qwq = !qwq;
+let qwq = true;
+let qwq2 = false;
+let qwq3 = 3;
+document.querySelector(".title").onclick = () => {
+	if (qwq2); //qwq = !qwq;
+	else if (!--qwq3) document.getElementById("demo").classList.remove("hide");
+}
+
+function playDemo() {
+	document.getElementById("demo").classList.add("hide");
+	uploads.classList.add("disabled");
+	const xhr = new XMLHttpRequest();
+	xhr.open("get", "./src/demo.zip", true);
+	xhr.responseType = 'blob';
+	xhr.send();
+	xhr.onload = () => {
+		document.getElementById("filename").value = "demo.zip";
+		loadFile(xhr.response);
+	};
+}
 //pec假note
 const showFakeNotes = false;
 //全屏相关
@@ -245,30 +264,6 @@ function init() {
 		}
 		out.innerText = "等待上传文件...";
 		upload.parentElement.classList.remove("disabled");
-		//给图片上色
-		function imgShader(img, color) {
-			const canvas = document.createElement("canvas");
-			canvas.width = img.width;
-			canvas.height = img.height;
-			const ctx = canvas.getContext("2d");
-			ctx.drawImage(img, 0, 0);
-			const imgData = ctx.getImageData(0, 0, img.width, img.height);
-			if (color == null) return imgData;
-			const rgba = (hex => {
-				const canvas = document.createElement("canvas");
-				const ctx = canvas.getContext("2d");
-				ctx.fillStyle = hex;
-				ctx.fillRect(0, 0, 1, 1);
-				return ctx.getImageData(0, 0, 1, 1).data;
-			})(color);
-			for (let i = 0; i < imgData.data.length / 4; i++) {
-				imgData.data[i * 4] *= rgba[0] / 255;
-				imgData.data[i * 4 + 1] *= rgba[1] / 255;
-				imgData.data[i * 4 + 2] *= rgba[2] / 255;
-				imgData.data[i * 4 + 3] *= rgba[3] / 255;
-			}
-			return imgData;
-		}
 	}
 }
 //必要组件
@@ -303,6 +298,7 @@ let isPaused = true;
 let chart, backgroundMusic, backgroundImage; //存放谱面
 //加载文件
 function loadFile(file) {
+	qwq2 = true;
 	const reader = new FileReader();
 	reader.readAsArrayBuffer(file);
 	reader.onprogress = progress => { //显示加载文件进度
@@ -321,37 +317,38 @@ function loadFile(file) {
 			console.log(zipData);
 			let loadedNum = 0;
 			const zipRaw = await Promise.all(zipData.map(i => new Promise(resolve => {
-				const fName = i.filename.replace(/.*\//, "");
-
-				//
-				if (/\.(png|jpeg|jpg)$/i.test(fName)) {
+				//const fName = i.filename.replace(/.*\//, "");
+				if (/\.(png|jpeg|jpg)$/i.test(i.filename)) {
 					return i.getData(new zip.BlobWriter()).then(async data => {
 						const imageData = await createImageBitmap(data);
 						const option = document.createElement("option");
-						option.innerHTML = fName;
-						option.value = bgs.push(imageData) - 1;
+						option.innerHTML = i.filename;
+						option.value = i.filename;
+						bgs[i.filename] = imageData;
 						selectbg.appendChild(option);
 						loading(++loadedNum);
 						resolve(imageData);
 					});
-				} else if (/\.(mp3|wav|ogg)$/i.test(fName)) {
+				} else if (/\.(mp3|wav|ogg)$/i.test(i.filename)) {
 					return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
 						const audioData = await actx.decodeAudioData(data.buffer);
 						const option = document.createElement("option");
-						option.innerHTML = fName;
-						option.value = bgms.push(audioData) - 1;
+						option.innerHTML = i.filename;
+						option.value = i.filename;
+						bgms[i.filename] = audioData;
 						selectbgm.appendChild(option);
 						loading(++loadedNum);
 						resolve(audioData);
 					});
-				} else if (/\.(json|txt)$/i.test(fName)) {
+				} else if (/\.(json|txt)$/i.test(i.filename)) {
 					return i.getData(new zip.TextWriter()).then(async data => {
 						try {
 							console.log(JSON.parse(data)); //test
 							const jsonData = await prerenderChart(chart123(JSON.parse(data)));
 							const option = document.createElement("option");
-							option.innerHTML = fName;
-							option.value = charts.push(jsonData) - 1;
+							option.innerHTML = i.filename;
+							option.value = i.filename;
+							charts[i.filename] = jsonData;
 							selectchart.appendChild(option);
 							loading(++loadedNum);
 							resolve(jsonData);
@@ -360,30 +357,44 @@ function loadFile(file) {
 							resolve(undefined);
 						}
 					});
-				} else if (/\.(pec)$/i.test(fName)) {
+				} else if (/\.(pec)$/i.test(i.filename)) {
 					return i.getData(new zip.TextWriter()).then(async data => {
 						//test
 						const jsonData = await prerenderChart(chart123(chartp23(data)));
 						//chartPec(data);
 						const option = document.createElement("option");
-						option.innerHTML = fName;
-						option.value = charts.push(jsonData) - 1;
+						option.innerHTML = i.filename;
+						option.value = i.filename;
+						charts[i.filename] = jsonData;
 						selectchart.appendChild(option);
 						loading(++loadedNum);
 						resolve(jsonData);
 					});
-				} //test
-				//console.log(done);
+				} else if (i.filename == "line.csv") {
+					return i.getData(new zip.TextWriter()).then(async data => {
+						//test
+						const csvLine = csv2array(data);
+						csvLineData.push(...csvLine);
+						//chartPec(data);
+						loading(++loadedNum);
+						resolve(csvLine);
+					});
+				} else {
+					loading(++loadedNum);
+					resolve();
+				}
 			})));
 
 			function loading(num) {
 				out.className = "accept";
 				out.innerText = `读取文件：${Math.floor(num/zipData.length * 100)}%`;
 				if (num == zipData.length) {
-					if (charts.length == 0) {
+					if (selectchart.children.length == 0) {
 						out.className = "error";
 						out.innerText = "未找到json！"; //test
-					} else select.classList.remove("disabled");
+					} else {
+						select.classList.remove("disabled");
+					}
 				}
 			}
 			console.log(zipRaw);
@@ -393,22 +404,23 @@ function loadFile(file) {
 }
 //note预处理
 function prerenderChart(chart) {
+	let chartNew = JSON.parse(JSON.stringify(chart));
 	//(双押提示)
 	const timeOfMulti = {};
-	for (const i of chart.judgeLineList) {
+	for (const i of chartNew.judgeLineList) {
 		for (const j of i.notesAbove) timeOfMulti[j.time] = timeOfMulti[j.time] ? 2 : 1;
 		for (const j of i.notesBelow) timeOfMulti[j.time] = timeOfMulti[j.time] ? 2 : 1;
 	}
-	for (const i of chart.judgeLineList) {
+	for (const i of chartNew.judgeLineList) {
 		for (const j of i.notesAbove) j.isMulti = (timeOfMulti[j.time] == 2);
 		for (const j of i.notesBelow) j.isMulti = (timeOfMulti[j.time] == 2);
 	}
-	for (const i of chart.judgeLineList) {
+	for (const i of chartNew.judgeLineList) {
 		i.notesTapAbove = [];
 		i.notesDragAbove = [];
 		i.notesHoldAbove = [];
 		i.notesFlickAbove = [];
-		for (const j of i.notesAbove) {
+		for (const j of i.notesAbove.sort((a, b) => a.time - b.time)) {
 			switch (j.type) {
 				case 1:
 					i.notesTapAbove.push(j);
@@ -430,7 +442,7 @@ function prerenderChart(chart) {
 		i.notesDragBelow = [];
 		i.notesHoldBelow = [];
 		i.notesFlickBelow = [];
-		for (const j of i.notesBelow) {
+		for (const j of i.notesBelow.sort((a, b) => a.time - b.time)) {
 			switch (j.type) {
 				case 1:
 					i.notesTapBelow.push(j);
@@ -449,18 +461,26 @@ function prerenderChart(chart) {
 			}
 		}
 	}
-	return JSON.parse(JSON.stringify(chart));
+	return chartNew;
 }
 
 document.addEventListener("visibilitychange", () => {
 	if (document.visibilityState == "hidden" && btnPause.value == "暂停") btnPause.click();
 });
 //play
-btnPlay.onclick = function() {
+btnPlay.onclick = async function() {
 	btnPause.value = "暂停";
 	switch (this.value) {
 		case "播放":
-			chart = JSON.parse(JSON.stringify(charts[selectchart.value]));
+			chart = JSON.parse(JSON.stringify(charts[selectchart.value])); //fuck
+			for (const i of csvLineData) {
+				if (selectchart.value == i[0]) {
+					chart.judgeLineList[i[1]].image = await createImageBitmap(imgShader(bgs[i[2]], "#feffa9"));
+					chart.judgeLineList[i[1]].imageH = Number(i[3]);
+					chart.judgeLineList[i[1]].imageW = Number(i[4]);
+					chart.judgeLineList[i[1]].imageB = Number(i[5]);
+				}
+			}
 			backgroundImage = bgs[selectbg.value];
 			backgroundMusic = bgms[selectbgm.value];
 			stage.classList.remove("disabled");
@@ -518,7 +538,7 @@ function resizeImagebg() {
 //加载bgm
 function loadBgm() {
 	lines.length = 0;
-	for (const i of chart.judgeLineList) lines.push(new line(0, 0, 0, 0, i.bpm));
+	for (const i of chart.judgeLineList) lines.push(new line(0, 0, 0, 0, i.bpm, i.image || res.JudgeLineAP, i.imageH, i.imageW, i.imageB));
 	duration = backgroundMusic.duration;
 	playBgm(backgroundMusic);
 	stage.classList.remove("disabled");
@@ -542,15 +562,7 @@ function draw() {
 	timeChart = Math.max(timeBgm - chart.offset, 0);
 	//重置画面
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	//绘制判定线
-	for (const i of lines) {
-		ctx.globalAlpha = i.a;
-		ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
-		ctx.rotate(-i.r * Math.PI / 180);
-		ctx.drawImage(res.JudgeLineAP, -lineScale * 19.2 * 3, -lineScale * 0.03 * 2.5, lineScale * 38.4 * 3, lineScale * 0.06 * 2.5); //(3,2.5,0)
-		ctx.globalAlpha = 1;
-		ctx.resetTransform();
-	}
+
 	//遍历events
 	chart.judgeLineList.forEach((val, idx) => {
 		const i = lines[idx];
@@ -583,7 +595,7 @@ function draw() {
 		drawFlickNote(idx, val.notesFlickAbove, beat32, 1);
 		drawFlickNote(idx, val.notesFlickBelow, beat32, -1);
 	});
-	//绘制控制点
+	//绘制定位点
 	if (document.getElementById("showPoint").checked) {
 		lines.forEach((i, val) => {
 			ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
@@ -594,7 +606,9 @@ function draw() {
 			ctx.font = `${lineScale}px Exo`;
 			ctx.textAlign = "center";
 			ctx.textBaseline = "bottom";
+			ctx.globalAlpha = i.a; //test(SP)
 			ctx.fillText(val, 0, -lineScale * 0.1);
+			ctx.globalAlpha = 1;
 			ctx.resetTransform();
 		});
 	}
@@ -620,10 +634,36 @@ function draw() {
 	}
 	//绘制背景
 	ctx.globalCompositeOperation = "destination-over";
+	//绘制判定线(背景前)
+	for (const i of lines) {
+		//if (!i.imageB) {
+		ctx.globalAlpha = i.a;
+		ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
+		ctx.rotate(-i.r * Math.PI / 180);
+		const imgH = i.imageH > 0 ? lineScale * 18.75 * i.imageH : dh1 * -i.imageH; // hlen*0.008
+		const imgW = imgH * i.image.width / i.image.height * i.imageW; //* 38.4*25 * i.imageH* i.imageW; //wlen*3
+		ctx.drawImage(i.image, -imgW / 2, -imgH / 2, imgW, imgH);
+		ctx.globalAlpha = 1;
+		ctx.resetTransform();
+		//}
+	}
 	ctx.fillStyle = "#000"; //背景变暗
 	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.globalAlpha = 1;
+	//绘制判定线(背景后)
+	/*for (const i of lines) {
+		if (i.imageB) {
+			ctx.globalAlpha = i.a;
+			ctx.translate(wlen * (1 + i.x), hlen * (1 - i.y));
+			ctx.rotate(-i.r * Math.PI / 180);
+			const imgH = lineScale * 18.75 * i.imageH; // hlen*0.008
+			const imgW = lineScale * 18.75 * i.imageH * 2000 / 1920 * i.image.width / i.image.height //* 38.4*25 * i.imageH* i.imageW; //wlen*3
+			ctx.drawImage(i.image, -imgW / 2, -imgH / 2, imgW, imgH);
+			ctx.globalAlpha = 1;
+			ctx.resetTransform();
+		}
+	}*/
 	ctx.drawImage(backgroundImage, sx, sy, sw, sh, dx1, dy1, dw1, dh1);
 	ctxbg.drawImage(backgroundImage, sx, sy, sw, sh, dx2, dy2, dw2, dh2);
 	ctx.globalCompositeOperation = "source-over";
@@ -678,12 +718,16 @@ function draw() {
 const lines = []; //存放判定线
 const lineEvents = []; //存放判定线事件
 class line {
-	constructor(x, y, rotation, alpha, bpm) {
+	constructor(x, y, rotation, alpha, bpm, image, imageH, imageW, imageB) {
 		this.x = x;
 		this.y = y;
 		this.r = rotation;
 		this.a = alpha;
 		this.bpm = bpm;
+		this.image = image; //fuck
+		this.imageH = imageH || 0.008;
+		this.imageW = imageW || 1.042;
+		this.imageB = !!imageB;
 	}
 }
 //判定线事件
@@ -1081,56 +1125,85 @@ function chartp23(pec) {
 		}
 	}
 	if (raw[rawstr]) raw[rawstr].push(JSON.parse(JSON.stringify(rawarr))); //补充最后一个(bug)
-	baseBpm = raw.bp[0][1];
+
+	//变速测试start
+	baseBpm = raw.bp[0][1]; //即将移除
+	let fuckBpm = 0;
+	const bpmEvents = [];
+	raw.bp.sort((a, b) => a[0] - b[0]).forEach((i, idx, arr) => {
+		//if (i[0] < 0) i[0] = 0;
+		const start = i[0] < 0 ? 0 : i[0];
+		const end = arr[idx + 1] ? arr[idx + 1][0] : 1e9;
+		const bpm = i[1];
+		bpmEvents.push({
+			startTime: start,
+			endTime: end,
+			bpm: bpm,
+			value: fuckBpm
+		});
+		fuckBpm += (end - start) / bpm;
+	});
+	//console.log(bpmEvents); //test
+
+	function qwqBpm(time) {
+		let qwq = 0;
+		for (const i of bpmEvents) {
+			if (time < i.startTime) break;
+			if (time > i.endTime) continue;
+			qwq = Math.round(((time - i.startTime) / i.bpm + i.value) * baseBpm * 32);
+		}
+		return qwq;
+	}
+	//变速测试end
 	let qwqLines = [];
 	for (const i of raw.n1) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addNote(new Note(1, i[1] * 32 + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		qwqLines[i[0]].addNote(new Note(1, qwqBpm(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addNote(new Note(3, i[1] * 32 + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, (i[2] - i[1]) * 32, i[6]), i[4], i[5]);
+		qwqLines[i[0]].addNote(new Note(3, qwqBpm(i[1]) + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, qwqBpm(i[2]) - qwqBpm(i[1]), i[6]), i[4], i[5]);
 	}
 
 	for (const i of raw.n3) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addNote(new Note(4, i[1] * 32 + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		qwqLines[i[0]].addNote(new Note(4, qwqBpm(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
 	}
 	for (const i of raw.n4) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addNote(new Note(2, i[1] * 32 + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		qwqLines[i[0]].addNote(new Note(2, qwqBpm(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
 	}
 	//变速
 	for (const i of raw.cv) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(0, i[1] * 32, null, i[2] / 7.0); //6.0??
+		qwqLines[i[0]].addEvents(0, qwqBpm(i[1]), null, i[2] / 7.0); //6.0??
 	}
 	//不透明度
 	for (const i of raw.ca) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-1, i[1] * 32, i[1] * 32, i[2] > 0 ? (i[2] + 1) / 256 : 0); //暂不支持alpha值扩展
+		qwqLines[i[0]].addEvents(-1, qwqBpm(i[1]), qwqBpm(i[1]), i[2] > 0 ? (i[2] + 1) / 256 : 0); //暂不支持alpha值扩展
 	}
 	for (const i of raw.cf) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-1, i[1] * 32, i[2] * 32, i[3] > 0 ? (i[3] + 1) / 256 : 0);
+		qwqLines[i[0]].addEvents(-1, qwqBpm(i[1]), qwqBpm(i[2]), i[3] > 0 ? (i[3] + 1) / 256 : 0);
 	}
 	//移动
 	for (const i of raw.cp) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-2, i[1] * 32, i[1] * 32, i[2] / 2048, i[3] / 1400, 1);
+		qwqLines[i[0]].addEvents(-2, qwqBpm(i[1]), qwqBpm(i[1]), i[2] / 2048, i[3] / 1400, 1);
 	}
 	for (const i of raw.cm) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-2, i[1] * 32, i[2] * 32, i[3] / 2048, i[4] / 1400, i[5]);
+		qwqLines[i[0]].addEvents(-2, qwqBpm(i[1]), qwqBpm(i[2]), i[3] / 2048, i[4] / 1400, i[5]);
 	}
 	//旋转
 	for (const i of raw.cd) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-3, i[1] * 32, i[1] * 32, -i[2], 1); //??
+		qwqLines[i[0]].addEvents(-3, qwqBpm(i[1]), qwqBpm(i[1]), -i[2], 1); //??
 	}
 	for (const i of raw.cr) {
 		if (!qwqLines[i[0]]) qwqLines[i[0]] = new JudgeLine(baseBpm);
-		qwqLines[i[0]].addEvents(-3, i[1] * 32, i[2] * 32, -i[3], i[4]);
+		qwqLines[i[0]].addEvents(-3, qwqBpm(i[1]), qwqBpm(i[2]), -i[3], i[4]);
 	}
 	for (const i of qwqLines) {
 		if (i) {
@@ -1140,7 +1213,7 @@ function chartp23(pec) {
 			let ldp = i.judgeLineDisappearEventsPec;
 			let lmp = i.judgeLineMoveEventsPec;
 			let lrp = i.judgeLineRotateEventsPec;
-			const srt = (a, b) => a.startTime == b.startTime ? a.endTime - b.endTime : a.startTime - b.startTime;
+			const srt = (a, b) => (a.startTime - b.startTime) + (a.endTime - b.endTime); //不单独判断以避免误差
 			s.sort(srt); //以后移到123函数
 			ldp.sort(srt); //以后移到123函数
 			lmp.sort(srt); //以后移到123函数
@@ -1269,7 +1342,7 @@ function chartp23(pec) {
 	return JSON.parse(JSON.stringify(qwqChart));
 }
 window.addEventListener("keydown", function(event) {
-	if (event.key == ' ' && btnPause.disabled == false) {
+	if (document.activeElement.classList.value != "input" && event.key == ' ' && btnPause.disabled == false) {
 		event.preventDefault();
 		btnPause.click();
 	}
@@ -1384,4 +1457,70 @@ function chartify(json) {
 		newChart.judgeLineList.push(newLine);
 	}
 	return newChart;
+}
+//给图片上色
+const imgShader = function(img, color) {
+	const canvas = document.createElement("canvas");
+	canvas.width = img.width;
+	canvas.height = img.height;
+	const ctx = canvas.getContext("2d");
+	ctx.drawImage(img, 0, 0);
+	const imgData = ctx.getImageData(0, 0, img.width, img.height);
+	if (color == null) return imgData;
+	const rgba = (hex => {
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d");
+		ctx.fillStyle = hex;
+		ctx.fillRect(0, 0, 1, 1);
+		return ctx.getImageData(0, 0, 1, 1).data;
+	})(color);
+	for (let i = 0; i < imgData.data.length / 4; i++) {
+		imgData.data[i * 4] *= rgba[0] / 256;
+		imgData.data[i * 4 + 1] *= rgba[1] / 256;
+		imgData.data[i * 4 + 2] *= rgba[2] / 256;
+		imgData.data[i * 4 + 3] *= rgba[3] / 256;
+	}
+	return imgData;
+}
+//读取csv
+const csv2array = function(data) {
+	const strarr = data.replace(/\r/g, "").split("\n");
+	const col = [];
+	for (const i of strarr) {
+		let rowstr = "";
+		let isQuot = false;
+		let beforeQuot = false;
+		const row = [];
+		for (const j of i) {
+			if (j == '"') {
+				if (!isQuot) isQuot = true;
+				else if (beforeQuot) {
+					rowstr += j;
+					beforeQuot = false;
+				} else beforeQuot = true;
+			} else if (j == ',') {
+				if (!isQuot) {
+					row.push(rowstr);
+					rowstr = "";
+				} else if (beforeQuot) {
+					row.push(rowstr);
+					rowstr = "";
+					isQuot = false;
+					beforeQuot = false;
+				} else rowstr += j;
+			} else if (!beforeQuot) rowstr += j;
+			else throw "Error 1";
+		}
+		if (!isQuot) {
+			row.push(rowstr);
+			rowstr = "";
+		} else if (beforeQuot) {
+			row.push(rowstr);
+			rowstr = "";
+			isQuot = false;
+			beforeQuot = false;
+		} else throw "Error 2";
+		col.push(row);
+	}
+	return col;
 }
