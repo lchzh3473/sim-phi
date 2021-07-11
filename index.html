@@ -64,7 +64,7 @@
 			然后调节相关参数，最后点击“播放”按钮。点击画面可以全屏，再次点击退出全屏。
 		</p>
 		<div id="uploads" class="upload">
-			<input type="button" id="demo" class="hide" value="Demo" onclick="playDemo()">
+			<input type="button" id="demo" class="hide" value="Demo">
 			<input type="file" accept="application/x-zip-compressed" id="upload">
 			<label for="upload">选择zip</label>
 			<input type="text" style="width:0;flex-grow:1;flex-shrink:1;pointer-events:none" id="filename">
@@ -77,8 +77,9 @@
 			宽高比：<select id="select-aspect-ratio" style="min-width:5em">
 				<option value="1.25">5:4</option>
 				<option value="1.333333">4:3</option>
-				<option value="1.462857">256:175</option>
-				<option value="1.6">16:10</option>
+				<option value="1.428571">10:7</option>
+				<option value="1.461538">19:13</option>
+				<option value="1.6">8:5</option>
 				<option value="1.666667">5:3</option>
 				<option value="1.692308">22:13</option>
 				<option value="1.777778" selected>16:9</option>
@@ -97,18 +98,22 @@
 				<option value="0.4">较亮</option>
 				<option value="0.2">明亮</option>
 			</select><br>
-			<input id="songName" class="input" placeholder="songName">
-			<input id="songLevel" class="input" placeholder="SP  Lv.?"><br>
+			歌名：<input id="input-name" class="input" style="width:7em" placeholder="Untitled">
+			等级：<input id="input-level" class="input" style="width:7em" placeholder="SP  Lv.?"><br>
+			曲绘：<input id="input-illustrator" class="input" style="width:7em" placeholder="nameless">
+			谱师：<input id="input-designer" class="input" style="width:7em" placeholder="nameless"><br>
 			<input type="checkbox" id="hitSong" checked>
 			<label for="hitSong">开启打击音效</label>
 			<input type="checkbox" id="highLight" checked>
 			<label for="highLight">多押高亮</label>
 			<input type="checkbox" id="showPoint">
-			<label for="showPoint">显示定位点</label>
+			<label for="showPoint">显示定位点</label><br>
 			<!--<input type="checkbox" id="lineColor">
 			<label for="lineColor" >FC/AP指示器</label>
 			<input type="checkbox" id="autoPlay" checked>
 			<label for="autoPlay">AutoPlay</label>-->
+			<input type="checkbox" id="showTransition" checked>
+			<label for="showTransition">过渡动画</label>
 			<input id="btn-play" type="button" value="播放">
 			<input id="btn-pause" type="button" value="暂停">
 		</div><strong id="output"></strong>
