@@ -26,9 +26,9 @@ function qwqInfo() {
 		if (selectchart.value == i[0]) {
 			if (bgms[i[1]]) selectbgm.value = i[1];
 			if (bgs[i[2]]) selectbg.value = i[2];
-			if (!isNaN(i[3])) selectaspectratio.value = i[3];
-			if (!isNaN(i[4])) selectscaleratio.value = i[4];
-			if (!isNaN(i[5])) selectglobalalpha.value = i[5];
+			if (!!Number(i[3])) selectaspectratio.value = i[3];
+			if (!!Number(i[4])) selectscaleratio.value = i[4];
+			if (!!Number(i[5])) selectglobalalpha.value = i[5];
 			inputName.value = i[6];
 			inputLevel.value = i[7];
 			inputIllustrator.value = i[8];
@@ -97,6 +97,10 @@ document.getElementById("demo").onclick = function() {
 	xhr.open("get", "./src/demo.png", true); //避免gitee的404
 	xhr.responseType = 'blob';
 	xhr.send();
+	xhr.onprogress = progress => { //显示加载文件进度
+		out.className = "accept";
+		out.innerText = `加载文件：${Math.floor(progress.loaded / 6331586 * 100)}%`;
+	};
 	xhr.onload = () => {
 		document.getElementById("filename").value = "demo.zip";
 		loadFile(xhr.response);
@@ -219,6 +223,7 @@ function init() {
 	loadResourse();
 	//加载资源
 	async function loadResourse() {
+		let qwqNum = 0;
 		await Promise.all((obj => {
 			const arr = [];
 			for (const i in obj) arr.push([i, obj[i]]);
@@ -240,7 +245,7 @@ function init() {
 			0: "src/HitSong0.ogg",
 			1: "src/HitSong1.ogg",
 			2: "src/HitSong2.ogg"
-		}).map(([name, src], i, arr) => new Promise(resolve => {
+		}).map(([name, src], _i, arr) => new Promise(resolve => {
 			const xhr = new XMLHttpRequest();
 			xhr.open("get", src, true);
 			if (/\.(png|jpeg|jpg)$/i.test(src)) {
@@ -249,7 +254,7 @@ function init() {
 				xhr.onload = async () => {
 					res[name] = await createImageBitmap(xhr.response);
 					out.className = "accept";
-					out.innerText = `加载资源...(还剩${arr.length-i}个文件)`;
+					out.innerText = `加载资源：${Math.floor(++qwqNum / arr.length * 100)}%`;
 					resolve();
 				};
 			} else if (/\.(mp3|wav|ogg)$/i.test(src)) {
@@ -258,7 +263,7 @@ function init() {
 				xhr.onload = async () => {
 					res[name] = await actx.decodeAudioData(xhr.response);
 					out.className = "accept";
-					out.innerText = `加载资源...(还剩${arr.length-i}个文件)`;
+					out.innerText = `加载资源：${Math.floor(++qwqNum / arr.length * 100)}%`;
 					resolve();
 				};
 			}
