@@ -1,0 +1,119 @@
+@font-face {
+	font-family: Exo;
+	src: url('src/Exo-Regular.otf');
+}
+
+::-webkit-scrollbar {
+	display: none;
+}
+
+html,
+body {
+	/*overflow: hidden;*/
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+}
+
+#stage {
+	position: relative;
+	margin: auto;
+	width: 80vw;
+	max-width: 854px;
+}
+
+#canvas-bg {
+	position: absolute;
+	width: 100vw;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	filter: brightness(0.8);
+	z-index: -1;
+}
+
+#canvas {
+	background-color: #000;
+	margin: auto;
+	width: 100%;
+}
+
+.upload {
+	width: 80vw;
+	max-width: 500px;
+	display: inline-flex;
+	justify-content: center;
+}
+
+#cover-dark {
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.65);
+	left: 0px;
+	bottom: 0px;
+	transition-property: opacity, visibility;
+	transition-duration: 0.2s;
+	z-index: 100;
+}
+
+#cover-view {
+	background-color: #fff;
+	border-radius: 12px;
+	position: fixed;
+	width: 75vmin;
+	max-height: 75vh;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	padding: 5vmin;
+	transition-property: opacity, visibility;
+	transition-duration: 0.2s;
+	z-index: 200;
+	text-align: left;
+	overflow: scroll;
+	font-family: monospace;
+}
+
+.view-title {
+	font-size: 5vmin;
+	margin: 0px;
+	text-align: center;
+}
+
+.view-content {
+	font-size: 3vmin;
+	margin: 0px;
+	text-align: left;
+	line-height: 1.5em;
+}
+
+.view-table {
+	font-size: 2.5vmin;
+	margin: 0px;
+	text-align: left;
+	line-height: 1.5em;
+}
+
+.view-table tr {
+	vertical-align: top;
+	word-break: break-all;
+}
+
+.real-table {
+	border: #000 1px solid;
+	border-spacing: 0;
+	text-align: center;
+	width: 100%;
+}
+
+.real-table tr {
+	word-break: normal;
+	vertical-align: middle;
+}
+
+.real-table tr th,
+.real-table tr td {
+	border: 1px solid gray;
+	padding: 2px 5px;
+}
