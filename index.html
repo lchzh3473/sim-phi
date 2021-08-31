@@ -15,9 +15,10 @@
 		<h1 class="title"></h1>
 		<p class="info"></p>
 		<p class="profile">
-			将<a id="qwq">谱面等资源文件(点击查看说明)</a>打包成zip文件然后上传；<br>
+			将<a id="qwq">谱面等资源文件(点击查看说明)</a>打包成zip然后上传；<br>
 			读取完成后调节相关参数，最后点击“播放”按钮。<br>
-			点击画面可以全屏，再次点击退出全屏。
+			播放时<!--双击左上角可以切换暂停；<br>
+			双击右上角重新开始；-->双击右下角可以切换全屏。
 		</p>
 		<div id="cover-dark" class="fade"></div>
 		<div id="cover-view" class="fade">
@@ -42,7 +43,7 @@
 						<td><a name="a2" href="#b2">[2]</a></td>
 						<td>
 							pec即PhiEditer谱面，由于模拟器先将其转换为官谱格式再进行播放，将不可避免地存在以下问题：<br>
-							&bull;&ensp;不显示负数Note(可勾选显示定位点以半透明显示)<br>
+							&bull;&ensp;不显示负数Note(可勾选显示定位点以半透明显示);<br>
 							&bull;&ensp;FakeNote可能存在显示错误;<br>
 							&bull;&ensp;Hold打击时无法变速;<br>
 							&bull;&ensp;不支持Alpha扩展(负数);<br>
@@ -187,10 +188,10 @@
 			<label for="highLight">多押高亮</label>
 			<input type="checkbox" id="showPoint">
 			<label for="showPoint">显示定位点</label><br>
-			<!--input type="checkbox" id="lineColor" checked>
+			<input type="checkbox" id="lineColor" checked>
 			<label for="lineColor">FC/AP指示器</label>
-			<input type="checkbox" id="autoPlay" checked>
-			<label for="autoPlay">AutoPlay</label>-->
+			<input type="checkbox" id="autoplay" checked>
+			<label for="autoplay">AutoPlay</label>
 			<input type="checkbox" id="showTransition" checked>
 			<label for="showTransition">过渡动画</label>
 			<input type="checkbox" id="videoRecorder">
@@ -201,6 +202,8 @@
 		<div id="stage">
 			<canvas id="canvas-bg"></canvas>
 			<canvas id="canvas"></canvas>
+			<div id="stage-pause" class="hide"></div>
+			<div id="stage-full"></div>
 		</div>
 	</div>
 	<noscript><strong style="color:red">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>

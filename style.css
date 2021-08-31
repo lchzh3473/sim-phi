@@ -38,6 +38,24 @@ body {
 	width: 100%;
 }
 
+#stage-pause {
+	position: absolute;
+	width: 20px;
+	height: 20px;
+	left: 0;
+	top: 0;
+	z-index: 100;
+}
+
+#stage-full {
+	position: absolute;
+	width: 20px;
+	height: 20px;
+	right: 0;
+	bottom: 0;
+	z-index: 100;
+}
+
 .upload {
 	width: 80vw;
 	max-width: 500px;
@@ -72,7 +90,7 @@ body {
 	z-index: 200;
 	text-align: left;
 	overflow: scroll;
-	font-family: monospace;
+	font-family: Consolas, monospace;
 }
 
 .view-title {

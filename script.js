@@ -1,6 +1,6 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 3, 2], 1611795955, 1629076560];
-//document.oncontextmenu = e => e.returnValue = false;
+const _i = ['Phigros模拟器', [1, 4], 1611795955, 1630411484];
+document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
 const out = document.getElementById("output");
@@ -27,9 +27,9 @@ document.getElementById("qwq").addEventListener("click", () => {
 	document.getElementById("cover-dark").classList.remove("fade");
 	document.getElementById("cover-view").classList.remove("fade");
 });
-selectchart.addEventListener("change", qwqInfo);
+selectchart.addEventListener("change", adjustInfo);
 //自动填写歌曲信息
-function qwqInfo() {
+function adjustInfo() {
 	for (const i of chartInfoData) {
 		if (selectchart.value == i.Chart) {
 			if (bgms[i.Music]) selectbgm.value = i.Music;
@@ -50,6 +50,8 @@ const inputLevel = document.getElementById("input-level");
 const inputDesigner = document.getElementById("input-designer");
 const inputIllustrator = document.getElementById("input-illustrator");
 const showPoint = document.getElementById("showPoint");
+const lineColor = document.getElementById("lineColor");
+const autoplay = document.getElementById("autoplay");
 const showTransition = document.getElementById("showTransition");
 const videoRecorder = document.getElementById("videoRecorder");
 const bgs = {};
@@ -60,7 +62,7 @@ const chartInfoData = [];
 const canvas = document.getElementById("canvas");
 const canvasbg = document.getElementById("canvas-bg");
 //调节画面尺寸和全屏相关
-const qwqSize = (sw, sh, dw, dh) => (dw * sh > dh * sw) ? [0, (dh - dw * sh / sw) / 2, dw, dw * sh / sw] : [(dw - dh * sw / sh) / 2, 0, dh * sw / sh, dh];
+const adjustSize = (sw, sh, dw, dh) => (dw * sh > dh * sw) ? [0, (dh - dw * sh / sw) / 2, dw, dw * sh / sw] : [(dw - dh * sw / sh) / 2, 0, dh * sw / sh, dh];
 const AspectRatio = 16 / 9; //宽高比上限
 const Deg = Math.PI / 180; //角度转弧度
 let wlen, hlen, wlen2, noteScale, lineScale; //背景图相关
@@ -74,7 +76,8 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
-stage.addEventListener("click", () => {
+document.getElementById("stage-pause").addEventListener("dblclick", () => btnPause.click());
+document.getElementById("stage-full").addEventListener("dblclick", () => {
 	if (document.fullscreenElement) document.exitFullscreen().then(resizeCanvas);
 	else stage.requestFullscreen().then(resizeCanvas);
 });
@@ -103,14 +106,14 @@ function resizeCanvas() {
 const qwq = [true, false, 3];
 document.getElementById("demo").classList.add("hide");
 videoRecorder.nextElementSibling.classList.add("hide");
-document.querySelector(".title").onclick = () => {
+document.querySelector(".title").addEventListener("click", function() {
 	if (qwq[1]) qwq[0] = !qwq[0];
 	else if (!--qwq[2]) {
 		document.getElementById("demo").classList.remove("hide");
 		videoRecorder.nextElementSibling.classList.remove("hide");
 	}
-}
-document.getElementById("demo").onclick = function() {
+});
+document.getElementById("demo").addEventListener("click", function() {
 	document.getElementById("demo").classList.add("hide");
 	uploads.classList.add("disabled");
 	const xhr = new XMLHttpRequest();
@@ -125,59 +128,288 @@ document.getElementById("demo").onclick = function() {
 		document.getElementById("filename").value = "demo.zip";
 		loadFile(xhr.response);
 	};
-}
+});
 //点击特效(以后会改)
-const clicks = []; //存放点击事件，用于检测
-const clickEvents = []; //存放点击特效
-class clickEvent {
-	constructor(x, y) {
-		this.x = isNaN(x) ? 0 : x; //初始横坐标
-		this.y = isNaN(y) ? 0 : y; //初始纵坐标
+class Clicks extends Array {
+
+}
+const clicks = new Clicks(); //存放点击事件，用于检测
+class Click {
+	constructor(offsetX, offsetY, isActive) {
+		this.offsetX = Number(offsetX) || 0;
+		this.offsetY = Number(offsetY) || 0;
+		this.isActive = !!isActive;
+		this.isMoving = false;
 		this.time = 0;
-		this.rand = [];
-		for (let i = 0; i < 4; i++) this.rand.push([Math.random() * 75 + 225, Math.random() * 2 * Math.PI]);
+	}
+	static activate(offsetX, offsetY) {
+		return new Click(offsetX, offsetY, true);
+	}
+	move(offsetX, offsetY) {
+		this.offsetX = Number(offsetX) || 0;
+		this.offsetY = Number(offsetY) || 0;
+		this.isMoving = true;
+		this.time = 0;
+	}
+	animate() {
+		if (!this.time++) {
+			if (this.isMoving) clickEvents.push(ClickEvent.getClickMove(this.offsetX, this.offsetY));
+			else clickEvents.push(ClickEvent.getClickTap(this.offsetX, this.offsetY));
+		} else clickEvents.push(ClickEvent.getClickHold(this.offsetX, this.offsetY));
+	}
+	disactivate() {
+		this.isActive = false;
 	}
 }
-/*
+class Judgement {
+	constructor(offsetX, offsetY, type) {
+		this.offsetX = Number(offsetX) || 0;
+		this.offsetY = Number(offsetY) || 0;
+		this.type = Number(type) || 0; //1-Tap,2-Hold,3-Move
+	}
+	isInArea(x, y, cosr, sinr, hw) {
+		return Math.abs((this.offsetX - x) * cosr + (this.offsetY - y) * sinr) <= hw;
+	}
+}
+class Judgements extends Array {
+	addJudgement(notes, realTime) {
+		this.length = 0;
+		if (!autoplay.checked) {
+			for (const i of clicks) {
+				if (i instanceof Click && i.isActive) {
+					if (!i.time) {
+						if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
+						else this.push(new Judgement(i.offsetX, i.offsetY, 1));
+					} else this.push(new Judgement(i.offsetX, i.offsetY, 2));
+				}
+			}
+		} else {
+			for (const i of notes) {
+				if (i.scored) continue;
+				if (i.type == 1) {
+					if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
+				} else if (i.type == 2) {
+					if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+				} else if (i.type == 3) {
+					if (i.status3) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					else if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
+				} else if (i.type == 4) {
+					if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 3));
+				}
+			}
+		}
+	};
+	judgeNote(notes, realTime, width) {
+		for (const i of notes) {
+			if (i.scored) continue;
+			if (i.realTime - realTime < -0.16 && !i.status2) {
+				//console.log("Miss", i.name);
+				i.status = 4;
+				stat.addCombo(4);
+				i.scored = true;
+			} else if (i.type == 1) {
+				for (let j = 0; j < this.length; j++) {
+					if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.2 && i.realTime - realTime > -0.16) {
+						if (i.realTime - realTime > 0.16) {
+							//console.log("Bad", i.name);
+							i.status = 3;
+							clickEvents.push(ClickEvent.getClickBad(i.offsetX, i.offsetY, i.cosr, i.sinr));
+						} else if (i.realTime - realTime > 0.08) {
+							//console.log("Good(Early)", i.name);
+							i.status = 2;
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+						} else if (i.realTime - realTime > -0.08) {
+							//console.log("Perfect", i.name);
+							i.status = 1;
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+						} else {
+							//console.log("Good(Late)", i.name);
+							i.status = 2;
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+						}
+						stat.addCombo(i.status);
+						i.scored = true;
+						this.splice(j, 1);
+						break;
+					}
+				}
+			} else if (i.type == 2) {
+				if (i.status == 1 && i.realTime - realTime < 0) {
+					if (document.getElementById("hitSong").checked) playSound(res["HitSong1"], false, true, videoRecorder.checked, 0);
+					clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+					stat.addCombo(1);
+					i.scored = true;
+				} else if (!i.status) {
+					for (let j = 0; j < this.length; j++) {
+						if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
+							//console.log("Perfect", i.name);
+							i.status = 1;
+							break;
+						}
+					}
+				}
+			} else if (i.type == 3) {
+				if (i.status3) {
+					if (Date.now() - i.status3 >= 150) {
+						if (i.status2 == 1) clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+						else if (i.status2 == 2) clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+						i.status3 = Date.now();
+					}
+					if (i.realTime + i.realHoldTime < realTime) {
+						i.scored = true;
+						continue;
+					}
+					if (i.realTime + i.realHoldTime - 0.2 < realTime) {
+						if (!i.status) stat.addCombo(i.status = i.status2);
+						continue;
+					}
+				}
+				i.status4 = true;
+				for (let j = 0; j < this.length; j++) {
+					if (!i.status3) {
+						if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							if (i.realTime - realTime > 0.08) {
+								//console.log("Good(Early)", i.name);
+								i.status2 = 2;
+								clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+								i.status3 = Date.now();
+							} else if (i.realTime - realTime > -0.08) {
+								//console.log("Perfect", i.name);
+								i.status2 = 1;
+								clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+								i.status3 = Date.now();
+							} else {
+								//console.log("Good(Late)", i.name);
+								i.status2 = 2;
+								clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+								i.status3 = Date.now();
+							}
+							this.splice(j, 1);
+							i.status4 = false;
+							break;
+						}
+					} else if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width)) i.status4 = false;
+				}
+				if (!isPaused && i.status3 && i.status4) {
+					//console.log("Miss", i.name);
+					i.status = 4;
+					stat.addCombo(4);
+					i.scored = true;
+				}
+			} else if (i.type == 4) {
+				if (i.status == 1 && i.realTime - realTime < 0) {
+					if (document.getElementById("hitSong").checked) playSound(res["HitSong2"], false, true, videoRecorder.checked, 0);
+					clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+					stat.addCombo(1);
+					i.scored = true;
+				} else if (!i.status) {
+					for (let j = 0; j < this.length; j++) {
+						if (this[j].type == 3 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
+							//console.log("Perfect", i.name);
+							i.status = 1;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+const judgements = new Judgements();
+class ClickEvents extends Array {
+	defilter(func) {
+		var i = this.length;
+		while (i--) {
+			if (func(this[i])) this.splice(i, 1);
+		}
+		return this;
+	}
+}
+const clickEvents = new ClickEvents(); //存放点击特效
+class ClickEvent {
+	constructor(offsetX, offsetY, type, n1, n2, n3) {
+		this.offsetX = Number(offsetX) || 0;
+		this.offsetY = Number(offsetY) || 0;
+		this.type = Number(type) || 0;
+		switch (this.type) {
+			case 0:
+				this.color = String(n1);
+				this.text = String(n2);
+				this.time = 0;
+				break;
+			case 1:
+				this.time = Date.now();
+				this.duration = 500;
+				this.images = res.Clicks[n1]; //以后做缺少检测
+				this.color = String(n3);
+				this.rand = [];
+				for (let i = 0; i < (Number(n2) || 0); i++) this.rand.push([Math.random() * 80 + 185, Math.random() * 2 * Math.PI]); //qwq
+				break;
+			case 2:
+				this.time = Date.now();
+				this.duration = 500;
+				this.image = n1;
+				this.cosr = n2;
+				this.sinr = n3;
+				break;
+			default:
+		}
+	}
+	static getClickTap(offsetX, offsetY) {
+		//console.log("Tap", offsetX, offsetY);
+		return new ClickEvent(offsetX, offsetY, 0, "cyan", "");
+	}
+	static getClickHold(offsetX, offsetY) {
+		//console.log("Hold", offsetX, offsetY);
+		return new ClickEvent(offsetX, offsetY, 0, "lime", "");
+	}
+	static getClickMove(offsetX, offsetY) {
+		//console.log("Move", offsetX, offsetY);
+		return new ClickEvent(offsetX, offsetY, 0, "violet", "");
+	}
+	static getClickPerfect(offsetX, offsetY) {
+		return new ClickEvent(offsetX, offsetY, 1, "rgba(255,236,160,0.8823529)", 4, "#ffeca0");
+	}
+	static getClickGood(offsetX, offsetY) {
+		return new ClickEvent(offsetX, offsetY, 1, "rgba(180,225,255,0.9215686)", 3, "#b4e1ff");
+	}
+	static getClickBad(offsetX, offsetY, cosr, sinr) {
+		return new ClickEvent(offsetX, offsetY, 2, res.TapBad, cosr, sinr);
+	}
+}
 //适配PC鼠标
-let isMouseDown = [];
+const isMouseDown = [];
 canvas.addEventListener("mousedown", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
-	///console.log("mousedown", idx); //test
-	clicks[idx] = {
-		x: (evt.pageX - canvas.offsetLeft) * window.devicePixelRatio + canvas.width / 2,
-		y: evt.pageY * window.devicePixelRatio,
-	};
-	clickEvents.push(new clickEvent(clicks[idx].x, clicks[idx].y));
-	clicks[idx].t = setInterval(() => clickEvents.push(new clickEvent(clicks[idx].x, clicks[idx].y)), 200);
+	const i = evt;
+	clicks[idx] = Click.activate((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
 	isMouseDown[idx] = true;
 });
 canvas.addEventListener("mousemove", evt => {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			//console.log("mousemove", idx); //test
-			clicks[idx].x = (evt.pageX - canvas.offsetLeft) * window.devicePixelRatio + canvas.width / 2;
-			clicks[idx].y = evt.pageY * window.devicePixelRatio;
+			const i = evt;
+			clicks[idx].move((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
 		}
 	}
 });
 canvas.addEventListener("mouseup", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
-	///console.log("mouseup", idx); //test
-	clearInterval(clicks[idx].t);
-	clicks[idx] = {};
+	clicks[idx].disactivate();
 	isMouseDown[idx] = false;
 });
 canvas.addEventListener("mouseout", evt => {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			///console.log("mouseout", idx); //test
-			clearInterval(clicks[idx].t);
-			clicks[idx] = {};
+			clicks[idx].disactivate();
 			isMouseDown[idx] = false;
 		}
 	}
@@ -188,43 +420,30 @@ const passive = {
 }; //不加这玩意会出现warning
 canvas.addEventListener("touchstart", evt => {
 	for (const i of evt.changedTouches) {
-		const idx = i.identifier;
-		///console.log("touchstart", idx); //test
-		clicks[idx] = {
-			x: (i.pageX - canvas.offsetLeft) * window.devicePixelRatio + canvas.width / 2,
-			y: i.pageY * window.devicePixelRatio
-		}; //移动端存在多押bug(可能已经解决了？)
-		clickEvents.push(new clickEvent(clicks[idx].x, clicks[idx].y));
-		clicks[idx].t = setInterval(() => clickEvents.push(new clickEvent(clicks[idx].x, clicks[idx].y)), 200);
+		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
+		clicks[idx] = Click.activate((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchmove", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		//console.log("touchmove",idx); //test
-		clicks[idx].x = (i.pageX - canvas.offsetLeft) * window.devicePixelRatio + canvas.width / 2;
-		clicks[idx].y = i.pageY * window.devicePixelRatio;
+		clicks[idx].move((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchend", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		///console.log("touchend", idx); //test
-		clearInterval(clicks[idx].t);
-		clicks[idx] = {};
+		clicks[idx].disactivate();
 	}
 });
 canvas.addEventListener("touchcancel", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		///console.log("touchcancel", idx); //test
-		clearInterval(clicks[idx].t);
-		clicks[idx] = {};
+		clicks[idx].disactivate();
 	}
-});*/
-//init();
+});
 const ctx = canvas.getContext("2d"); //游戏界面
 const ctxbg = canvasbg.getContext("2d"); //游戏背景
 const imgClick = {
@@ -253,7 +472,7 @@ function init() {
 	loadResourse();
 	//加载资源
 	async function loadResourse() {
-		let qwqNum = 0;
+		let loadedNum = 0;
 		await Promise.all((obj => {
 			const arr = [];
 			for (const i in obj) arr.push([i, obj[i]]);
@@ -265,6 +484,7 @@ function init() {
 			Pause: "src/Pause.png",
 			clickRaw: "src/clickRaw.png",
 			Tap: "src/Tap.png",
+			Tap2: "src/Tap2.png",
 			TapHL: "src/TapHL.png",
 			Drag: "src/Drag.png",
 			DragHL: "src/DragHL.png",
@@ -276,7 +496,13 @@ function init() {
 			mute: "src/mute.ogg",
 			HitSong0: "src/HitSong0.ogg",
 			HitSong1: "src/HitSong1.ogg",
-			HitSong2: "src/HitSong2.ogg"
+			HitSong2: "src/HitSong2.ogg",
+			LevelOver1: "src/LevelOver1.png",
+			LevelOver2: "src/LevelOver2.ogg",
+			LevelOver3: "src/LevelOver3.png",
+			LevelOver4: "src/LevelOver4.png",
+			LevelOver5: "src/LevelOver5.png",
+			Rank: "src/Rank.png"
 		}).map(([name, src], _i, arr) => new Promise(resolve => {
 			const xhr = new XMLHttpRequest();
 			xhr.open("get", src, true);
@@ -286,7 +512,7 @@ function init() {
 				xhr.onload = async () => {
 					res[name] = await createImageBitmap(xhr.response);
 					out.className = "accept";
-					out.innerText = `加载资源：${Math.floor(++qwqNum / arr.length * 100)}%`;
+					out.innerText = `加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`;
 					resolve();
 				};
 			} else if (/\.(mp3|wav|ogg)$/i.test(src)) {
@@ -295,27 +521,104 @@ function init() {
 				xhr.onload = async () => {
 					res[name] = await actx.decodeAudioData(xhr.response);
 					out.className = "accept";
-					out.innerText = `加载资源：${Math.floor(++qwqNum / arr.length * 100)}%`;
+					out.innerText = `加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`;
 					resolve();
 				};
 			}
 		})));
-		//加载打击动画
-		const clickPerfect = imgShader(res.clickRaw, "#fce491");
-		const clickGood = imgShader(res.clickRaw, "#9ed5f3");
 		res.JudgeLineAP = await createImageBitmap(imgShader(res.JudgeLine, "#feffa9"));
 		res.JudgeLineFC = await createImageBitmap(imgShader(res.JudgeLine, "#a2eeff"));
-		for (let i = 0; i < 30; i++) {
+		res.TapBad = await createImageBitmap(imgShader(res.Tap2, "#6c4343"));
+		res.Clicks = {};
+		res.Clicks.default = await qwqImage(res.clickRaw, "white");
+		res.Ranks = await qwqImage(res.Rank, "white");
+		res.Clicks["rgba(255,236,160,0.8823529)"] = await qwqImage(res.clickRaw, "rgba(255,236,160,0.8823529)"); //#fce491
+		res.Clicks["rgba(180,225,255,0.9215686)"] = await qwqImage(res.clickRaw, "rgba(180,225,255,0.9215686)"); //#9ed5f3
+		/*for (let i = 0; i < 30; i++) {
 			res[`clickPerfect${i}`] = await createImageBitmap(clickPerfect, 0, i * 256, 256, 256);
 			res[`clickGood${i}`] = await createImageBitmap(clickGood, 0, i * 256, 256, 256);
-		}
+			res.Clicks.default[i] = await createImageBitmap(res.clickRaw, 0, i * 256, 256, 256);
+		}*/
 		out.innerText = "等待上传文件...";
 		upload.parentElement.classList.remove("disabled");
 	}
 }
+async function qwqImage(img, color) {
+	const clickqwq = imgShader(img, color);
+	const arr = [];
+	const min = Math.min(img.width, img.height);
+	const max = Math.max(img.width, img.height);
+	for (let i = 0; i < parseInt(max / min); i++) arr[i] = await createImageBitmap(clickqwq, 0, i * min, min, min);
+	return arr;
+}
 //必要组件
 let stopDrawing;
 const stopPlaying = [];
+class Stat {
+	constructor(numOfNotes) {
+		this.reset(numOfNotes);
+	}
+	get all() {
+		return this.perfect + this.good + this.bad + this.miss;
+	}
+	get scoreNum() {
+		const a = 1e6 * (this.perfect * 0.9 + this.good * 0.585 + this.maxcombo * 0.1) / this.numOfNotes;
+		return isFinite(a) ? a : 0;
+	}
+	get scoreStr() {
+		const a = this.scoreNum.toFixed(0);
+		return ("0").repeat(a.length < 7 ? 7 - a.length : 0) + a;
+	}
+	get accNum() {
+		const a = (this.perfect + this.good * 0.65) / this.all;
+		return isFinite(a) ? a : 0;
+	}
+	get accStr() {
+		return (100 * this.accNum).toFixed(2) + "%";
+	}
+	get lineStatus() {
+		if (this.bad + this.miss) return 0;
+		if (this.good) return 2;
+		return 1;
+	}
+	get rankStatus() {
+		const a = this.scoreNum;
+		if (a == 1e6) return 0;
+		if (a >= 9.6e5) return 1;
+		if (a >= 9.2e5) return 2;
+		if (a >= 8.8e5) return 3;
+		if (a >= 8.2e5) return 4;
+		if (a >= 7e5) return 5;
+		return 6;
+	}
+	reset(numOfNotes) {
+		this.numOfNotes = Number(numOfNotes) || 0;
+		this.perfect = 0;
+		this.good = 0;
+		this.bad = 0;
+		this.miss = 0;
+		this.combo = 0;
+		this.maxcombo = 0;
+	}
+	addCombo(status) {
+		if (status == 1) {
+			this.perfect++;
+			this.combo++;
+			if (this.combo > this.maxcombo) this.maxcombo = this.combo;
+		} else if (status == 2) {
+			this.good++;
+			this.combo++;
+			if (this.combo > this.maxcombo) this.maxcombo = this.combo;
+		} else if (status == 3) {
+			this.bad++;
+			this.combo = 0;
+		} else if (status == 4) {
+			this.miss++;
+			this.combo = 0;
+		}
+	}
+}
+const stat = new Stat();
 const combo = [0, 0, 0, 0, 0]; //实时连击次数(以后会完善)
 const comboColor = ["#fff", "#0ac3ff", "#f0ed69", "#a0e9fd", "#fe4365"];
 let score = "0000000"; //实时分数
@@ -346,6 +649,7 @@ const Timer = { //计算fps
 }
 let tickIn = 0;
 let tickOut = 0;
+let tickEnd = 0;
 let curTime = 0;
 let curTimestamp = 0;
 let timeBgm = 0;
@@ -452,15 +756,19 @@ function loadFile(file) {
 				if (num == zipData.length) {
 					if (selectchart.children.length == 0) {
 						out.className = "error";
-						out.innerText = "未找到json！"; //test
+						out.innerText = "读取出错：未发现谱面文件"; //test
 					} else {
 						select.classList.remove("disabled");
 						btnPause.classList.add("disabled");
-						qwqInfo();
+						adjustInfo();
 					}
 				}
 			}
 			console.log(zipRaw);
+		}, e => {
+			console.log(e);
+			out.className = "error";
+			out.innerText = "读取出错：不是zip文件"; //test
 		});
 		reader.close();
 	}
@@ -479,6 +787,7 @@ function prerenderChart(chart) {
 		i.rotation = 0;
 		i.positionY = 0; //临时过渡用
 		i.image = res.JudgeLineAP;
+		i.images = [res.JudgeLine, res.JudgeLineAP, res.JudgeLineFC];
 		i.imageH = 0.008;
 		i.imageW = 1.042;
 		i.imageB = 0;
@@ -496,6 +805,7 @@ function prerenderChart(chart) {
 	Renderer.drags.sort(sortNote);
 	Renderer.holds.sort(sortNote);
 	Renderer.flicks.sort(sortNote);
+	Renderer.tapholds.sort(sortNote);
 	//向Renderer添加Note
 	function addNote(note, base32, lineId, noteId, isAbove) {
 		note.offsetX = 0;
@@ -513,6 +823,7 @@ function prerenderChart(chart) {
 		else if (note.type == 2) Renderer.drags.push(note);
 		else if (note.type == 3) Renderer.holds.push(note);
 		else if (note.type == 4) Renderer.flicks.push(note);
+		if (note.type == 1 || note.type == 3) Renderer.tapholds.push(note);
 	}
 	//合并不同方向note
 	for (const i of chartNew.judgeLineList) {
@@ -610,15 +921,19 @@ function prerenderChart(chart) {
 
 document.addEventListener("visibilitychange", () => document.visibilityState == "hidden" && btnPause.value == "暂停" && btnPause.click());
 //play
-btnPlay.onclick = async function() {
+btnPlay.addEventListener("click", async function() {
 	btnPause.value = "暂停";
 	if (this.value == "播放") {
 		stopPlaying.push(playSound(res["mute"], true, false, videoRecorder.checked, 0)); //播放空音频(防止音画不同步)
-		for (const i of ["lines", "notes", "taps", "drags", "flicks", "holds"]) Renderer[i] = [];
+		for (const i of ["lines", "notes", "taps", "drags", "flicks", "holds", "tapholds"]) Renderer[i] = [];
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
+		stat.reset(Renderer.chart.numOfNotes);
 		for (const i of chartLineData) {
 			if (selectchart.value == i.Chart) {
 				Renderer.chart.judgeLineList[i.LineId].image = await createImageBitmap(imgShader(bgs[i.Image], "#feffa9"));
+				Renderer.chart.judgeLineList[i.LineId].images[0] = bgs[i.Image];
+				Renderer.chart.judgeLineList[i.LineId].images[1] = await createImageBitmap(imgShader(bgs[i.Image], "#feffa9"));
+				Renderer.chart.judgeLineList[i.LineId].images[2] = await createImageBitmap(imgShader(bgs[i.Image], "#a2eeff"));
 				Renderer.chart.judgeLineList[i.LineId].imageH = Number(i.Vert);
 				Renderer.chart.judgeLineList[i.LineId].imageW = Number(i.Horz);
 				Renderer.chart.judgeLineList[i.LineId].imageB = Number(i.IsDark);
@@ -637,6 +952,7 @@ btnPlay.onclick = async function() {
 		if (!showTransition.checked) tickIn = 179;
 		stage.classList.remove("disabled");
 		btnPause.classList.remove("disabled");
+		autoplay.nextElementSibling.classList.add("disabled");
 		showTransition.nextElementSibling.classList.add("disabled");
 		videoRecorder.nextElementSibling.classList.add("disabled");
 		if (videoRecorder.checked) btnPause.classList.add("disabled"); //testvideo录制时不允许暂停(存在bug)
@@ -668,9 +984,9 @@ btnPlay.onclick = async function() {
 		if (videoRecorder.checked) btnPlay.classList.add("disabled"); //只许录制一次(存在bug)
 		while (stopPlaying.length) stopPlaying.shift()();
 		cancelAnimationFrame(stopDrawing);
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		ctxbg.clearRect(0, 0, canvasbg.width, canvasbg.height);
+		resizeCanvas();
 		stage.classList.add("disabled");
+		autoplay.nextElementSibling.classList.remove("disabled");
 		showTransition.nextElementSibling.classList.remove("disabled");
 		videoRecorder.nextElementSibling.classList.remove("disabled");
 		btnPause.classList.add("disabled");
@@ -678,6 +994,7 @@ btnPlay.onclick = async function() {
 		clickEvents.length = 0;
 		tickIn = 0;
 		tickOut = 0;
+		tickEnd = 0;
 		curTime = 0;
 		curTimestamp = 0;
 		duration = 0;
@@ -685,8 +1002,8 @@ btnPlay.onclick = async function() {
 		score = "0000000";
 		this.value = "播放";
 	}
-}
-btnPause.onclick = function() {
+});
+btnPause.addEventListener("click", function() {
 	if (this.classList.contains("disabled") || btnPlay.value == "播放") return;
 	if (this.value == "暂停") {
 		isPaused = true;
@@ -698,7 +1015,7 @@ btnPause.onclick = function() {
 		if (isInEnd && !isOutStart) playBgm(Renderer.backgroundMusic, timeBgm);
 		this.value = "暂停";
 	}
-}
+});
 //播放bgm
 function playBgm(data, offset) {
 	isPaused = false;
@@ -708,94 +1025,127 @@ function playBgm(data, offset) {
 }
 //作图
 function draw() {
+	const now = Date.now();
 	//计算时间
 	if (!isPaused) {
 		if (tickIn < 180 && ++tickIn == 180) {
 			isInEnd = true;
 			playBgm(Renderer.backgroundMusic);
 		}
-		if (isInEnd && !isOutStart) timeBgm = (Date.now() - curTimestamp) / 1e3 + curTime;
+		if (isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
 		if (timeBgm >= duration) isOutStart = true;
 		showTransition.checked && isOutStart && tickOut < 40 && ++tickOut == 40;
 	}
 	timeChart = Math.max(timeBgm - Renderer.chart.offset, 0);
 	//遍历判定线events和Note
-	for (const qwq of Renderer.lines) {
-		for (const i of qwq.judgeLineDisappearEvents) {
+	for (const line of Renderer.lines) {
+		for (const i of line.judgeLineDisappearEvents) {
 			if (timeChart < i.startRealTime) break;
 			if (timeChart > i.endRealTime) continue;
 			const t2 = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
 			const t1 = 1 - t2;
-			qwq.alpha = i.start * t1 + i.end * t2;
+			line.alpha = i.start * t1 + i.end * t2;
 		}
-		for (const i of qwq.judgeLineMoveEvents) {
+		for (const i of line.judgeLineMoveEvents) {
 			if (timeChart < i.startRealTime) break;
 			if (timeChart > i.endRealTime) continue;
 			const t2 = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
 			const t1 = 1 - t2;
-			qwq.offsetX = canvas.width * (i.start * t1 + i.end * t2);
-			qwq.offsetY = canvas.height * (1 - i.start2 * t1 - i.end2 * t2);
+			line.offsetX = canvas.width * (i.start * t1 + i.end * t2);
+			line.offsetY = canvas.height * (1 - i.start2 * t1 - i.end2 * t2);
 		}
-		for (const i of qwq.judgeLineRotateEvents) {
+		for (const i of line.judgeLineRotateEvents) {
 			if (timeChart < i.startRealTime) break;
 			if (timeChart > i.endRealTime) continue;
 			const t2 = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
 			const t1 = 1 - t2;
-			qwq.rotation = i.startDeg * t1 + i.endDeg * t2;
-			qwq.cosr = Math.cos(qwq.rotation);
-			qwq.sinr = Math.sin(qwq.rotation);
+			line.rotation = i.startDeg * t1 + i.endDeg * t2;
+			line.cosr = Math.cos(line.rotation);
+			line.sinr = Math.sin(line.rotation);
 		}
-		for (const i of qwq.speedEvents) {
+		for (const i of line.speedEvents) {
 			if (timeChart < i.startRealTime) break;
 			if (timeChart > i.endRealTime) continue;
-			qwq.positionY = (timeChart - i.startRealTime) * i.value + i.floorPosition;
+			line.positionY = (timeChart - i.startRealTime) * i.value + i.floorPosition;
 		}
-		for (const i of qwq.notesAbove) {
+		for (const i of line.notesAbove) {
 			const dx = wlen2 * i.positionX;
-			const dy = hlen * (i.type == 3 ? (i.playing ? (i.realTime - timeChart) * i.speed : i.floorPosition - qwq.positionY) : (i.floorPosition - qwq.positionY) * i.speed) * 1.2;
-			i.cosr = qwq.cosr;
-			i.sinr = qwq.sinr;
-			i.projectX = qwq.offsetX + dx * i.cosr;
+			const dy = hlen * (i.type == 3 ? (i.realTime < timeChart ? (i.realTime - timeChart) * i.speed : i.floorPosition - line.positionY) : (i.floorPosition - line.positionY) * i.speed) * 1.2;
+			i.cosr = line.cosr;
+			i.sinr = line.sinr;
+			i.projectX = line.offsetX + dx * i.cosr;
 			i.offsetX = i.projectX + dy * i.sinr;
-			i.projectY = qwq.offsetY + dx * i.sinr;
+			i.projectY = line.offsetY + dx * i.sinr;
 			i.offsetY = i.projectY - dy * i.cosr;
-			if (i.type == 3) i.alpha = (i.realTime > timeChart) ? ((i.speed == 0 || dy < -1e-3 && !i.playing) ? (showPoint.checked ? 0.45 : 0) : 1) : ((i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1);
-			else i.alpha = (dy < -1e-3 && !i.played) ? (showPoint.checked ? 0.45 : 0) : 1;
-			i.visible = (Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen * (1 + i.realHoldTime * i.speed * 1.2));
+			qwqAlpha(i, dy);
 		}
-		for (const i of qwq.notesBelow) {
+		for (const i of line.notesBelow) {
 			const dx = wlen2 * i.positionX;
-			const dy = hlen * (i.type == 3 ? (i.playing ? (i.realTime - timeChart) * i.speed : i.floorPosition - qwq.positionY) : (i.floorPosition - qwq.positionY) * i.speed) * 1.2;
-			i.cosr = -qwq.cosr;
-			i.sinr = -qwq.sinr;
-			i.projectX = qwq.offsetX - dx * i.cosr;
+			const dy = hlen * (i.type == 3 ? (i.realTime < timeChart ? (i.realTime - timeChart) * i.speed : i.floorPosition - line.positionY) : (i.floorPosition - line.positionY) * i.speed) * 1.2;
+			i.cosr = -line.cosr;
+			i.sinr = -line.sinr;
+			i.projectX = line.offsetX - dx * i.cosr;
 			i.offsetX = i.projectX + dy * i.sinr;
-			i.projectY = qwq.offsetY - dx * i.sinr;
+			i.projectY = line.offsetY - dx * i.sinr;
 			i.offsetY = i.projectY - dy * i.cosr;
-			if (i.type == 3) i.alpha = (i.realTime > timeChart) ? ((i.speed == 0 || dy < -1e-3 && !i.playing) ? (showPoint.checked ? 0.45 : 0) : 1) : ((i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1);
-			else i.alpha = (dy < -1e-3 && !i.played) ? (showPoint.checked ? 0.45 : 0) : 1;
-			i.visible = (Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen * (1 + i.realHoldTime * i.speed * 1.2));
+			qwqAlpha(i, dy);
+		}
+
+		function qwqAlpha(i, dy) {
+			if (i.type == 3) {
+				i.alpha = (i.realTime > timeChart) ? ((i.speed == 0 || dy < -1e-3 && !(i.realTime < timeChart)) ? (showPoint.checked ? 0.45 : 0) : 1) : ((i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : (i.status == 4 ? 0.45 : 1));
+				i.visible = (Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen * (1 + i.realHoldTime * i.speed * 1.2));
+			} else {
+				if (i.realTime >= timeChart && dy < -1e-3) i.alpha = showPoint.checked ? 0.45 : 0;
+				else if (i.realTime < timeChart) i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0);
+				else i.alpha = 1;
+				i.visible = (Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen);
+			}
 		}
 	}
-	playNote(timeChart); //草
+	judgements.addJudgement(Renderer.notes, timeChart);
+	judgements.judgeNote(Renderer.drags, timeChart, canvas.width * 0.117775);
+	judgements.judgeNote(Renderer.flicks, timeChart, canvas.width * 0.117775);
+	judgements.judgeNote(Renderer.tapholds, timeChart, canvas.width * 0.117775); //播放打击音效和判定
 	Timer.addTick(); //计算fps
-	for (let i = 0; i < clickEvents.length; i++) { //清除打击特效
-		if (clickEvents[i].time >= 30) clickEvents.splice(i--, 1);
-	}
+	clickEvents.defilter(i => i.type ? (now >= i.time + i.duration) : (i.time++ > 0)); //清除打击特效
 	ctx.clearRect(0, 0, canvas.width, canvas.height); //重置画面
 	ctx.globalCompositeOperation = "destination-over"; //由后往前绘制
-	for (const i of clickEvents) { //绘制打击特效
-		const tick = i.time / 30;
-		ctx.globalAlpha = 1;
-		ctx.setTransform(noteScale * 6, 0, 0, noteScale * 6, i.x, i.y); //缩放
-		ctx.drawImage(res[`clickPerfect${[(i.time++).toFixed(0)]}`], -128, -128); //停留约0.5秒
-		//四个方块
-		ctx.fillStyle = "#fce491";
-		ctx.globalAlpha = 1 - tick; //不透明度
-		const r3 = tween[20](tick) * 15 + 15; //方块大小
-		for (const j of i.rand) {
-			const ds = tween[18](tick) * j[0]; //打击点距离
-			ctx.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
+	for (const i of clickEvents) { //绘制打击特效1
+		if (i.type == 1) {
+			const tick = (now - i.time) / i.duration;
+			ctx.globalAlpha = 1;
+			ctx.setTransform(noteScale * 6, 0, 0, noteScale * 6, i.offsetX, i.offsetY); //缩放
+			ctx.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //停留约0.5秒
+			ctx.fillStyle = i.color;
+			ctx.globalAlpha = 1 - tick; //不透明度
+			const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //方块大小
+			for (const j of i.rand) {
+				const ds = j[0] * (9 * tick / (8 * tick + 1)); //打击点距离
+				ctx.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
+			}
+		}
+	}
+	for (const i of clicks) {
+		if (i instanceof Click && i.isActive) i.animate();
+	}
+	for (const i of clickEvents) { //绘制打击特效0
+		ctx.globalAlpha = 0.85;
+		if (i.type == 0) {
+			ctx.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
+			ctx.fillStyle = i.color;
+			ctx.beginPath();
+			ctx.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
+			ctx.fill();
+			i.time++;
+		}
+	}
+	for (const i of clickEvents) { //绘制打击特效2
+		if (i.type == 2) {
+			const tick = (now - i.time) / i.duration;
+			ctx.globalAlpha = 1 - tick;
+			ctx.setTransform(noteScale * i.cosr, noteScale * i.sinr, -noteScale * i.sinr, noteScale * i.cosr, i.offsetX, i.offsetY); //缩放
+			ctx.drawImage(i.image, -i.image.width / 2, -i.image.height / 2); //停留约0.5秒
 		}
 	}
 	if (showPoint.checked) { //绘制定位点
@@ -829,15 +1179,16 @@ function draw() {
 		for (const i of Renderer.holds) drawNote(i, timeChart, 3);
 	}
 	//绘制背景
-	if (tickIn >= 150) drawLine(2); //绘制判定线(背景前1)
+	if (tickIn >= 150) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
 	ctx.resetTransform();
 	ctx.fillStyle = "#000"; //背景变暗
 	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	if (tickIn >= 150 && !stat.lineStatus) drawLine(0); //绘制判定线(背景后0)
 	ctx.globalAlpha = 1;
-	//if (tickIn >= 150)drawLine(0);//绘制判定线(背景后0)
-	ctx.drawImage(Renderer.backgroundImage, ...qwqSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-	ctxbg.drawImage(Renderer.backgroundImage, ...qwqSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+	ctx.resetTransform();
+	ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+	ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
 	//
 	ctx.globalCompositeOperation = "source-over";
 	//绘制进度条
@@ -874,16 +1225,16 @@ function draw() {
 	ctx.textBaseline = "alphabetic";
 	ctx.font = `${lineScale*0.95}px Exo`;
 	ctx.textAlign = "right";
-	ctx.fillText(score, canvas.width - lineScale * 0.65, lineScale * 1.35);
+	ctx.fillText(stat.scoreStr, canvas.width - lineScale * 0.65, lineScale * 1.35);
 	if (!qwq[0]) ctx.drawImage(res.Pause, lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
-	if (combo[0] > 2) {
+	if (stat.combo > 2) {
 		ctx.textAlign = "center";
 		ctx.font = `${lineScale*1.3}px Exo`;
-		ctx.fillText(combo[0], wlen, lineScale * 1.35);
+		ctx.fillText(stat.combo, wlen, lineScale * 1.35);
 		ctx.globalAlpha = tickIn < 40 ? tween[2](tickIn * 0.025) : (1 - tween[2](tickOut * 0.025));
 		ctx.textBaseline = "top";
 		ctx.font = `${lineScale*0.65}px Exo`;
-		ctx.fillText( /*qwq[0]?"combo":*/ "Autoplay", wlen, lineScale * 1.50);
+		ctx.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 1.50);
 	}
 	//绘制歌名和等级
 	ctx.globalAlpha = 1;
@@ -923,52 +1274,117 @@ function draw() {
 	//判定线函数，undefined/0:默认,1:非,2:恒成立
 	function drawLine(bool) {
 		ctx.globalAlpha = 1;
-		const qwq = 1 - tween[2](tickOut * 0.025);
+		const tw = 1 - tween[2](tickOut * 0.025);
 		for (const i of Renderer.lines) {
 			if (bool ^ i.imageB && tickOut < 40) {
 				ctx.globalAlpha = i.alpha;
-				ctx.setTransform(i.cosr * qwq, i.sinr, -i.sinr * qwq, i.cosr, wlen + (i.offsetX - wlen) * qwq, i.offsetY); //hiahiah
+				ctx.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, wlen + (i.offsetX - wlen) * tw, i.offsetY); //hiahiah
 				const imgH = i.imageH > 0 ? lineScale * 18.75 * i.imageH : canvas.height * -i.imageH; // hlen*0.008
 				const imgW = imgH * i.image.width / i.image.height * i.imageW; //* 38.4*25 * i.imageH* i.imageW; //wlen*3
-				ctx.drawImage(i.image, -imgW / 2, -imgH / 2, imgW, imgH);
+				ctx.drawImage(i.images[lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
 			}
 		}
 	}
-	stopDrawing = requestAnimationFrame(draw); //回调更新动画
+	stopDrawing = requestAnimationFrame(tickOut == 40 ? draw2 : draw); //回调更新动画
 }
-//播放打击音效和判定得分
-function playNote(realTime) {
-	for (const i of Renderer.notes) {
-		if (i.realTime > realTime) break;
-		if (!i.played) {
-			if (document.getElementById("hitSong").checked) playSound(res[type2idx(i.type)], false, true, videoRecorder.checked, 0);
-			clickEvents.push(new clickEvent(i.projectX, i.projectY));
-			i.played = true;
-		} else if (!i.scored && i.realTime + i.realHoldTime - 0.2 < realTime) {
-			score = (Array(7).join(0) + (1e6 / Renderer.chart.numOfNotes * (++combo[0])).toFixed(0)).slice(-7);
-			combo[i.type]++; //test
-			i.scored = true;
-		}
-	}
 
-	function type2idx(type) {
-		switch (type) {
-			case 1:
-			case 3:
-				return "HitSong0";
-			case 2:
-				return "HitSong1";
-			case 4:
-				return "HitSong2";
-			default:
-				return "HitSong0";
+function draw2() {
+	tickOut = 40;
+	tickEnd = 0;
+	isPaused = true;
+	while (stopPlaying.length) stopPlaying.shift()();
+	cancelAnimationFrame(stopDrawing);
+	btnPause.classList.add("disabled");
+	ctx.globalCompositeOperation = "source-over";
+	ctx.resetTransform();
+	ctx.globalAlpha = 1;
+	ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+	ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+	ctx.fillStyle = "#000"; //背景变暗
+	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	setTimeout(() => stopPlaying.push(playSound(res.LevelOver2, true, true, videoRecorder.checked, 0)), 1000);
+	setTimeout(qwqwq, 1000);
+
+	function qwqwq() {
+		++tickEnd;
+		ctx.resetTransform();
+		ctx.globalCompositeOperation = "source-over";
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.globalAlpha = 1;
+		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+		ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+		ctx.fillStyle = "#000"; //背景变暗
+		ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		ctx.globalCompositeOperation = "destination-out";
+		ctx.globalAlpha = 1;
+		const k = 3.7320508075688776; //tan75°
+		ctx.setTransform(canvas.width - canvas.height / k, 0, -canvas.height / k, canvas.height, canvas.height / k, 0);
+		ctx.fillRect(0, 0, 1, tween[8](range((tickEnd - 8) / 64)));
+		ctx.resetTransform();
+		ctx.globalCompositeOperation = "destination-over";
+		const qwq0 = (canvas.width - canvas.height / k) / (16 - 9 / k);
+		ctx.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
+		ctx.drawImage(res.LevelOver4, 183, 42, 1184, 228);
+		ctx.globalAlpha = range((tickEnd - 16) / 72);
+		ctx.drawImage(res.LevelOver1, 102, 378);
+		ctx.globalCompositeOperation = "source-over";
+		ctx.globalAlpha = 1;
+		ctx.drawImage(res.LevelOver5, 700 * tween[8](range(tickEnd / 48)) - 369, 91, 20, 80);
+		ctx.fillStyle = "#fff";
+		ctx.textBaseline = "middle";
+		ctx.textAlign = "left";
+		ctx.font = "80px Exo";
+		ctx.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(tickEnd / 48)) - 319, 135);
+		ctx.font = "32px Exo";
+		ctx.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(tickEnd / 48)) - 319, 203);
+		ctx.font = "30px Exo";
+		ctx.globalAlpha = range((tickEnd - 57) / 40);
+		ctx.fillText(stat.accStr, 351, 541);
+		ctx.fillText(stat.maxcombo, 1527, 541);
+		if (stat.lineStatus) {
+			ctx.fillStyle = stat.lineStatus == 1 ? "#ffc500" : "#00bef1";
+			ctx.fillText(stat.lineStatus == 1 ? "ALL  PERFECT" : "FULL  COMBO", 1355, 586);
 		}
+		ctx.fillStyle = "#fff";
+		ctx.textAlign = "center";
+		ctx.font = "86px Exo";
+		ctx.globalAlpha = range((tickEnd - 67) / 30);
+		ctx.fillText(stat.scoreStr, 1075, 544);
+		ctx.font = "26px Exo";
+		ctx.globalAlpha = range((tickEnd - 52) / 24);
+		ctx.fillText(stat.perfect, 890, 641);
+		ctx.globalAlpha = range((tickEnd - 64) / 24);
+		ctx.fillText(stat.good, 1043, 641);
+		ctx.globalAlpha = range((tickEnd - 76) / 24);
+		ctx.fillText(stat.bad, 1196, 641);
+		ctx.globalAlpha = range((tickEnd - 88) / 24);
+		ctx.fillText(stat.miss, 1349, 641);
+		ctx.globalAlpha = range((tickEnd - 112) / 16);
+		ctx.transform(1, 0, 0, 1, 661.5, 544.5);
+		const qwq2 = 293 + range((tickEnd - 112) / 16) * 100;
+		const qwq3 = 410 - range((tickEnd - 112) / 28) * 164;
+		ctx.drawImage(res.LevelOver3, -qwq2 / 2, -qwq2 / 2, qwq2, qwq2);
+		ctx.drawImage(res.Ranks[stat.rankStatus], -qwq3 / 2, -qwq3 / 2, qwq3, qwq3);
+		ctx.resetTransform();
+		ctx.globalCompositeOperation = "destination-over";
+		ctx.globalAlpha = 1;
+		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+		stopDrawing = requestAnimationFrame(qwqwq); //回调更新动画
 	}
+}
+
+function range(num) {
+	if (num < 0) return 0;
+	if (num > 1) return 1;
+	return num;
 }
 //绘制Note
 function drawNote(note, realTime, type) {
 	if (!note.visible) return;
-	if (note.realTime + note.realHoldTime < realTime) return; //qwq
+	if (note.type != 3 && note.scored) return;
+	if (note.type == 3 && note.realTime + note.realHoldTime < realTime) return; //qwq
 	ctx.globalAlpha = note.alpha;
 	ctx.setTransform(noteScale * note.cosr, noteScale * note.sinr, -noteScale * note.sinr, noteScale * note.cosr, note.offsetX, note.offsetY);
 	if (type == 3) {
@@ -977,13 +1393,10 @@ function drawNote(note, realTime, type) {
 		if (note.realTime > realTime) {
 			ctx.drawImage(res.HoldHead, -res.HoldHead.width * 0.5, 0);
 			ctx.drawImage(res.Hold, -res.Hold.width * 0.5, -holdLength, res.Hold.width, holdLength);
-			ctx.drawImage(res.HoldEnd, -res.HoldEnd.width * 0.5, -holdLength - 50);
+			ctx.drawImage(res.HoldEnd, -res.HoldEnd.width * 0.5, -holdLength - res.HoldEnd.height);
 		} else {
 			ctx.drawImage(res.Hold, -res.Hold.width * 0.5, -holdLength, res.Hold.width, holdLength - baseLength * (realTime - note.realTime));
-			ctx.drawImage(res.HoldEnd, -res.HoldEnd.width * 0.5, -holdLength - 50);
-			//绘制持续打击动画(以后移到别的地方)
-			note.playing = note.playing ? note.playing + 1 : 1;
-			if (note.playing % 9 == 0) clickEvents.push(new clickEvent(note.projectX, note.projectY));
+			ctx.drawImage(res.HoldEnd, -res.HoldEnd.width * 0.5, -holdLength - res.HoldEnd.height);
 		}
 	} else if (note.isMulti && document.getElementById("highLight").checked) {
 		if (type == 1) ctx.drawImage(res.TapHL, -res.TapHL.width * 0.5, -res.TapHL.height * 0.5);
@@ -1130,7 +1543,7 @@ function chartp23(pec) {
 			this.time = time;
 			this.positionX = x;
 			this.holdTime = type == 3 ? holdTime : 0;
-			this.speed = isNaN(speed) ? 1 : speed;
+			this.speed = isNaN(speed) ? 1 : speed; //默认值不为0不能改成Number(speed)||1
 			this.floorPosition = time % 1e9 / 104 * 1.2;
 		}
 	}
@@ -1165,6 +1578,7 @@ function chartp23(pec) {
 	//处理bpm变速
 	if (!raw.bp[0]) raw.bp.push([0, 120]);
 	const baseBpm = raw.bp[0][1];
+	if (raw.bp[0][0]) raw.bp.unshift([0, baseBpm]);
 	const bpmEvents = []; //存放bpm变速事件
 	let fuckBpm = 0;
 	raw.bp.sort((a, b) => a[0] - b[0]).forEach((i, idx, arr) => {
@@ -1217,11 +1631,11 @@ function chartp23(pec) {
 	//不透明度
 	for (const i of raw.ca) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[1]), i[2] > 0 ? (i[2] + 1) / 256 : 0); //暂不支持alpha值扩展
+		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[1]), i[2] > 0 ? i[2] / 255 : 0); //暂不支持alpha值扩展
 	}
 	for (const i of raw.cf) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[2]), i[3] > 0 ? (i[3] + 1) / 256 : 0);
+		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[2]), i[3] > 0 ? i[3] / 255 : 0);
 	}
 	//移动
 	for (const i of raw.cp) {
@@ -1483,21 +1897,25 @@ function imgShader(img, color) {
 	const ctx = canvas.getContext("2d");
 	ctx.drawImage(img, 0, 0);
 	const imgData = ctx.getImageData(0, 0, img.width, img.height);
-	if (color == null) return imgData;
-	const rgba = (hex => {
-		const canvas = document.createElement("canvas");
-		const ctx = canvas.getContext("2d");
-		ctx.fillStyle = hex;
-		ctx.fillRect(0, 0, 1, 1);
-		return ctx.getImageData(0, 0, 1, 1).data;
-	})(color);
+	const data = hex2rgba(color);
 	for (let i = 0; i < imgData.data.length / 4; i++) {
-		imgData.data[i * 4] *= rgba[0] / 256;
-		imgData.data[i * 4 + 1] *= rgba[1] / 256;
-		imgData.data[i * 4 + 2] *= rgba[2] / 256;
-		imgData.data[i * 4 + 3] *= rgba[3] / 256;
+		imgData.data[i * 4] *= data[0] / 255;
+		imgData.data[i * 4 + 1] *= data[1] / 255;
+		imgData.data[i * 4 + 2] *= data[2] / 255;
+		imgData.data[i * 4 + 3] *= data[3] / 255;
 	}
 	return imgData;
+}
+//十六进制color转rgba数组
+function hex2rgba(color) {
+	const ctx = document.createElement("canvas").getContext("2d");
+	ctx.fillStyle = color;
+	ctx.fillRect(0, 0, 1, 1);
+	return ctx.getImageData(0, 0, 1, 1).data;
+}
+
+function rgba2hex(...rgba) {
+	return "#" + rgba.map(i => ("00" + Math.round(Number(i) * 255 || 0).toString(16)).slice(-2)).join("");
 }
 //读取csv
 function csv2array(data, isObject) {
