@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4], 1611795955, 1630411484];
+const _i = ['Phigros模拟器', [1, 4, 1], 1611795955, 1630475140];
 document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
@@ -76,11 +76,6 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
-document.getElementById("stage-pause").addEventListener("dblclick", () => btnPause.click());
-document.getElementById("stage-full").addEventListener("dblclick", () => {
-	if (document.fullscreenElement) document.exitFullscreen().then(resizeCanvas);
-	else stage.requestFullscreen().then(resizeCanvas);
-});
 //适应画面尺寸
 function resizeCanvas() {
 	const width = window.innerWidth * window.devicePixelRatio;
@@ -134,6 +129,24 @@ class Clicks extends Array {
 
 }
 const clicks = new Clicks(); //存放点击事件，用于检测
+const taps = []; //额外处理tap(试图修复吃音bug)
+const specialClick = {
+	time: [0, 0, 0],
+	func: [() => {
+		btnPause.click();
+	}, () => {
+		btnPlay.click();
+		btnPlay.click();
+	}, () => {
+		if (document.fullscreenElement) document.exitFullscreen().then(resizeCanvas);
+		else stage.requestFullscreen().then(resizeCanvas);
+	}],
+	click: function(id) {
+		const now = Date.now();
+		if (now - this.time[id] < 300) this.func[id]();
+		this.time[id] = now;
+	}
+}
 class Click {
 	constructor(offsetX, offsetY, isActive) {
 		this.offsetX = Number(offsetX) || 0;
@@ -143,6 +156,10 @@ class Click {
 		this.time = 0;
 	}
 	static activate(offsetX, offsetY) {
+		taps.push(new Click(offsetX, offsetY, true));
+		if (Math.hypot(lineScale - offsetX, lineScale - offsetY) < lineScale) specialClick.click(0);
+		if (Math.hypot(canvas.width - lineScale - offsetX, lineScale - offsetY) < lineScale) specialClick.click(1);
+		if (Math.hypot(canvas.width - lineScale - offsetX, canvas.height - lineScale - offsetY) < lineScale) specialClick.click(2);
 		return new Click(offsetX, offsetY, true);
 	}
 	move(offsetX, offsetY) {
@@ -179,9 +196,12 @@ class Judgements extends Array {
 				if (i instanceof Click && i.isActive) {
 					if (!i.time) {
 						if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
-						else this.push(new Judgement(i.offsetX, i.offsetY, 1));
+						//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
 					} else this.push(new Judgement(i.offsetX, i.offsetY, 2));
 				}
+			}
+			for (const i of taps) {
+				if (i instanceof Click) this.push(new Judgement(i.offsetX, i.offsetY, 1));
 			}
 		} else {
 			for (const i of notes) {
@@ -205,7 +225,7 @@ class Judgements extends Array {
 			if (i.realTime - realTime < -0.16 && !i.status2) {
 				//console.log("Miss", i.name);
 				i.status = 4;
-				stat.addCombo(4);
+				stat.addCombo(4, i.type);
 				i.scored = true;
 			} else if (i.type == 1) {
 				for (let j = 0; j < this.length; j++) {
@@ -230,7 +250,7 @@ class Judgements extends Array {
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
 							clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
 						}
-						stat.addCombo(i.status);
+						stat.addCombo(i.status, 1);
 						i.scored = true;
 						this.splice(j, 1);
 						break;
@@ -240,7 +260,7 @@ class Judgements extends Array {
 				if (i.status == 1 && i.realTime - realTime < 0) {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong1"], false, true, videoRecorder.checked, 0);
 					clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
-					stat.addCombo(1);
+					stat.addCombo(1, 2);
 					i.scored = true;
 				} else if (!i.status) {
 					for (let j = 0; j < this.length; j++) {
@@ -263,7 +283,7 @@ class Judgements extends Array {
 						continue;
 					}
 					if (i.realTime + i.realHoldTime - 0.2 < realTime) {
-						if (!i.status) stat.addCombo(i.status = i.status2);
+						if (!i.status) stat.addCombo(i.status = i.status2, 3);
 						continue;
 					}
 				}
@@ -297,14 +317,14 @@ class Judgements extends Array {
 				if (!isPaused && i.status3 && i.status4) {
 					//console.log("Miss", i.name);
 					i.status = 4;
-					stat.addCombo(4);
+					stat.addCombo(4, 3);
 					i.scored = true;
 				}
 			} else if (i.type == 4) {
 				if (i.status == 1 && i.realTime - realTime < 0) {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong2"], false, true, videoRecorder.checked, 0);
 					clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
-					stat.addCombo(1);
+					stat.addCombo(1, 4);
 					i.scored = true;
 				} else if (!i.status) {
 					for (let j = 0; j < this.length; j++) {
@@ -387,7 +407,7 @@ canvas.addEventListener("mousedown", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
 	const i = evt;
-	clicks[idx] = Click.activate((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
+	clicks[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	isMouseDown[idx] = true;
 });
 canvas.addEventListener("mousemove", evt => {
@@ -395,7 +415,7 @@ canvas.addEventListener("mousemove", evt => {
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
 			const i = evt;
-			clicks[idx].move((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
+			clicks[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 		}
 	}
 });
@@ -421,14 +441,14 @@ const passive = {
 canvas.addEventListener("touchstart", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
-		clicks[idx] = Click.activate((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
+		clicks[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchmove", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		clicks[idx].move((i.pageX - canvas.offsetLeft - canvas.offsetParent.offsetLeft) / canvas.offsetWidth * canvas.width, (i.pageY - canvas.offsetParent.offsetTop) / canvas.offsetHeight * canvas.height);
+		clicks[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchend", evt => {
@@ -444,6 +464,28 @@ canvas.addEventListener("touchcancel", evt => {
 		clicks[idx].disactivate();
 	}
 });
+//优化触摸定位，以后整合进class
+function getOffsetLeft(element) {
+	if (!(element instanceof HTMLElement)) return NaN;
+	let qwqElem = element;
+	let a = 0;
+	while (qwqElem instanceof HTMLElement) {
+		a += qwqElem.offsetLeft;
+		qwqElem = qwqElem.offsetParent;
+	}
+	return a;
+}
+
+function getOffsetTop(element) {
+	if (!(element instanceof HTMLElement)) return NaN;
+	let qwqElem = element;
+	let a = 0;
+	while (qwqElem instanceof HTMLElement) {
+		a += qwqElem.offsetTop;
+		qwqElem = qwqElem.offsetParent;
+	}
+	return a;
+}
 const ctx = canvas.getContext("2d"); //游戏界面
 const ctxbg = canvasbg.getContext("2d"); //游戏背景
 const imgClick = {
@@ -582,8 +624,8 @@ class Stat {
 		return 1;
 	}
 	get rankStatus() {
-		const a = this.scoreNum;
-		if (a == 1e6) return 0;
+		const a = Math.round(this.scoreNum);
+		if (a >= 1e6) return 0;
 		if (a >= 9.6e5) return 1;
 		if (a >= 9.2e5) return 2;
 		if (a >= 8.8e5) return 3;
@@ -599,8 +641,9 @@ class Stat {
 		this.miss = 0;
 		this.combo = 0;
 		this.maxcombo = 0;
+		this.combos = [0, 0, 0, 0, 0]; //不同种类note实时连击次数
 	}
-	addCombo(status) {
+	addCombo(status, type) {
 		if (status == 1) {
 			this.perfect++;
 			this.combo++;
@@ -616,12 +659,12 @@ class Stat {
 			this.miss++;
 			this.combo = 0;
 		}
+		this.combos[0]++;
+		this.combos[type]++;
 	}
 }
 const stat = new Stat();
-const combo = [0, 0, 0, 0, 0]; //实时连击次数(以后会完善)
 const comboColor = ["#fff", "#0ac3ff", "#f0ed69", "#a0e9fd", "#fe4365"];
-let score = "0000000"; //实时分数
 //读取文件
 upload.onchange = function() {
 	const file = this.files[0];
@@ -998,8 +1041,6 @@ btnPlay.addEventListener("click", async function() {
 		curTime = 0;
 		curTimestamp = 0;
 		duration = 0;
-		combo.forEach((_val, idx, arr) => arr[idx] = 0);
-		score = "0000000";
 		this.value = "播放";
 	}
 });
@@ -1107,6 +1148,7 @@ function draw() {
 	judgements.judgeNote(Renderer.drags, timeChart, canvas.width * 0.117775);
 	judgements.judgeNote(Renderer.flicks, timeChart, canvas.width * 0.117775);
 	judgements.judgeNote(Renderer.tapholds, timeChart, canvas.width * 0.117775); //播放打击音效和判定
+	taps.length = 0; //qwq
 	Timer.addTick(); //计算fps
 	clickEvents.defilter(i => i.type ? (now >= i.time + i.duration) : (i.time++ > 0)); //清除打击特效
 	ctx.clearRect(0, 0, canvas.width, canvas.height); //重置画面
@@ -1259,7 +1301,7 @@ function draw() {
 		ctx.textAlign = "right";
 		ctx.fillText(Timer.fps, canvas.width, lineScale * 0.3);
 		ctx.textBaseline = "alphabetic";
-		if (showPoint.checked) combo.forEach((val, idx) => {
+		if (showPoint.checked) stat.combos.forEach((val, idx) => {
 			ctx.fillStyle = comboColor[idx];
 			ctx.fillText(val, lineScale * (idx + 1) * 1.1, canvas.height - lineScale * 0.1);
 		});
