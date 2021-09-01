@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 1], 1611795955, 1630475140];
+const _i = ['Phigros模拟器', [1, 4, 2], 1611795955, 1630495196];
 document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
@@ -117,7 +117,7 @@ document.getElementById("demo").addEventListener("click", function() {
 	xhr.send();
 	xhr.onprogress = progress => { //显示加载文件进度
 		out.className = "accept";
-		out.innerText = `加载文件：${Math.floor(progress.loaded / 6331586 * 100)}%`;
+		out.innerText = `加载文件：${Math.floor(progress.loaded / 6331675 * 100)}%`;
 	};
 	xhr.onload = () => {
 		document.getElementById("filename").value = "demo.zip";
@@ -157,9 +157,9 @@ class Click {
 	}
 	static activate(offsetX, offsetY) {
 		taps.push(new Click(offsetX, offsetY, true));
-		if (Math.hypot(lineScale - offsetX, lineScale - offsetY) < lineScale) specialClick.click(0);
-		if (Math.hypot(canvas.width - lineScale - offsetX, lineScale - offsetY) < lineScale) specialClick.click(1);
-		if (Math.hypot(canvas.width - lineScale - offsetX, canvas.height - lineScale - offsetY) < lineScale) specialClick.click(2);
+		if (offsetX < lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(0);
+		if (offsetX > canvas.width - lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(1);
+		if (offsetX > canvas.width - lineScale * 1.5 && offsetY > canvas.height - lineScale * 1.5) specialClick.click(2);
 		return new Click(offsetX, offsetY, true);
 	}
 	move(offsetX, offsetY) {
@@ -278,12 +278,9 @@ class Judgements extends Array {
 						else if (i.status2 == 2) clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
 						i.status3 = Date.now();
 					}
-					if (i.realTime + i.realHoldTime < realTime) {
-						i.scored = true;
-						continue;
-					}
 					if (i.realTime + i.realHoldTime - 0.2 < realTime) {
 						if (!i.status) stat.addCombo(i.status = i.status2, 3);
+						if (i.realTime + i.realHoldTime < realTime) i.scored = true;
 						continue;
 					}
 				}
