@@ -1,10 +1,11 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 2], 1611795955, 1630495196];
+const _i = ['Phigros模拟器', [1, 4, 3], 1611795955, 1630495196];
 document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
 const out = document.getElementById("output");
 const stage = document.getElementById("stage");
+const mask = document.getElementById("stage-mask");
 const select = document.getElementById("select");
 const selectbg = document.getElementById("select-bg");
 const btnPlay = document.getElementById("btn-play");
@@ -49,6 +50,7 @@ const inputName = document.getElementById("input-name");
 const inputLevel = document.getElementById("input-level");
 const inputDesigner = document.getElementById("input-designer");
 const inputIllustrator = document.getElementById("input-illustrator");
+const inputOffset = document.getElementById("input-offset");
 const showPoint = document.getElementById("showPoint");
 const lineColor = document.getElementById("lineColor");
 const autoplay = document.getElementById("autoplay");
@@ -96,6 +98,7 @@ function resizeCanvas() {
 	wlen2 = canvas.width / 18;
 	noteScale = canvas.width / Number(selectscaleratio.value); //note、特效缩放
 	lineScale = canvas.width > canvas.height * 0.75 ? canvas.height / 18.75 : canvas.width / 14.0625; //判定线、文字缩放
+	if (canvas.classList.contains("disabled")) mask.classList.remove("fade");
 }
 //qwq[water,demo,democlick]
 const qwq = [true, false, 3];
@@ -125,10 +128,7 @@ document.getElementById("demo").addEventListener("click", function() {
 	};
 });
 //点击特效(以后会改)
-class Clicks extends Array {
-
-}
-const clicks = new Clicks(); //存放点击事件，用于检测
+const clicks = []; //存放点击事件，用于检测
 const taps = []; //额外处理tap(试图修复吃音bug)
 const specialClick = {
 	time: [0, 0, 0],
@@ -507,7 +507,8 @@ const res = {}; //存放资源
 function init() {
 	uploads.classList.add("disabled");
 	select.classList.add("disabled");
-	stage.classList.add("disabled");
+	canvas.classList.add("disabled");
+	mask.classList.remove("fade");
 	loadResourse();
 	//加载资源
 	async function loadResourse() {
@@ -541,7 +542,8 @@ function init() {
 			LevelOver3: "src/LevelOver3.png",
 			LevelOver4: "src/LevelOver4.png",
 			LevelOver5: "src/LevelOver5.png",
-			Rank: "src/Rank.png"
+			Rank: "src/Rank.png",
+			NoImage: "src/0.png"
 		}).map(([name, src], _i, arr) => new Promise(resolve => {
 			const xhr = new XMLHttpRequest();
 			xhr.open("get", src, true);
@@ -569,15 +571,10 @@ function init() {
 		res.JudgeLineFC = await createImageBitmap(imgShader(res.JudgeLine, "#a2eeff"));
 		res.TapBad = await createImageBitmap(imgShader(res.Tap2, "#6c4343"));
 		res.Clicks = {};
-		res.Clicks.default = await qwqImage(res.clickRaw, "white");
+		//res.Clicks.default = await qwqImage(res.clickRaw, "white");
 		res.Ranks = await qwqImage(res.Rank, "white");
 		res.Clicks["rgba(255,236,160,0.8823529)"] = await qwqImage(res.clickRaw, "rgba(255,236,160,0.8823529)"); //#fce491
 		res.Clicks["rgba(180,225,255,0.9215686)"] = await qwqImage(res.clickRaw, "rgba(180,225,255,0.9215686)"); //#9ed5f3
-		/*for (let i = 0; i < 30; i++) {
-			res[`clickPerfect${i}`] = await createImageBitmap(clickPerfect, 0, i * 256, 256, 256);
-			res[`clickGood${i}`] = await createImageBitmap(clickGood, 0, i * 256, 256, 256);
-			res.Clicks.default[i] = await createImageBitmap(res.clickRaw, 0, i * 256, 256, 256);
-		}*/
 		out.innerText = "等待上传文件...";
 		upload.parentElement.classList.remove("disabled");
 	}
@@ -675,7 +672,7 @@ upload.onchange = function() {
 	loadFile(file);
 }
 const time2Str = time => `${`00${parseInt(time/60)}`.slice(-2)}:${`00${parseInt(time%60)}`.slice(-2)}`;
-const Timer = { //计算fps
+const frameTimer = { //计算fps
 	tick: 0,
 	time: Date.now(),
 	fps: "",
@@ -685,6 +682,36 @@ const Timer = { //计算fps
 			this.fps = (1e3 * fr / (-this.time + (this.time = Date.now()))).toFixed(0);
 		}
 		return this.fps;
+	}
+}
+class Timer {
+	constructor() {
+		this.reset();
+	}
+	play() {
+		if (!this.isPaused) throw new Error("Time has been playing");
+		this.t1 = Date.now();
+		this.isPaused = false;
+	}
+	pause() {
+		if (this.isPaused) throw new Error("Time has been paused");
+		this.t0 = this.time;
+		this.isPaused = true;
+	}
+	reset() {
+		this.t0 = 0;
+		this.t1 = 0;
+		this.isPaused = true;
+	}
+	addTime(num) {
+		this.t0 += num;
+	}
+	get time() {
+		if (this.isPaused) return this.t0;
+		return this.t0 + Date.now() - this.t1;
+	}
+	get second() {
+		return this.time / 1e3;
 	}
 }
 let tickIn = 0;
@@ -697,6 +724,7 @@ let timeChart = 0;
 let duration = 0;
 let isInEnd = false; //开头过渡动画
 let isOutStart = false; //结尾过渡动画
+let isOutEnd = false; //临时变量
 let isPaused = true; //暂停
 //加载文件
 function loadFile(file) {
@@ -797,6 +825,9 @@ function loadFile(file) {
 					if (selectchart.children.length == 0) {
 						out.className = "error";
 						out.innerText = "读取出错：未发现谱面文件"; //test
+					} else if (selectbg.children.length == 0) {
+						out.className = "error";
+						out.innerText = "读取出错：未发现音乐文件"; //test
 					} else {
 						select.classList.remove("disabled");
 						btnPause.classList.add("disabled");
@@ -826,7 +857,6 @@ function prerenderChart(chart) {
 		i.alpha = 0;
 		i.rotation = 0;
 		i.positionY = 0; //临时过渡用
-		i.image = res.JudgeLineAP;
 		i.images = [res.JudgeLine, res.JudgeLineAP, res.JudgeLineFC];
 		i.imageH = 0.008;
 		i.imageW = 1.042;
@@ -845,6 +875,7 @@ function prerenderChart(chart) {
 	Renderer.drags.sort(sortNote);
 	Renderer.holds.sort(sortNote);
 	Renderer.flicks.sort(sortNote);
+	Renderer.reverseholds.sort(sortNote).reverse();
 	Renderer.tapholds.sort(sortNote);
 	//向Renderer添加Note
 	function addNote(note, base32, lineId, noteId, isAbove) {
@@ -863,6 +894,7 @@ function prerenderChart(chart) {
 		else if (note.type == 2) Renderer.drags.push(note);
 		else if (note.type == 3) Renderer.holds.push(note);
 		else if (note.type == 4) Renderer.flicks.push(note);
+		if (note.type == 3) Renderer.reverseholds.push(note);
 		if (note.type == 1 || note.type == 3) Renderer.tapholds.push(note);
 	}
 	//合并不同方向note
@@ -958,19 +990,20 @@ function prerenderChart(chart) {
 		return events;
 	}
 }
-
 document.addEventListener("visibilitychange", () => document.visibilityState == "hidden" && btnPause.value == "暂停" && btnPause.click());
+const qwqIn = new Timer();
+const qwqOut = new Timer();
+const qwqEnd = new Timer();
 //play
 btnPlay.addEventListener("click", async function() {
 	btnPause.value = "暂停";
 	if (this.value == "播放") {
 		stopPlaying.push(playSound(res["mute"], true, false, videoRecorder.checked, 0)); //播放空音频(防止音画不同步)
-		for (const i of ["lines", "notes", "taps", "drags", "flicks", "holds", "tapholds"]) Renderer[i] = [];
+		for (const i of ["lines", "notes", "taps", "drags", "flicks", "holds", "reverseholds", "tapholds"]) Renderer[i] = [];
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
 		stat.reset(Renderer.chart.numOfNotes);
 		for (const i of chartLineData) {
 			if (selectchart.value == i.Chart) {
-				Renderer.chart.judgeLineList[i.LineId].image = await createImageBitmap(imgShader(bgs[i.Image], "#feffa9"));
 				Renderer.chart.judgeLineList[i.LineId].images[0] = bgs[i.Image];
 				Renderer.chart.judgeLineList[i.LineId].images[1] = await createImageBitmap(imgShader(bgs[i.Image], "#feffa9"));
 				Renderer.chart.judgeLineList[i.LineId].images[2] = await createImageBitmap(imgShader(bgs[i.Image], "#a2eeff"));
@@ -979,24 +1012,24 @@ btnPlay.addEventListener("click", async function() {
 				Renderer.chart.judgeLineList[i.LineId].imageB = Number(i.IsDark);
 			}
 		}
-		Renderer.backgroundImage = bgs[selectbg.value];
+		Renderer.backgroundImage = bgs[selectbg.value] || res.NoImage;
 		Renderer.backgroundMusic = bgms[selectbgm.value];
-		stage.classList.remove("disabled");
 		this.value = "停止";
 		resizeCanvas();
 		duration = Renderer.backgroundMusic.duration;
 		isInEnd = false;
 		isOutStart = false;
+		isOutEnd = false;
 		isPaused = false;
 		timeBgm = 0;
-		if (!showTransition.checked) tickIn = 179;
-		stage.classList.remove("disabled");
+		if (!showTransition.checked) qwqIn.addTime(3000); //tickIn = 179;
+		canvas.classList.remove("disabled");
+		mask.classList.add("fade");
 		btnPause.classList.remove("disabled");
-		autoplay.nextElementSibling.classList.add("disabled");
-		showTransition.nextElementSibling.classList.add("disabled");
-		videoRecorder.nextElementSibling.classList.add("disabled");
+		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.add("disabled");
 		if (videoRecorder.checked) btnPause.classList.add("disabled"); //testvideo录制时不允许暂停(存在bug)
 		draw();
+		qwqIn.play();
 		if (videoRecorder.checked) {
 			const cStream = canvas.captureStream();
 			const aStream = dest.stream;
@@ -1025,16 +1058,17 @@ btnPlay.addEventListener("click", async function() {
 		while (stopPlaying.length) stopPlaying.shift()();
 		cancelAnimationFrame(stopDrawing);
 		resizeCanvas();
-		stage.classList.add("disabled");
-		autoplay.nextElementSibling.classList.remove("disabled");
-		showTransition.nextElementSibling.classList.remove("disabled");
-		videoRecorder.nextElementSibling.classList.remove("disabled");
+		canvas.classList.add("disabled");
+		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.remove("disabled");
 		btnPause.classList.add("disabled");
 		//清除原有数据
 		clickEvents.length = 0;
 		tickIn = 0;
+		qwqIn.reset();
 		tickOut = 0;
+		qwqOut.reset();
 		tickEnd = 0;
+		qwqEnd.reset();
 		curTime = 0;
 		curTimestamp = 0;
 		duration = 0;
@@ -1044,15 +1078,23 @@ btnPlay.addEventListener("click", async function() {
 btnPause.addEventListener("click", function() {
 	if (this.classList.contains("disabled") || btnPlay.value == "播放") return;
 	if (this.value == "暂停") {
+		qwqIn.pause();
+		if (showTransition.checked && isOutStart) qwqOut.pause();
 		isPaused = true;
 		this.value = "继续";
 		curTime = timeBgm;
 		while (stopPlaying.length) stopPlaying.shift()();
 	} else {
+		qwqIn.play();
+		if (showTransition.checked && isOutStart) qwqOut.play();
 		isPaused = false;
 		if (isInEnd && !isOutStart) playBgm(Renderer.backgroundMusic, timeBgm);
 		this.value = "暂停";
 	}
+});
+inputOffset.addEventListener("input", function() {
+	if (this.value < -400) this.value = -400;
+	if (this.value > 600) this.value = 600;
 });
 //播放bgm
 function playBgm(data, offset) {
@@ -1066,15 +1108,28 @@ function draw() {
 	const now = Date.now();
 	//计算时间
 	if (!isPaused) {
-		if (tickIn < 180 && ++tickIn == 180) {
+		/*if (tickIn < 180 && ++tickIn == 180) {
+			isInEnd = true;
+			playBgm(Renderer.backgroundMusic);
+		}
+		if (isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
+		if (timeBgm >= duration) isOutStart = true;
+		showTransition.checked && isOutStart && tickOut < 40 && ++tickOut == 40;*/
+		tickIn = qwqIn.second * 60;
+		if (!isInEnd && qwqIn.second >= 3) {
 			isInEnd = true;
 			playBgm(Renderer.backgroundMusic);
 		}
 		if (isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
 		if (timeBgm >= duration) isOutStart = true;
 		showTransition.checked && isOutStart && tickOut < 40 && ++tickOut == 40;
+		if (showTransition.checked && isOutStart && !isOutEnd) {
+			isOutEnd = true;
+			qwqOut.play();
+		}
+		tickOut = qwqOut.second * 60;
 	}
-	timeChart = Math.max(timeBgm - Renderer.chart.offset, 0);
+	timeChart = Math.max(timeBgm - Renderer.chart.offset - (Number(inputOffset.value) / 1e3 || 0), 0);
 	//遍历判定线events和Note
 	for (const line of Renderer.lines) {
 		for (const i of line.judgeLineDisappearEvents) {
@@ -1146,7 +1201,7 @@ function draw() {
 	judgements.judgeNote(Renderer.flicks, timeChart, canvas.width * 0.117775);
 	judgements.judgeNote(Renderer.tapholds, timeChart, canvas.width * 0.117775); //播放打击音效和判定
 	taps.length = 0; //qwq
-	Timer.addTick(); //计算fps
+	frameTimer.addTick(); //计算fps
 	clickEvents.defilter(i => i.type ? (now >= i.time + i.duration) : (i.time++ > 0)); //清除打击特效
 	ctx.clearRect(0, 0, canvas.width, canvas.height); //重置画面
 	ctx.globalCompositeOperation = "destination-over"; //由后往前绘制
@@ -1215,7 +1270,7 @@ function draw() {
 		for (const i of Renderer.flicks) drawNote(i, timeChart, 4);
 		for (const i of Renderer.taps) drawNote(i, timeChart, 1);
 		for (const i of Renderer.drags) drawNote(i, timeChart, 2);
-		for (const i of Renderer.holds) drawNote(i, timeChart, 3);
+		for (const i of Renderer.reverseholds) drawNote(i, timeChart, 3);
 	}
 	//绘制背景
 	if (tickIn >= 150) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
@@ -1256,7 +1311,7 @@ function draw() {
 		const imgW = lineScale * 48 * (tickIn < 40 ? tween[3](tickIn * 0.025) : 1);
 		const imgH = lineScale * 0.15;
 		if (tickIn >= 150) ctx.globalAlpha = tween[2]((180 - tickIn) / 30);
-		ctx.drawImage(res.JudgeLineAP, -imgW / 2, -imgH / 2, imgW, imgH);
+		ctx.drawImage(lineColor.checked ? res.JudgeLineAP : res.JudgeLine, -imgW / 2, -imgH / 2, imgW, imgH);
 	}
 	//绘制分数和combo以及暂停按钮
 	ctx.globalAlpha = 1;
@@ -1296,7 +1351,7 @@ function draw() {
 		ctx.textAlign = "left";
 		ctx.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}`, 0, lineScale * 0.3);
 		ctx.textAlign = "right";
-		ctx.fillText(Timer.fps, canvas.width, lineScale * 0.3);
+		ctx.fillText(frameTimer.fps, canvas.width, lineScale * 0.3);
 		ctx.textBaseline = "alphabetic";
 		if (showPoint.checked) stat.combos.forEach((val, idx) => {
 			ctx.fillStyle = comboColor[idx];
@@ -1319,18 +1374,18 @@ function draw() {
 				ctx.globalAlpha = i.alpha;
 				ctx.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, wlen + (i.offsetX - wlen) * tw, i.offsetY); //hiahiah
 				const imgH = i.imageH > 0 ? lineScale * 18.75 * i.imageH : canvas.height * -i.imageH; // hlen*0.008
-				const imgW = imgH * i.image.width / i.image.height * i.imageW; //* 38.4*25 * i.imageH* i.imageW; //wlen*3
+				const imgW = imgH * i.images[0].width / i.images[0].height * i.imageW; //* 38.4*25 * i.imageH* i.imageW; //wlen*3
 				ctx.drawImage(i.images[lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
 			}
 		}
 	}
-	stopDrawing = requestAnimationFrame(tickOut == 40 ? draw2 : draw); //回调更新动画
+	stopDrawing = requestAnimationFrame(tickOut >= 40 ? draw2 : draw); //回调更新动画
 }
 
 function draw2() {
-	tickOut = 40;
-	tickEnd = 0;
-	isPaused = true;
+	//tickOut = 40;
+	//tickEnd = 0;
+	btnPause.click(); //isPaused = true;
 	while (stopPlaying.length) stopPlaying.shift()();
 	cancelAnimationFrame(stopDrawing);
 	btnPause.classList.add("disabled");
@@ -1343,10 +1398,12 @@ function draw2() {
 	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	setTimeout(() => stopPlaying.push(playSound(res.LevelOver2, true, true, videoRecorder.checked, 0)), 1000);
+	setTimeout(() => qwqEnd.play(), 1000);
 	setTimeout(qwqwq, 1000);
 
 	function qwqwq() {
-		++tickEnd;
+		//++tickEnd;
+		tickEnd = qwqEnd.second * 60;
 		ctx.resetTransform();
 		ctx.globalCompositeOperation = "source-over";
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1419,6 +1476,7 @@ function range(num) {
 	if (num > 1) return 1;
 	return num;
 }
+
 //绘制Note
 function drawNote(note, realTime, type) {
 	if (!note.visible) return;
@@ -1653,7 +1711,6 @@ function chartp23(pec) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
 	}
-
 	for (const i of raw.n3) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);

@@ -15,6 +15,10 @@ body {
 	-moz-user-select: none;
 }
 
+#select div {
+	display: inline-block;
+}
+
 #stage {
 	position: relative;
 	margin: auto;
@@ -36,6 +40,19 @@ body {
 	background-color: #000;
 	margin: auto;
 	width: 100%;
+}
+
+#stage-mask {
+	color: gray;
+	font-family: Exo, Consolas, monospace;
+	font-size: 4vmin;
+	position: absolute;
+	width: 70vmin;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 100;
+	word-break: keep-all;
 }
 
 .upload {
