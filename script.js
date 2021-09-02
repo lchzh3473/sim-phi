@@ -825,7 +825,7 @@ function loadFile(file) {
 					if (selectchart.children.length == 0) {
 						out.className = "error";
 						out.innerText = "读取出错：未发现谱面文件"; //test
-					} else if (selectbg.children.length == 0) {
+					} else if (selectbgm.children.length == 0) {
 						out.className = "error";
 						out.innerText = "读取出错：未发现音乐文件"; //test
 					} else {
