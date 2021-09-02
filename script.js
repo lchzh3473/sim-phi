@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 3], 1611795955, 1630495196];
+const _i = ['Phigros模拟器', [1, 4, 3], 1611795955, 1630565643];
 document.oncontextmenu = e => e.returnValue = false;
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
