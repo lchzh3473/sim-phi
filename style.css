@@ -20,10 +20,12 @@ body {
 }
 
 #stage {
+	background-color: rgba(0, 0, 0, 0.2);
 	position: relative;
 	margin: auto;
 	width: 80vw;
 	max-width: 854px;
+	line-height: 0;
 }
 
 #canvas-bg {
@@ -37,14 +39,13 @@ body {
 }
 
 #canvas {
-	background-color: #000;
 	margin: auto;
 	width: 100%;
 }
 
 #stage-mask {
 	color: gray;
-	font-family: Exo, Consolas, monospace;
+	font-family: Exo, Consolas, Menlo, monospace;
 	font-size: 4vmin;
 	position: absolute;
 	width: 70vmin;
@@ -52,7 +53,7 @@ body {
 	top: 50%;
 	transform: translate(-50%, -50%);
 	z-index: 100;
-	word-break: keep-all;
+	line-height: 1.5em;
 }
 
 .upload {
@@ -71,7 +72,7 @@ body {
 	bottom: 0px;
 	transition-property: opacity, visibility;
 	transition-duration: 0.2s;
-	z-index: 100;
+	z-index: 200;
 }
 
 #cover-view {
@@ -86,10 +87,11 @@ body {
 	padding: 5vmin;
 	transition-property: opacity, visibility;
 	transition-duration: 0.2s;
-	z-index: 200;
+	z-index: 300;
 	text-align: left;
 	overflow: scroll;
-	font-family: Consolas, monospace;
+	font-family: Consolas, Menlo, monospace;
+	word-break: keep-all;
 }
 
 .view-title {
@@ -100,9 +102,12 @@ body {
 
 .view-content {
 	font-size: 3vmin;
+	font-weight: bold;
 	margin: 0px;
 	text-align: left;
 	line-height: 1.5em;
+	width: 100%;
+	/*table-layout: fixed;*/
 }
 
 .view-table {
@@ -114,6 +119,13 @@ body {
 
 .view-table tr {
 	vertical-align: top;
+}
+
+.view-table tr td.left {
+	word-break: keep-all;
+}
+
+.view-table tr td.right {
 	word-break: break-all;
 }
 
@@ -124,13 +136,23 @@ body {
 	width: 100%;
 }
 
-.real-table tr {
-	word-break: normal;
-	vertical-align: middle;
+.real-table tr th.left,
+.real-table tr td.left {
+	word-break: keep-all;
+}
+
+.real-table tr th.right,
+.real-table tr td.right {
+	word-break: break-all;
 }
 
 .real-table tr th,
 .real-table tr td {
+	vertical-align: middle;
 	border: 1px solid gray;
 	padding: 2px 5px;
+}
+
+#canPlayType {
+	word-break: break-word;
 }

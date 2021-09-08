@@ -1,6 +1,6 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 3], 1611795955, 1630565643];
-document.oncontextmenu = e => e.returnValue = false;
+const _i = ['Phigros模拟器', [1, 4, 4], 1611795955, 1631125420];
+document.oncontextmenu = e => e.returnValue = false; //qwq
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
 const out = document.getElementById("output");
@@ -10,16 +10,55 @@ const select = document.getElementById("select");
 const selectbg = document.getElementById("select-bg");
 const btnPlay = document.getElementById("btn-play");
 const btnPause = document.getElementById("btn-pause");
-//
-selectbg.onchange = () => {
-	Renderer.backgroundImage = bgs[selectbg.value];
-	resizeCanvas();
-}
 const selectbgm = document.getElementById("select-bgm");
 const selectchart = document.getElementById("select-chart");
 const selectscaleratio = document.getElementById("select-scale-ratio"); //数值越大note越小
 const selectaspectratio = document.getElementById("select-aspect-ratio");
 const selectglobalalpha = document.getElementById("select-global-alpha");
+const inputName = document.getElementById("input-name");
+const inputLevel = document.getElementById("input-level");
+const inputDesigner = document.getElementById("input-designer");
+const inputIllustrator = document.getElementById("input-illustrator");
+const inputOffset = document.getElementById("input-offset");
+const showPoint = document.getElementById("showPoint");
+const lineColor = document.getElementById("lineColor");
+const autoplay = document.getElementById("autoplay");
+const showTransition = document.getElementById("showTransition");
+const videoRecorder = document.getElementById("videoRecorder");
+const canvas = document.getElementById("canvas");
+const canvasbg = document.getElementById("canvas-bg");
+const bgs = {};
+const bgsBlur = {};
+const bgms = {};
+const charts = {};
+const chartLineData = []; //line.csv
+const chartInfoData = []; //info.csv
+//调节画面尺寸和全屏相关
+const adjustSize = (sw, sh, dw, dh) => (dw * sh > dh * sw) ? [0, (dh - dw * sh / sw) / 2, dw, dw * sh / sw] : [(dw - dh * sw / sh) / 2, 0, dh * sw / sh, dh];
+const AspectRatio = 16 / 9; //宽高比上限
+const Deg = Math.PI / 180; //角度转弧度
+let wlen, hlen, wlen2, noteScale, lineScale; //背景图相关
+const Renderer = { //存放谱面
+	chart: null,
+	backgroundImage: null,
+	backgroundImageBlur: null,
+	backgroundMusic: null,
+	lines: [],
+	notes: [],
+	taps: [],
+	drags: [],
+	flicks: [],
+	holds: [],
+	reverseholds: [],
+	tapholds: []
+};
+if (!document.fullscreenEnabled) document.getElementById("full").innerText = "；暂不支持全屏"; //试图适配Safari
+//qwq
+selectbg.onchange = () => {
+	Renderer.backgroundImage = bgs[selectbg.value];
+	Renderer.backgroundImageBlur = bgsBlur[selectbg.value];
+	resizeCanvas();
+}
 document.getElementById("cover-dark").addEventListener("click", () => {
 	document.getElementById("cover-dark").classList.add("fade");
 	document.getElementById("cover-view").classList.add("fade");
@@ -46,36 +85,11 @@ function adjustInfo() {
 	}
 }
 //
-const inputName = document.getElementById("input-name");
-const inputLevel = document.getElementById("input-level");
-const inputDesigner = document.getElementById("input-designer");
-const inputIllustrator = document.getElementById("input-illustrator");
-const inputOffset = document.getElementById("input-offset");
-const showPoint = document.getElementById("showPoint");
-const lineColor = document.getElementById("lineColor");
-const autoplay = document.getElementById("autoplay");
-const showTransition = document.getElementById("showTransition");
-const videoRecorder = document.getElementById("videoRecorder");
-const bgs = {};
-const bgms = {};
-const charts = {};
-const chartLineData = [];
-const chartInfoData = [];
-const canvas = document.getElementById("canvas");
-const canvasbg = document.getElementById("canvas-bg");
-//调节画面尺寸和全屏相关
-const adjustSize = (sw, sh, dw, dh) => (dw * sh > dh * sw) ? [0, (dh - dw * sh / sw) / 2, dw, dw * sh / sw] : [(dw - dh * sw / sh) / 2, 0, dh * sw / sh, dh];
-const AspectRatio = 16 / 9; //宽高比上限
-const Deg = Math.PI / 180; //角度转弧度
-let wlen, hlen, wlen2, noteScale, lineScale; //背景图相关
-const Renderer = { //存放谱面
-	chart: null,
-	backgroundImage: null,
-	backgroundMusic: null
-};
 canvas.style.cssText = `max-width:calc(100vh*${AspectRatio});`;
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
+document.addEventListener("fullscreenchange", resizeCanvas);
+//document.addEventListener("webkitfullscreenchange", resizeCanvas); //Safari
 selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
 //适应画面尺寸
@@ -98,7 +112,6 @@ function resizeCanvas() {
 	wlen2 = canvas.width / 18;
 	noteScale = canvas.width / Number(selectscaleratio.value); //note、特效缩放
 	lineScale = canvas.width > canvas.height * 0.75 ? canvas.height / 18.75 : canvas.width / 14.0625; //判定线、文字缩放
-	if (canvas.classList.contains("disabled")) mask.classList.remove("fade");
 }
 //qwq[water,demo,democlick]
 const qwq = [true, false, 3];
@@ -128,7 +141,8 @@ document.getElementById("demo").addEventListener("click", function() {
 	};
 });
 //点击特效(以后会改)
-const clicks = []; //存放点击事件，用于检测
+const clicks = {}; //存放点击事件，用于检测
+const touches = {}; //存放触摸事件，用于检测
 const taps = []; //额外处理tap(试图修复吃音bug)
 const specialClick = {
 	time: [0, 0, 0],
@@ -148,19 +162,18 @@ const specialClick = {
 	}
 }
 class Click {
-	constructor(offsetX, offsetY, isActive) {
+	constructor(offsetX, offsetY) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
-		this.isActive = !!isActive;
 		this.isMoving = false;
 		this.time = 0;
 	}
 	static activate(offsetX, offsetY) {
-		taps.push(new Click(offsetX, offsetY, true));
+		taps.push(new Click(offsetX, offsetY));
 		if (offsetX < lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(0);
 		if (offsetX > canvas.width - lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(1);
 		if (offsetX > canvas.width - lineScale * 1.5 && offsetY > canvas.height - lineScale * 1.5) specialClick.click(2);
-		return new Click(offsetX, offsetY, true);
+		return new Click(offsetX, offsetY);
 	}
 	move(offsetX, offsetY) {
 		this.offsetX = Number(offsetX) || 0;
@@ -173,9 +186,6 @@ class Click {
 			if (this.isMoving) clickEvents.push(ClickEvent.getClickMove(this.offsetX, this.offsetY));
 			else clickEvents.push(ClickEvent.getClickTap(this.offsetX, this.offsetY));
 		} else clickEvents.push(ClickEvent.getClickHold(this.offsetX, this.offsetY));
-	}
-	disactivate() {
-		this.isActive = false;
 	}
 }
 class Judgement {
@@ -192,8 +202,18 @@ class Judgements extends Array {
 	addJudgement(notes, realTime) {
 		this.length = 0;
 		if (!autoplay.checked) {
-			for (const i of clicks) {
-				if (i instanceof Click && i.isActive) {
+			for (const j in clicks) {
+				const i = clicks[j];
+				if (i instanceof Click) {
+					if (!i.time) {
+						if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
+						//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
+					} else this.push(new Judgement(i.offsetX, i.offsetY, 2));
+				}
+			}
+			for (const j in touches) {
+				const i = touches[j];
+				if (i instanceof Click) {
 					if (!i.time) {
 						if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
 						//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
@@ -419,15 +439,15 @@ canvas.addEventListener("mousemove", evt => {
 canvas.addEventListener("mouseup", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
-	clicks[idx].disactivate();
-	isMouseDown[idx] = false;
+	delete clicks[idx];
+	delete isMouseDown[idx];
 });
 canvas.addEventListener("mouseout", evt => {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			clicks[idx].disactivate();
-			isMouseDown[idx] = false;
+			delete clicks[idx];
+			delete isMouseDown[idx];
 		}
 	}
 });
@@ -438,53 +458,56 @@ const passive = {
 canvas.addEventListener("touchstart", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
-		clicks[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+		touches[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchmove", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		clicks[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+		touches[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchend", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		clicks[idx].disactivate();
+		delete touches[idx];
 	}
 });
 canvas.addEventListener("touchcancel", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		clicks[idx].disactivate();
+		delete touches[idx];
 	}
 });
 //优化触摸定位，以后整合进class
 function getOffsetLeft(element) {
 	if (!(element instanceof HTMLElement)) return NaN;
-	let qwqElem = element;
+	let elem = element;
 	let a = 0;
-	while (qwqElem instanceof HTMLElement) {
-		a += qwqElem.offsetLeft;
-		qwqElem = qwqElem.offsetParent;
+	while (elem instanceof HTMLElement) {
+		a += elem.offsetLeft;
+		elem = elem.offsetParent;
 	}
 	return a;
 }
 
 function getOffsetTop(element) {
 	if (!(element instanceof HTMLElement)) return NaN;
-	let qwqElem = element;
+	let elem = element;
 	let a = 0;
-	while (qwqElem instanceof HTMLElement) {
-		a += qwqElem.offsetTop;
-		qwqElem = qwqElem.offsetParent;
+	while (elem instanceof HTMLElement) {
+		a += elem.offsetTop;
+		elem = elem.offsetParent;
 	}
 	return a;
 }
-const ctx = canvas.getContext("2d"); //游戏界面
-const ctxbg = canvasbg.getContext("2d"); //游戏背景
+const settings = { //优化(?)
+	alpha: false
+};
+const ctx = canvas.getContext("2d", settings); //游戏界面
+const ctxbg = canvasbg.getContext("2d", settings); //游戏背景
 const imgClick = {
 	perfect: [],
 	good: []
@@ -492,6 +515,7 @@ const imgClick = {
 window.addEventListener("load", init);
 //声音组件
 const actx = new AudioContext();
+const actx2 = new oggmented.OggmentedAudioContext(); //兼容Safari
 const dest = actx.createMediaStreamDestination(); //testvideo
 const playSound = (res, loop, isOut, isRecord, offset) => {
 	const bufferSource = actx.createBufferSource();
@@ -507,7 +531,7 @@ const res = {}; //存放资源
 function init() {
 	uploads.classList.add("disabled");
 	select.classList.add("disabled");
-	canvas.classList.add("disabled");
+	canvas.classList.add("fade");
 	mask.classList.remove("fade");
 	loadResourse();
 	//加载资源
@@ -533,40 +557,31 @@ function init() {
 			HoldEnd: "src/HoldEnd.png",
 			Flick: "src/Flick.png",
 			FlickHL: "src/FlickHL.png",
-			mute: "src/mute.ogg",
-			HitSong0: "src/HitSong0.ogg",
-			HitSong1: "src/HitSong1.ogg",
-			HitSong2: "src/HitSong2.ogg",
 			LevelOver1: "src/LevelOver1.png",
-			LevelOver2: "src/LevelOver2.ogg",
 			LevelOver3: "src/LevelOver3.png",
 			LevelOver4: "src/LevelOver4.png",
 			LevelOver5: "src/LevelOver5.png",
 			Rank: "src/Rank.png",
-			NoImage: "src/0.png"
-		}).map(([name, src], _i, arr) => new Promise(resolve => {
+			NoImage: "src/0.png",
+			mute: "src/mute.ogg",
+			HitSong0: "src/HitSong0.ogg",
+			HitSong1: "src/HitSong1.ogg",
+			HitSong2: "src/HitSong2.ogg"
+		}).map(([name, src], _i, arr) => {
 			const xhr = new XMLHttpRequest();
 			xhr.open("get", src, true);
-			if (/\.(png|jpeg|jpg)$/i.test(src)) {
-				xhr.responseType = 'blob';
-				xhr.send();
+			xhr.responseType = 'arraybuffer';
+			xhr.send();
+			return new Promise(resolve => {
 				xhr.onload = async () => {
-					res[name] = await createImageBitmap(xhr.response);
+					if (/\.(mp3|wav|ogg)$/i.test(src)) res[name] = await actx2.decodeAudioData(xhr.response);
+					else if (/\.(png|jpeg|jpg)$/i.test(src)) res[name] = await createImageBitmap(new Blob([xhr.response]));
 					out.className = "accept";
 					out.innerText = `加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`;
 					resolve();
 				};
-			} else if (/\.(mp3|wav|ogg)$/i.test(src)) {
-				xhr.responseType = 'arraybuffer';
-				xhr.send();
-				xhr.onload = async () => {
-					res[name] = await actx.decodeAudioData(xhr.response);
-					out.className = "accept";
-					out.innerText = `加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`;
-					resolve();
-				};
-			}
-		})));
+			});
+		}));
 		res.JudgeLineAP = await createImageBitmap(imgShader(res.JudgeLine, "#feffa9"));
 		res.JudgeLineFC = await createImageBitmap(imgShader(res.JudgeLine, "#a2eeff"));
 		res.TapBad = await createImageBitmap(imgShader(res.Tap2, "#6c4343"));
@@ -590,7 +605,7 @@ async function qwqImage(img, color) {
 //必要组件
 let stopDrawing;
 const stopPlaying = [];
-class Stat {
+const Stat = class {
 	constructor(numOfNotes) {
 		this.reset(numOfNotes);
 	}
@@ -627,7 +642,28 @@ class Stat {
 		if (a >= 7e5) return 5;
 		return 6;
 	}
-	reset(numOfNotes) {
+	get localData() {
+		const l1 = Math.round(this.accNum * 1e4 + 566).toString(22).slice(-3);
+		const l2 = Math.round(this.scoreNum + 40672).toString(32).slice(-4);
+		const l3 = (Number(inputLevel.value.match(/\d+$/))).toString(36).slice(-1);
+		return l1 + l2 + l3;
+	}
+	getData(isAuto) {
+		const s1 = this.data[this.id].slice(0, 3);
+		const s2 = this.data[this.id].slice(3, 7);
+		const l1 = Math.round(this.accNum * 1e4 + 566).toString(22).slice(-3);
+		const l2 = Math.round(this.scoreNum + 40672).toString(32).slice(-4);
+		const l3 = (Number(inputLevel.value.match(/\d+$/))).toString(36).slice(-1);
+		const a = (parseInt(s2, 32) - 40672).toFixed(0);
+		const scoreBest = ("0").repeat(a.length < 7 ? 7 - a.length : 0) + a;
+		if (!isAuto) this.data[this.id] = (s1 > l1 ? s1 : l1) + (s2 > l2 ? s2 : l2) + l3;
+		const arr = [];
+		for (const i in this.data) arr.push(i + this.data[i]);
+		localStorage.setItem("phi", arr.sort(() => Math.random() - 0.5).join(""));
+		if (isAuto) return [false, scoreBest, "+ 0", true];
+		return [s2 < l2, scoreBest, (s2 > l2 ? "- " : "+ ") + Math.abs(scoreBest - this.scoreStr), false];
+	}
+	reset(numOfNotes, id) {
 		this.numOfNotes = Number(numOfNotes) || 0;
 		this.perfect = 0;
 		this.good = 0;
@@ -636,6 +672,17 @@ class Stat {
 		this.combo = 0;
 		this.maxcombo = 0;
 		this.combos = [0, 0, 0, 0, 0]; //不同种类note实时连击次数
+		this.data = {};
+		if (localStorage.getItem("phi") == null) localStorage.setItem("phi", ""); //初始化存储
+		const str = localStorage.getItem("phi");
+		for (let i = 0; i < parseInt(str.length / 40); i++) {
+			const data = str.slice(i * 40, i * 40 + 40);
+			this.data[data.slice(0, 32)] = data.slice(-8);
+		}
+		if (id) {
+			if (!this.data[id]) this.data[id] = this.localData;
+			this.id = id;
+		}
 	}
 	addCombo(status, type) {
 		if (status == 1) {
@@ -714,9 +761,6 @@ class Timer {
 		return this.time / 1e3;
 	}
 }
-let tickIn = 0;
-let tickOut = 0;
-let tickEnd = 0;
 let curTime = 0;
 let curTimestamp = 0;
 let timeBgm = 0;
@@ -727,7 +771,7 @@ let isOutStart = false; //结尾过渡动画
 let isOutEnd = false; //临时变量
 let isPaused = true; //暂停
 //加载文件
-function loadFile(file) {
+const loadFile = function(file) {
 	qwq[1] = true;
 	document.getElementById("demo").classList.add("hide");
 	const reader = new FileReader();
@@ -743,62 +787,12 @@ function loadFile(file) {
 		reader.getEntries().then(async zipDataRaw => {
 			const zipData = [];
 			for (const i of zipDataRaw) {
-				if (i.filename.replace(/.*\//, "")) zipData.push(i);
+				if (i.filename.replace(/.*\//, "")) zipData.push(i); //过滤文件夹
 			}
 			console.log(zipData);
 			let loadedNum = 0;
 			const zipRaw = await Promise.all(zipData.map(i => new Promise(resolve => {
-				if (/\.(png|jpeg|jpg)$/i.test(i.filename)) {
-					return i.getData(new zip.BlobWriter()).then(async data => {
-						const imageData = await createImageBitmap(data);
-						const option = document.createElement("option");
-						option.innerHTML = i.filename;
-						option.value = i.filename;
-						bgs[i.filename] = imageData;
-						selectbg.appendChild(option);
-						loading(++loadedNum);
-						resolve(imageData);
-					});
-				} else if (/\.(mp3|wav|ogg)$/i.test(i.filename)) {
-					return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
-						const audioData = await actx.decodeAudioData(data.buffer);
-						const option = document.createElement("option");
-						option.innerHTML = i.filename;
-						option.value = i.filename;
-						bgms[i.filename] = audioData;
-						selectbgm.appendChild(option);
-						loading(++loadedNum);
-						resolve(audioData);
-					});
-				} else if (/\.(json|txt)$/i.test(i.filename)) {
-					return i.getData(new zip.TextWriter()).then(async data => {
-						try {
-							console.log(JSON.parse(data)); //test
-							const jsonData = await chart123(JSON.parse(data));
-							const option = document.createElement("option");
-							option.innerHTML = i.filename;
-							option.value = i.filename;
-							charts[i.filename] = jsonData;
-							selectchart.appendChild(option);
-							loading(++loadedNum);
-							resolve(jsonData);
-						} catch {
-							loading(++loadedNum);
-							resolve(undefined);
-						}
-					});
-				} else if (/\.(pec)$/i.test(i.filename)) {
-					return i.getData(new zip.TextWriter()).then(async data => {
-						const jsonData = await chart123(chartp23(data));
-						const option = document.createElement("option");
-						option.innerHTML = i.filename;
-						option.value = i.filename;
-						charts[i.filename] = jsonData;
-						selectchart.appendChild(option);
-						loading(++loadedNum);
-						resolve(jsonData);
-					});
-				} else if (i.filename == "line.csv") {
+				if (i.filename == "line.csv") {
 					return i.getData(new zip.TextWriter()).then(async data => {
 						const chartLine = csv2array(data, true);
 						chartLineData.push(...chartLine);
@@ -812,10 +806,68 @@ function loadFile(file) {
 						loading(++loadedNum);
 						resolve(chartInfo);
 					});
-				} else {
+				} else i.getData(new zip.Uint8ArrayWriter()).then(async data => {
+					const audioData = await actx.decodeAudioData(data.buffer);
+					const option = document.createElement("option");
+					option.innerHTML = i.filename;
+					option.value = i.filename;
+					bgms[i.filename] = audioData;
+					selectbgm.appendChild(option);
 					loading(++loadedNum);
-					resolve();
-				}
+					resolve(audioData);
+				}).catch(() => {
+					return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
+						const audioData = await actx2.decodeAudioData(data.buffer);
+						const option = document.createElement("option");
+						option.innerHTML = i.filename;
+						option.value = i.filename;
+						bgms[i.filename] = audioData;
+						selectbgm.appendChild(option);
+						loading(++loadedNum);
+						resolve(audioData);
+					});
+				}).catch(() => {
+					return i.getData(new zip.BlobWriter()).then(async data => {
+						const imageData = await createImageBitmap(data);
+						const option = document.createElement("option");
+						option.innerHTML = i.filename;
+						option.value = i.filename;
+						bgs[i.filename] = imageData;
+						bgsBlur[i.filename] = await createImageBitmap(imgBlur(imageData));
+						selectbg.appendChild(option);
+						loading(++loadedNum);
+						resolve(imageData);
+					});
+				}).catch(() => {
+					return i.getData(new zip.TextWriter()).then(async data => {
+						console.log(JSON.parse(data)); //test
+						const jsonData = await chart123(JSON.parse(data));
+						const option = document.createElement("option");
+						option.innerHTML = i.filename;
+						option.value = i.filename;
+						charts[i.filename] = jsonData;
+						charts[i.filename]["md5"] = md5(data);
+						selectchart.appendChild(option);
+						loading(++loadedNum);
+						resolve(jsonData);
+					});
+				}).catch(() => {
+					return i.getData(new zip.TextWriter()).then(async data => {
+						const jsonData = await chart123(chartp23(data));
+						const option = document.createElement("option");
+						option.innerHTML = i.filename;
+						option.value = i.filename;
+						charts[i.filename] = jsonData;
+						charts[i.filename]["md5"] = md5(data);
+						selectchart.appendChild(option);
+						loading(++loadedNum);
+						resolve(jsonData);
+					});
+				}).catch(() => {
+					loading(++loadedNum);
+					console.warn("Unsupported file:", i.filename); //以后移到日志里
+					resolve(undefined);
+				});
 			})));
 
 			function loading(num) {
@@ -836,8 +888,7 @@ function loadFile(file) {
 				}
 			}
 			console.log(zipRaw);
-		}, e => {
-			console.log(e);
+		}, () => {
 			out.className = "error";
 			out.innerText = "读取出错：不是zip文件"; //test
 		});
@@ -1001,7 +1052,7 @@ btnPlay.addEventListener("click", async function() {
 		stopPlaying.push(playSound(res["mute"], true, false, videoRecorder.checked, 0)); //播放空音频(防止音画不同步)
 		for (const i of ["lines", "notes", "taps", "drags", "flicks", "holds", "reverseholds", "tapholds"]) Renderer[i] = [];
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
-		stat.reset(Renderer.chart.numOfNotes);
+		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5);
 		for (const i of chartLineData) {
 			if (selectchart.value == i.Chart) {
 				Renderer.chart.judgeLineList[i.LineId].images[0] = bgs[i.Image];
@@ -1013,6 +1064,7 @@ btnPlay.addEventListener("click", async function() {
 			}
 		}
 		Renderer.backgroundImage = bgs[selectbg.value] || res.NoImage;
+		Renderer.backgroundImageBlur = bgsBlur[selectbg.value] || res.NoImage;
 		Renderer.backgroundMusic = bgms[selectbgm.value];
 		this.value = "停止";
 		resizeCanvas();
@@ -1022,8 +1074,8 @@ btnPlay.addEventListener("click", async function() {
 		isOutEnd = false;
 		isPaused = false;
 		timeBgm = 0;
-		if (!showTransition.checked) qwqIn.addTime(3000); //tickIn = 179;
-		canvas.classList.remove("disabled");
+		if (!showTransition.checked) qwqIn.addTime(3000);
+		canvas.classList.remove("fade");
 		mask.classList.add("fade");
 		btnPause.classList.remove("disabled");
 		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.add("disabled");
@@ -1058,16 +1110,14 @@ btnPlay.addEventListener("click", async function() {
 		while (stopPlaying.length) stopPlaying.shift()();
 		cancelAnimationFrame(stopDrawing);
 		resizeCanvas();
-		canvas.classList.add("disabled");
+		canvas.classList.add("fade");
+		mask.classList.remove("fade");
 		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.remove("disabled");
 		btnPause.classList.add("disabled");
 		//清除原有数据
 		clickEvents.length = 0;
-		tickIn = 0;
 		qwqIn.reset();
-		tickOut = 0;
 		qwqOut.reset();
-		tickEnd = 0;
 		qwqEnd.reset();
 		curTime = 0;
 		curTimestamp = 0;
@@ -1108,26 +1158,16 @@ function draw() {
 	const now = Date.now();
 	//计算时间
 	if (!isPaused) {
-		/*if (tickIn < 180 && ++tickIn == 180) {
-			isInEnd = true;
-			playBgm(Renderer.backgroundMusic);
-		}
-		if (isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
-		if (timeBgm >= duration) isOutStart = true;
-		showTransition.checked && isOutStart && tickOut < 40 && ++tickOut == 40;*/
-		tickIn = qwqIn.second * 60;
 		if (!isInEnd && qwqIn.second >= 3) {
 			isInEnd = true;
 			playBgm(Renderer.backgroundMusic);
 		}
 		if (isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
 		if (timeBgm >= duration) isOutStart = true;
-		showTransition.checked && isOutStart && tickOut < 40 && ++tickOut == 40;
 		if (showTransition.checked && isOutStart && !isOutEnd) {
 			isOutEnd = true;
 			qwqOut.play();
 		}
-		tickOut = qwqOut.second * 60;
 	}
 	timeChart = Math.max(timeBgm - Renderer.chart.offset - (Number(inputOffset.value) / 1e3 || 0), 0);
 	//遍历判定线events和Note
@@ -1220,18 +1260,19 @@ function draw() {
 			}
 		}
 	}
-	for (const i of clicks) {
-		if (i instanceof Click && i.isActive) i.animate();
-	}
-	for (const i of clickEvents) { //绘制打击特效0
-		ctx.globalAlpha = 0.85;
-		if (i.type == 0) {
-			ctx.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
-			ctx.fillStyle = i.color;
-			ctx.beginPath();
-			ctx.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
-			ctx.fill();
-			i.time++;
+	for (const i in clicks) clicks[i] instanceof Click && clicks[i].animate();
+	for (const i in touches) touches[i] instanceof Click && touches[i].animate();
+	if (document.getElementById("feedback").checked) {
+		for (const i of clickEvents) { //绘制打击特效0
+			ctx.globalAlpha = 0.85;
+			if (i.type == 0) {
+				ctx.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
+				ctx.fillStyle = i.color;
+				ctx.beginPath();
+				ctx.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
+				ctx.fill();
+				i.time++;
+			}
 		}
 	}
 	for (const i of clickEvents) { //绘制打击特效2
@@ -1266,35 +1307,40 @@ function draw() {
 			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 		}
 	}
-	if (tickIn >= 180 && tickOut == 0) { //绘制note
+	if (qwqIn.second >= 3 && qwqOut.second == 0) { //绘制note
 		for (const i of Renderer.flicks) drawNote(i, timeChart, 4);
 		for (const i of Renderer.taps) drawNote(i, timeChart, 1);
 		for (const i of Renderer.drags) drawNote(i, timeChart, 2);
 		for (const i of Renderer.reverseholds) drawNote(i, timeChart, 3);
 	}
 	//绘制背景
-	if (tickIn >= 150) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
+	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
 	ctx.resetTransform();
 	ctx.fillStyle = "#000"; //背景变暗
 	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	if (tickIn >= 150 && !stat.lineStatus) drawLine(0); //绘制判定线(背景后0)
+	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0); //绘制判定线(背景后0)
 	ctx.globalAlpha = 1;
 	ctx.resetTransform();
-	ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-	ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
-	//
+	if (document.getElementById("imageBlur").checked) {
+		ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvas.width, canvas.height));
+		ctxbg.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvasbg.width, canvasbg.height));
+	} else {
+		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+		ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+	}
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.globalCompositeOperation = "source-over";
 	//绘制进度条
-	ctx.setTransform(canvas.width / 1920, 0, 0, canvas.width / 1920, 0, lineScale * (tickIn < 40 ? (tween[2](tickIn * 0.025) - 1) : -tween[2](tickOut * 0.025)) * 1.75);
+	ctx.setTransform(canvas.width / 1920, 0, 0, canvas.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctx.drawImage(res.ProgressBar, timeBgm / duration * 1920 - 1920, 0);
 	//绘制文字
 	ctx.resetTransform();
 	ctx.fillStyle = "#fff";
-	//开头过渡动画//以后加入tickOut
-	if (tickIn < 180) {
-		if (tickIn < 40) ctx.globalAlpha = tween[2](tickIn * 0.025);
-		else if (tickIn >= 150) ctx.globalAlpha = tween[2]((180 - tickIn) / 30);
+	//开头过渡动画
+	if (qwqIn.second < 3) {
+		if (qwqIn.second < 0.67) ctx.globalAlpha = tween[2](qwqIn.second * 1.5);
+		else if (qwqIn.second >= 2.5) ctx.globalAlpha = tween[2](6 - qwqIn.second * 2);
 		ctx.textAlign = "center";
 		//歌名
 		ctx.textBaseline = "alphabetic";
@@ -1308,14 +1354,14 @@ function draw() {
 		//判定线(装饰用)
 		ctx.globalAlpha = 1;
 		ctx.setTransform(1, 0, 0, 1, wlen, hlen);
-		const imgW = lineScale * 48 * (tickIn < 40 ? tween[3](tickIn * 0.025) : 1);
+		const imgW = lineScale * 48 * (qwqIn.second < 0.67 ? tween[3](qwqIn.second * 1.5) : 1);
 		const imgH = lineScale * 0.15;
-		if (tickIn >= 150) ctx.globalAlpha = tween[2]((180 - tickIn) / 30);
+		if (qwqIn.second >= 2.5) ctx.globalAlpha = tween[2](6 - qwqIn.second * 2);
 		ctx.drawImage(lineColor.checked ? res.JudgeLineAP : res.JudgeLine, -imgW / 2, -imgH / 2, imgW, imgH);
 	}
 	//绘制分数和combo以及暂停按钮
 	ctx.globalAlpha = 1;
-	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (tickIn < 40 ? (tween[2](tickIn * 0.025) - 1) : -tween[2](tickOut * 0.025)) * 1.75);
+	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctx.textBaseline = "alphabetic";
 	ctx.font = `${lineScale*0.95}px Exo`;
 	ctx.textAlign = "right";
@@ -1325,14 +1371,14 @@ function draw() {
 		ctx.textAlign = "center";
 		ctx.font = `${lineScale*1.3}px Exo`;
 		ctx.fillText(stat.combo, wlen, lineScale * 1.35);
-		ctx.globalAlpha = tickIn < 40 ? tween[2](tickIn * 0.025) : (1 - tween[2](tickOut * 0.025));
+		ctx.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
 		ctx.textBaseline = "top";
 		ctx.font = `${lineScale*0.65}px Exo`;
 		ctx.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 1.50);
 	}
 	//绘制歌名和等级
 	ctx.globalAlpha = 1;
-	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (tickIn < 40 ? (1 - tween[2](tickIn * 0.025)) : tween[2](tickOut * 0.025)) * 1.75);
+	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctx.textBaseline = "alphabetic";
 	ctx.textAlign = "right";
 	ctx.font = `${lineScale*0.65}px Exo`;
@@ -1344,8 +1390,8 @@ function draw() {
 	ctx.resetTransform();
 	if (qwq[0]) {
 		//绘制时间和帧率以及note打击数
-		if (tickIn < 40) ctx.globalAlpha = tween[2](tickIn * 0.025);
-		else ctx.globalAlpha = 1 - tween[2](tickOut * 0.025);
+		if (qwqIn.second < 0.67) ctx.globalAlpha = tween[2](qwqIn.second * 1.5);
+		else ctx.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
 		ctx.textBaseline = "top";
 		ctx.font = `${lineScale*0.4}px Exo`;
 		ctx.textAlign = "left";
@@ -1368,9 +1414,9 @@ function draw() {
 	//判定线函数，undefined/0:默认,1:非,2:恒成立
 	function drawLine(bool) {
 		ctx.globalAlpha = 1;
-		const tw = 1 - tween[2](tickOut * 0.025);
+		const tw = 1 - tween[2](qwqOut.second * 1.5);
 		for (const i of Renderer.lines) {
-			if (bool ^ i.imageB && tickOut < 40) {
+			if (bool ^ i.imageB && qwqOut.second < 0.67) {
 				ctx.globalAlpha = i.alpha;
 				ctx.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, wlen + (i.offsetX - wlen) * tw, i.offsetY); //hiahiah
 				const imgH = i.imageH > 0 ? lineScale * 18.75 * i.imageH : canvas.height * -i.imageH; // hlen*0.008
@@ -1379,12 +1425,10 @@ function draw() {
 			}
 		}
 	}
-	stopDrawing = requestAnimationFrame(tickOut >= 40 ? draw2 : draw); //回调更新动画
+	stopDrawing = requestAnimationFrame(qwqOut.second >= 0.67 ? draw2 : draw); //回调更新动画
 }
 
 function draw2() {
-	//tickOut = 40;
-	//tickEnd = 0;
 	btnPause.click(); //isPaused = true;
 	while (stopPlaying.length) stopPlaying.shift()();
 	cancelAnimationFrame(stopDrawing);
@@ -1392,24 +1436,44 @@ function draw2() {
 	ctx.globalCompositeOperation = "source-over";
 	ctx.resetTransform();
 	ctx.globalAlpha = 1;
-	ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-	ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+	if (document.getElementById("imageBlur").checked) {
+		ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvas.width, canvas.height));
+		ctxbg.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvasbg.width, canvasbg.height));
+	} else {
+		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+		ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+	}
 	ctx.fillStyle = "#000"; //背景变暗
 	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	setTimeout(() => stopPlaying.push(playSound(res.LevelOver2, true, true, videoRecorder.checked, 0)), 1000);
-	setTimeout(() => qwqEnd.play(), 1000);
-	setTimeout(qwqwq, 1000);
+	const qwq = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
+	const statData = stat.getData(autoplay.checked);
+	const xhr = new XMLHttpRequest();
+	xhr.open("get", `src/LevelOver${qwq<0?2:qwq}.ogg`, true);
+	xhr.responseType = 'arraybuffer';
+	xhr.send();
+	xhr.onload = async () => {
+		const bgm = await actx2.decodeAudioData(xhr.response);
+		setTimeout(() => {
+			stopPlaying.push(playSound(bgm, true, true, videoRecorder.checked, 0));
+			qwqEnd.reset();
+			qwqEnd.play();
+			qwqwq();
+		}, 1000);
+	}
 
 	function qwqwq() {
-		//++tickEnd;
-		tickEnd = qwqEnd.second * 60;
 		ctx.resetTransform();
 		ctx.globalCompositeOperation = "source-over";
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.globalAlpha = 1;
-		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-		ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+		if (document.getElementById("imageBlur").checked) {
+			ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvas.width, canvas.height));
+			ctxbg.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvasbg.width, canvasbg.height));
+		} else {
+			ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+			ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+		}
 		ctx.fillStyle = "#000"; //背景变暗
 		ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1417,28 +1481,42 @@ function draw2() {
 		ctx.globalAlpha = 1;
 		const k = 3.7320508075688776; //tan75°
 		ctx.setTransform(canvas.width - canvas.height / k, 0, -canvas.height / k, canvas.height, canvas.height / k, 0);
-		ctx.fillRect(0, 0, 1, tween[8](range((tickEnd - 8) / 64)));
+		ctx.fillRect(0, 0, 1, tween[8](range((qwqEnd.second - 0.13) * 0.94)));
 		ctx.resetTransform();
 		ctx.globalCompositeOperation = "destination-over";
 		const qwq0 = (canvas.width - canvas.height / k) / (16 - 9 / k);
 		ctx.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
 		ctx.drawImage(res.LevelOver4, 183, 42, 1184, 228);
-		ctx.globalAlpha = range((tickEnd - 16) / 72);
+		ctx.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
 		ctx.drawImage(res.LevelOver1, 102, 378);
 		ctx.globalCompositeOperation = "source-over";
 		ctx.globalAlpha = 1;
-		ctx.drawImage(res.LevelOver5, 700 * tween[8](range(tickEnd / 48)) - 369, 91, 20, 80);
+		ctx.drawImage(res.LevelOver5, 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
 		ctx.fillStyle = "#fff";
 		ctx.textBaseline = "middle";
 		ctx.textAlign = "left";
 		ctx.font = "80px Exo";
-		ctx.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(tickEnd / 48)) - 319, 135);
+		ctx.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 319, 135);
 		ctx.font = "32px Exo";
-		ctx.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(tickEnd / 48)) - 319, 203);
+		ctx.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 319, 203);
 		ctx.font = "30px Exo";
-		ctx.globalAlpha = range((tickEnd - 57) / 40);
+		ctx.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
+		ctx.fillStyle = statData[0] ? "#18ffbf" : "#fff";
+		ctx.fillText(statData[0] ? "NEW BEST" : "BEST", 898, 424);
+		ctx.fillStyle = "#fff";
+		ctx.textAlign = "center";
+		ctx.fillText(statData[1], 1182, 424);
+		ctx.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
+		ctx.textAlign = "right";
+		ctx.fillText(statData[2], 1414, 424);
+		ctx.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
+		ctx.textAlign = "left";
 		ctx.fillText(stat.accStr, 351, 541);
 		ctx.fillText(stat.maxcombo, 1527, 541);
+		if (statData[3]) {
+			ctx.fillStyle = "#fe4365";
+			ctx.fillText("AUTO PLAY", 1355, 496);
+		}
 		if (stat.lineStatus) {
 			ctx.fillStyle = stat.lineStatus == 1 ? "#ffc500" : "#00bef1";
 			ctx.fillText(stat.lineStatus == 1 ? "ALL  PERFECT" : "FULL  COMBO", 1355, 586);
@@ -1446,27 +1524,29 @@ function draw2() {
 		ctx.fillStyle = "#fff";
 		ctx.textAlign = "center";
 		ctx.font = "86px Exo";
-		ctx.globalAlpha = range((tickEnd - 67) / 30);
+		ctx.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
 		ctx.fillText(stat.scoreStr, 1075, 544);
 		ctx.font = "26px Exo";
-		ctx.globalAlpha = range((tickEnd - 52) / 24);
+		ctx.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 		ctx.fillText(stat.perfect, 890, 641);
-		ctx.globalAlpha = range((tickEnd - 64) / 24);
+		ctx.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
 		ctx.fillText(stat.good, 1043, 641);
-		ctx.globalAlpha = range((tickEnd - 76) / 24);
+		ctx.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
 		ctx.fillText(stat.bad, 1196, 641);
-		ctx.globalAlpha = range((tickEnd - 88) / 24);
+		ctx.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
 		ctx.fillText(stat.miss, 1349, 641);
-		ctx.globalAlpha = range((tickEnd - 112) / 16);
+		ctx.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
 		ctx.transform(1, 0, 0, 1, 661.5, 544.5);
-		const qwq2 = 293 + range((tickEnd - 112) / 16) * 100;
-		const qwq3 = 410 - range((tickEnd - 112) / 28) * 164;
+		const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
+		const qwq3 = 410 - range((qwqEnd.second - 1.87) * 2.14) * 164;
 		ctx.drawImage(res.LevelOver3, -qwq2 / 2, -qwq2 / 2, qwq2, qwq2);
 		ctx.drawImage(res.Ranks[stat.rankStatus], -qwq3 / 2, -qwq3 / 2, qwq3, qwq3);
 		ctx.resetTransform();
 		ctx.globalCompositeOperation = "destination-over";
 		ctx.globalAlpha = 1;
+		ctx.fillStyle = "#000";
 		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		stopDrawing = requestAnimationFrame(qwqwq); //回调更新动画
 	}
 }
@@ -2002,6 +2082,23 @@ function imgShader(img, color) {
 	}
 	return imgData;
 }
+
+function imgBlur(img) {
+	/*const canvas = document.createElement("canvas");
+	canvas.width = img.width;
+	canvas.height = img.height;
+	const ctx = canvas.getContext("2d");
+	ctx.drawImage(img, 0, 0); //防止边界半透明
+	ctx.filter = `blur(${Math.min(img.width,img.height)*0.0065}px)`;
+	ctx.drawImage(img, 0, 0);
+	return ctx.getImageData(0, 0, img.width, img.height);*/
+	const canvas = document.createElement("canvas");
+	canvas.width = img.width;
+	canvas.height = img.height;
+	const ctx = canvas.getContext("2d");
+	ctx.drawImage(img, 0, 0);
+	return StackBlur.imageDataRGB(ctx.getImageData(0, 0, img.width, img.height), 0, 0, img.width, img.height, Math.ceil(Math.min(img.width, img.height) * 0.0125));
+}
 //十六进制color转rgba数组
 function hex2rgba(color) {
 	const ctx = document.createElement("canvas").getContext("2d");
@@ -2009,7 +2106,7 @@ function hex2rgba(color) {
 	ctx.fillRect(0, 0, 1, 1);
 	return ctx.getImageData(0, 0, 1, 1).data;
 }
-
+//rgba数组(0-1)转十六进制
 function rgba2hex(...rgba) {
 	return "#" + rgba.map(i => ("00" + Math.round(Number(i) * 255 || 0).toString(16)).slice(-2)).join("");
 }
