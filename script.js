@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 4], 1611795955, 1631125420];
+const _i = ['Phigros模拟器', [1, 4, 5], 1611795955, 1631210033];
 document.oncontextmenu = e => e.returnValue = false; //qwq
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
@@ -140,9 +140,9 @@ document.getElementById("demo").addEventListener("click", function() {
 		loadFile(xhr.response);
 	};
 });
-//点击特效(以后会改)
-const clicks = {}; //存放点击事件，用于检测
-const touches = {}; //存放触摸事件，用于检测
+const mouse = {}; //存放鼠标事件(用于检测，下同)
+const touch = {}; //存放触摸事件
+const keyboard = {}; //存放键盘事件
 const taps = []; //额外处理tap(试图修复吃音bug)
 const specialClick = {
 	time: [0, 0, 0],
@@ -163,8 +163,8 @@ const specialClick = {
 }
 class Click {
 	constructor(offsetX, offsetY) {
-		this.offsetX = Number(offsetX) || 0;
-		this.offsetY = Number(offsetY) || 0;
+		this.offsetX = Number(offsetX);
+		this.offsetY = Number(offsetY);
 		this.isMoving = false;
 		this.time = 0;
 	}
@@ -176,8 +176,8 @@ class Click {
 		return new Click(offsetX, offsetY);
 	}
 	move(offsetX, offsetY) {
-		this.offsetX = Number(offsetX) || 0;
-		this.offsetY = Number(offsetY) || 0;
+		this.offsetX = Number(offsetX);
+		this.offsetY = Number(offsetY);
 		this.isMoving = true;
 		this.time = 0;
 	}
@@ -190,34 +190,41 @@ class Click {
 }
 class Judgement {
 	constructor(offsetX, offsetY, type) {
-		this.offsetX = Number(offsetX) || 0;
-		this.offsetY = Number(offsetY) || 0;
+		this.offsetX = Number(offsetX);
+		this.offsetY = Number(offsetY);
 		this.type = Number(type) || 0; //1-Tap,2-Hold,3-Move
+		this.catched = false;
 	}
 	isInArea(x, y, cosr, sinr, hw) {
-		return Math.abs((this.offsetX - x) * cosr + (this.offsetY - y) * sinr) <= hw;
+		return isNaN(this.offsetX + this.offsetY) ? true : Math.abs((this.offsetX - x) * cosr + (this.offsetY - y) * sinr) <= hw;
 	}
 }
 class Judgements extends Array {
 	addJudgement(notes, realTime) {
 		this.length = 0;
 		if (!autoplay.checked) {
-			for (const j in clicks) {
-				const i = clicks[j];
+			for (const j in mouse) {
+				const i = mouse[j];
 				if (i instanceof Click) {
-					if (!i.time) {
-						if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
-						//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
-					} else this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					if (i.time) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					else if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
+					//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
 				}
 			}
-			for (const j in touches) {
-				const i = touches[j];
+			for (const j in touch) {
+				const i = touch[j];
 				if (i instanceof Click) {
-					if (!i.time) {
-						if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
-						//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
-					} else this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					if (i.time) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					else if (i.isMoving) this.push(new Judgement(i.offsetX, i.offsetY, 3));
+					//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
+				}
+			}
+			for (const j in keyboard) {
+				const i = keyboard[j];
+				if (i instanceof Click) {
+					if (i.time) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					else /*if (i.isMoving)*/ this.push(new Judgement(i.offsetX, i.offsetY, 3));
+					//else this.push(new Judgement(i.offsetX, i.offsetY, 1));
 				}
 			}
 			for (const i of taps) {
@@ -252,8 +259,10 @@ class Judgements extends Array {
 					if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.2 && i.realTime - realTime > -0.16) {
 						if (i.realTime - realTime > 0.16) {
 							//console.log("Bad", i.name);
-							i.status = 3;
-							clickEvents.push(ClickEvent.getClickBad(i.offsetX, i.offsetY, i.cosr, i.sinr));
+							if (!this[j].catched) {
+								i.status = 3;
+								clickEvents.push(ClickEvent.getClickBad(i.offsetX, i.offsetY, i.cosr, i.sinr));
+							}
 						} else if (i.realTime - realTime > 0.08) {
 							//console.log("Good(Early)", i.name);
 							i.status = 2;
@@ -270,10 +279,12 @@ class Judgements extends Array {
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
 							clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
 						}
-						stat.addCombo(i.status, 1);
-						i.scored = true;
-						this.splice(j, 1);
-						break;
+						if (i.status) {
+							stat.addCombo(i.status, 1);
+							i.scored = true;
+							this.splice(j, 1);
+							break;
+						}
 					}
 				}
 			} else if (i.type == 2) {
@@ -286,6 +297,7 @@ class Judgements extends Array {
 					for (let j = 0; j < this.length; j++) {
 						if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
 							//console.log("Perfect", i.name);
+							this[j].catched = true;
 							i.status = 1;
 							break;
 						}
@@ -345,10 +357,13 @@ class Judgements extends Array {
 					i.scored = true;
 				} else if (!i.status) {
 					for (let j = 0; j < this.length; j++) {
-						if (this[j].type == 3 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
+						if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
 							//console.log("Perfect", i.name);
-							i.status = 1;
-							break;
+							this[j].catched = true;
+							if (this[j].type == 3) {
+								i.status = 1;
+								break;
+							}
 						}
 					}
 				}
@@ -424,7 +439,7 @@ canvas.addEventListener("mousedown", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
 	const i = evt;
-	clicks[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+	mouse[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	isMouseDown[idx] = true;
 });
 canvas.addEventListener("mousemove", evt => {
@@ -432,24 +447,43 @@ canvas.addEventListener("mousemove", evt => {
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
 			const i = evt;
-			clicks[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+			mouse[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 		}
 	}
 });
 canvas.addEventListener("mouseup", evt => {
 	evt.preventDefault();
 	const idx = evt.button;
-	delete clicks[idx];
+	delete mouse[idx];
 	delete isMouseDown[idx];
 });
 canvas.addEventListener("mouseout", evt => {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			delete clicks[idx];
+			delete mouse[idx];
 			delete isMouseDown[idx];
 		}
 	}
+});
+//适配键盘(喵喵喵?)
+window.addEventListener("keydown", evt => {
+	if (document.activeElement.classList.value == "input") return;
+	if (btnPlay.value != "停止") return;
+	evt.preventDefault();
+	if (evt.key == "Shift") btnPause.click();
+	else if (keyboard[evt.code] instanceof Click);
+	else keyboard[evt.code] = Click.activate(NaN, NaN);
+}, false);
+window.addEventListener("keyup", evt => {
+	if (document.activeElement.classList.value == "input") return;
+	if (btnPlay.value != "停止") return;
+	evt.preventDefault();
+	if (evt.key == "Shift");
+	else if (keyboard[evt.code] instanceof Click) delete keyboard[evt.code];
+}, false);
+window.addEventListener("blur", () => {
+	for (const i in keyboard) delete keyboard[i]; //失去焦点清除键盘事件
 });
 //适配移动设备
 const passive = {
@@ -458,27 +492,27 @@ const passive = {
 canvas.addEventListener("touchstart", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
-		touches[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+		touch[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchmove", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		touches[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+		touch[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
 	}
 }, passive);
 canvas.addEventListener("touchend", evt => {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		delete touches[idx];
+		delete touch[idx];
 	}
 });
 canvas.addEventListener("touchcancel", evt => {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		delete touches[idx];
+		delete touch[idx];
 	}
 });
 //优化触摸定位，以后整合进class
@@ -1042,6 +1076,7 @@ function prerenderChart(chart) {
 	}
 }
 document.addEventListener("visibilitychange", () => document.visibilityState == "hidden" && btnPause.value == "暂停" && btnPause.click());
+document.addEventListener("pagehide", () => document.visibilityState == "hidden" && btnPause.value == "暂停" && btnPause.click()); //兼容Safari
 const qwqIn = new Timer();
 const qwqOut = new Timer();
 const qwqEnd = new Timer();
@@ -1260,8 +1295,8 @@ function draw() {
 			}
 		}
 	}
-	for (const i in clicks) clicks[i] instanceof Click && clicks[i].animate();
-	for (const i in touches) touches[i] instanceof Click && touches[i].animate();
+	for (const i in mouse) mouse[i] instanceof Click && mouse[i].animate();
+	for (const i in touch) touch[i] instanceof Click && touch[i].animate();
 	if (document.getElementById("feedback").checked) {
 		for (const i of clickEvents) { //绘制打击特效0
 			ctx.globalAlpha = 0.85;
@@ -1283,31 +1318,32 @@ function draw() {
 			ctx.drawImage(i.image, -i.image.width / 2, -i.image.height / 2); //停留约0.5秒
 		}
 	}
-	if (showPoint.checked) { //绘制定位点
-		ctx.font = `${lineScale}px Exo`;
-		ctx.textAlign = "center";
-		ctx.textBaseline = "bottom";
-		for (const i of Renderer.notes) {
-			if (!i.visible) continue;
-			ctx.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
-			ctx.fillStyle = "cyan";
-			ctx.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
-			ctx.fillText(i.name, 0, -lineScale * 0.1);
-			ctx.globalAlpha = 1;
-			ctx.fillStyle = "lime";
-			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+	if (qwqIn.second >= 3 && qwqOut.second == 0) {
+		if (showPoint.checked) { //绘制定位点
+			ctx.font = `${lineScale}px Exo`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "bottom";
+			for (const i of Renderer.notes) {
+				if (!i.visible) continue;
+				ctx.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+				ctx.fillStyle = "cyan";
+				ctx.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
+				ctx.fillText(i.name, 0, -lineScale * 0.1);
+				ctx.globalAlpha = 1;
+				ctx.fillStyle = "lime";
+				ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+			}
+			for (const i of Renderer.lines) {
+				ctx.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+				ctx.fillStyle = "yellow";
+				ctx.globalAlpha = (i.alpha + 0.5) / 1.5;
+				ctx.fillText(i.lineId, 0, -lineScale * 0.1);
+				ctx.globalAlpha = 1;
+				ctx.fillStyle = "violet";
+				ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+			}
 		}
-		for (const i of Renderer.lines) {
-			ctx.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
-			ctx.fillStyle = "yellow";
-			ctx.globalAlpha = (i.alpha + 0.5) / 1.5;
-			ctx.fillText(i.lineId, 0, -lineScale * 0.1);
-			ctx.globalAlpha = 1;
-			ctx.fillStyle = "violet";
-			ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
-		}
-	}
-	if (qwqIn.second >= 3 && qwqOut.second == 0) { //绘制note
+		//绘制note
 		for (const i of Renderer.flicks) drawNote(i, timeChart, 4);
 		for (const i of Renderer.taps) drawNote(i, timeChart, 1);
 		for (const i of Renderer.drags) drawNote(i, timeChart, 2);
@@ -1515,9 +1551,8 @@ function draw2() {
 		ctx.fillText(stat.maxcombo, 1527, 541);
 		if (statData[3]) {
 			ctx.fillStyle = "#fe4365";
-			ctx.fillText("AUTO PLAY", 1355, 496);
-		}
-		if (stat.lineStatus) {
+			ctx.fillText("AUTO PLAY", 1355, 586);
+		} else if (stat.lineStatus) {
 			ctx.fillStyle = stat.lineStatus == 1 ? "#ffc500" : "#00bef1";
 			ctx.fillText(stat.lineStatus == 1 ? "ALL  PERFECT" : "FULL  COMBO", 1355, 586);
 		}
@@ -1948,13 +1983,6 @@ function chartp23(pec) {
 	}
 	return JSON.parse(JSON.stringify(qwqChart));
 }
-window.addEventListener("keydown", evt => {
-	if (document.activeElement.classList.value != "input") {
-		evt.preventDefault();
-		if (btnPlay.value != "停止");
-		else if (evt.key == " ") btnPause.click();
-	}
-}, false);
 const tween = [null, null,
 	pos => Math.sin(pos * Math.PI / 2), //2
 	pos => 1 - Math.cos(pos * Math.PI / 2), //3
