@@ -37,7 +37,7 @@ const chartInfoData = []; //info.csv
 const adjustSize = (sw, sh, dw, dh) => (dw * sh > dh * sw) ? [0, (dh - dw * sh / sw) / 2, dw, dw * sh / sw] : [(dw - dh * sw / sh) / 2, 0, dh * sw / sh, dh];
 const AspectRatio = 16 / 9; //宽高比上限
 const Deg = Math.PI / 180; //角度转弧度
-let wlen, hlen, wlen2, noteScale, lineScale; //背景图相关
+let wlen, hlen, wlen2, hlen2, noteScale, lineScale; //背景图相关
 const Renderer = { //存放谱面
 	chart: null,
 	backgroundImage: null,
@@ -110,6 +110,7 @@ function resizeCanvas() {
 	wlen = canvas.width / 2;
 	hlen = canvas.height / 2;
 	wlen2 = canvas.width / 18;
+	hlen2 = canvas.height * 0.6; //控制note流速
 	noteScale = canvas.width / Number(selectscaleratio.value); //note、特效缩放
 	lineScale = canvas.width > canvas.height * 0.75 ? canvas.height / 18.75 : canvas.width / 14.0625; //判定线、文字缩放
 }
@@ -537,11 +538,20 @@ function getOffsetTop(element) {
 	}
 	return a;
 }
-const settings = { //优化(?)
-	alpha: false
-};
-const ctx = canvas.getContext("2d", settings); //游戏界面
-const ctxbg = canvasbg.getContext("2d", settings); //游戏背景
+const ctx = canvas.getContext("2d"); //游戏界面(alpha:false会出现兼容问题)
+/*const qwqcanvas=document.createElement("canvas");
+const qwqctx=qwqcanvas.getContext("2d");
+const ctxbuff = {
+	fontSize: 10,
+	fontFamily: "sans-serif",
+	textAlign: "start",
+	textBaseline: "alphabetic",
+	fillStyle: "#000000",
+	fillText:function(text,x,y,size,font,style,align,baseline){
+		this.fontSize
+	}
+}*/
+const ctxbg = canvasbg.getContext("2d"); //游戏背景
 const imgClick = {
 	perfect: [],
 	good: []
@@ -1192,17 +1202,15 @@ function playBgm(data, offset) {
 function draw() {
 	const now = Date.now();
 	//计算时间
-	if (!isPaused) {
-		if (!isInEnd && qwqIn.second >= 3) {
-			isInEnd = true;
-			playBgm(Renderer.backgroundMusic);
-		}
-		if (isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
-		if (timeBgm >= duration) isOutStart = true;
-		if (showTransition.checked && isOutStart && !isOutEnd) {
-			isOutEnd = true;
-			qwqOut.play();
-		}
+	if (!isInEnd && qwqIn.second >= 3) {
+		isInEnd = true;
+		playBgm(Renderer.backgroundMusic);
+	}
+	if (!isPaused && isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
+	if (timeBgm >= duration) isOutStart = true;
+	if (showTransition.checked && isOutStart && !isOutEnd) {
+		isOutEnd = true;
+		qwqOut.play();
 	}
 	timeChart = Math.max(timeBgm - Renderer.chart.offset - (Number(inputOffset.value) / 1e3 || 0), 0);
 	//遍历判定线events和Note
@@ -1237,37 +1245,34 @@ function draw() {
 			line.positionY = (timeChart - i.startRealTime) * i.value + i.floorPosition;
 		}
 		for (const i of line.notesAbove) {
-			const dx = wlen2 * i.positionX;
-			const dy = hlen * (i.type == 3 ? (i.realTime < timeChart ? (i.realTime - timeChart) * i.speed : i.floorPosition - line.positionY) : (i.floorPosition - line.positionY) * i.speed) * 1.2;
 			i.cosr = line.cosr;
 			i.sinr = line.sinr;
+			setAlpha(i, wlen2 * i.positionX, hlen2 * getY(i));
+		}
+		for (const i of line.notesBelow) {
+			i.cosr = -line.cosr;
+			i.sinr = -line.sinr;
+			setAlpha(i, -wlen2 * i.positionX, hlen2 * getY(i));
+		}
+
+		function getY(i) {
+			if (i.type != 3) return (i.floorPosition - line.positionY) * i.speed;
+			if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed;
+			return i.floorPosition - line.positionY;
+		}
+
+		function setAlpha(i, dx, dy) {
 			i.projectX = line.offsetX + dx * i.cosr;
 			i.offsetX = i.projectX + dy * i.sinr;
 			i.projectY = line.offsetY + dx * i.sinr;
 			i.offsetY = i.projectY - dy * i.cosr;
-			qwqAlpha(i, dy);
-		}
-		for (const i of line.notesBelow) {
-			const dx = wlen2 * i.positionX;
-			const dy = hlen * (i.type == 3 ? (i.realTime < timeChart ? (i.realTime - timeChart) * i.speed : i.floorPosition - line.positionY) : (i.floorPosition - line.positionY) * i.speed) * 1.2;
-			i.cosr = -line.cosr;
-			i.sinr = -line.sinr;
-			i.projectX = line.offsetX - dx * i.cosr;
-			i.offsetX = i.projectX + dy * i.sinr;
-			i.projectY = line.offsetY - dx * i.sinr;
-			i.offsetY = i.projectY - dy * i.cosr;
-			qwqAlpha(i, dy);
-		}
-
-		function qwqAlpha(i, dy) {
-			if (i.type == 3) {
-				i.alpha = (i.realTime > timeChart) ? ((i.speed == 0 || dy < -1e-3 && !(i.realTime < timeChart)) ? (showPoint.checked ? 0.45 : 0) : 1) : ((i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : (i.status == 4 ? 0.45 : 1));
-				i.visible = (Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen * (1 + i.realHoldTime * i.speed * 1.2));
+			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed;
+			if (i.realTime > timeChart) {
+				if (dy > -1e-3) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1;
+				else i.alpha = showPoint.checked ? 0.45 : 0;
 			} else {
-				if (i.realTime >= timeChart && dy < -1e-3) i.alpha = showPoint.checked ? 0.45 : 0;
-				else if (i.realTime < timeChart) i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0);
-				else i.alpha = 1;
-				i.visible = (Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen);
+				if (i.type == 3) i.speed == 0 ? (showPoint.checked ? 0.45 : 0) : (i.status == 4 ? 0.45 : 1);
+				else i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0); //过线后0.16s消失
 			}
 		}
 	}
@@ -1320,7 +1325,7 @@ function draw() {
 	}
 	if (qwqIn.second >= 3 && qwqOut.second == 0) {
 		if (showPoint.checked) { //绘制定位点
-			ctx.font = `${lineScale}px Exo`;
+			ctx.font = `${lineScale}px Mina`;
 			ctx.textAlign = "center";
 			ctx.textBaseline = "bottom";
 			for (const i of Renderer.notes) {
@@ -1380,11 +1385,11 @@ function draw() {
 		ctx.textAlign = "center";
 		//歌名
 		ctx.textBaseline = "alphabetic";
-		ctx.font = `${lineScale*1.1}px Exo`;
+		ctx.font = `${lineScale*1.1}px Mina`;
 		ctx.fillText(inputName.value || inputName.placeholder, wlen, hlen * 0.75);
 		//曲绘和谱师
 		ctx.textBaseline = "top";
-		ctx.font = `${lineScale*0.55}px Exo`;
+		ctx.font = `${lineScale*0.55}px Mina`;
 		ctx.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, wlen, hlen * 1.25 + lineScale * 0.15);
 		ctx.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, wlen, hlen * 1.25 + lineScale * 1.0);
 		//判定线(装饰用)
@@ -1399,17 +1404,17 @@ function draw() {
 	ctx.globalAlpha = 1;
 	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctx.textBaseline = "alphabetic";
-	ctx.font = `${lineScale*0.95}px Exo`;
+	ctx.font = `${lineScale*0.95}px Mina`;
 	ctx.textAlign = "right";
 	ctx.fillText(stat.scoreStr, canvas.width - lineScale * 0.65, lineScale * 1.35);
 	if (!qwq[0]) ctx.drawImage(res.Pause, lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
 	if (stat.combo > 2) {
 		ctx.textAlign = "center";
-		ctx.font = `${lineScale*1.3}px Exo`;
+		ctx.font = `${lineScale*1.3}px Mina`;
 		ctx.fillText(stat.combo, wlen, lineScale * 1.35);
 		ctx.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
 		ctx.textBaseline = "top";
-		ctx.font = `${lineScale*0.65}px Exo`;
+		ctx.font = `${lineScale*0.65}px Mina`;
 		ctx.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 1.50);
 	}
 	//绘制歌名和等级
@@ -1417,11 +1422,11 @@ function draw() {
 	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctx.textBaseline = "alphabetic";
 	ctx.textAlign = "right";
-	ctx.font = `${lineScale*0.65}px Exo`;
+	ctx.font = `${lineScale*0.65}px Mina`;
 	ctx.fillText(inputLevel.value || inputLevel.placeholder, canvas.width - lineScale * 0.75, canvas.height - lineScale * 0.65);
 	ctx.drawImage(res.SongsNameBar, lineScale * 0.53, canvas.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctx.textAlign = "left";
-	ctx.font = `${lineScale*0.62}px Exo`;
+	ctx.font = `${lineScale*0.62}px Mina`;
 	ctx.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvas.height - lineScale * 0.65);
 	ctx.resetTransform();
 	if (qwq[0]) {
@@ -1429,7 +1434,7 @@ function draw() {
 		if (qwqIn.second < 0.67) ctx.globalAlpha = tween[2](qwqIn.second * 1.5);
 		else ctx.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
 		ctx.textBaseline = "top";
-		ctx.font = `${lineScale*0.4}px Exo`;
+		ctx.font = `${lineScale*0.4}px Mina`;
 		ctx.textAlign = "left";
 		ctx.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}`, 0, lineScale * 0.3);
 		ctx.textAlign = "right";
@@ -1531,11 +1536,11 @@ function draw2() {
 		ctx.fillStyle = "#fff";
 		ctx.textBaseline = "middle";
 		ctx.textAlign = "left";
-		ctx.font = "80px Exo";
+		ctx.font = "80px Mina";
 		ctx.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 319, 135);
-		ctx.font = "32px Exo";
+		ctx.font = "32px Mina";
 		ctx.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 319, 203);
-		ctx.font = "30px Exo";
+		ctx.font = "30px Mina";
 		ctx.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 		ctx.fillStyle = statData[0] ? "#18ffbf" : "#fff";
 		ctx.fillText(statData[0] ? "NEW BEST" : "BEST", 898, 424);
@@ -1558,10 +1563,10 @@ function draw2() {
 		}
 		ctx.fillStyle = "#fff";
 		ctx.textAlign = "center";
-		ctx.font = "86px Exo";
+		ctx.font = "86px Mina";
 		ctx.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
 		ctx.fillText(stat.scoreStr, 1075, 544);
-		ctx.font = "26px Exo";
+		ctx.font = "26px Mina";
 		ctx.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 		ctx.fillText(stat.perfect, 890, 641);
 		ctx.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
@@ -1600,7 +1605,7 @@ function drawNote(note, realTime, type) {
 	ctx.globalAlpha = note.alpha;
 	ctx.setTransform(noteScale * note.cosr, noteScale * note.sinr, -noteScale * note.sinr, noteScale * note.cosr, note.offsetX, note.offsetY);
 	if (type == 3) {
-		const baseLength = hlen / noteScale * note.speed * 1.2;
+		const baseLength = hlen2 / noteScale * note.speed;
 		const holdLength = baseLength * note.realHoldTime;
 		if (note.realTime > realTime) {
 			ctx.drawImage(res.HoldHead, -res.HoldHead.width * 0.5, 0);
@@ -1756,7 +1761,7 @@ function chartp23(pec) {
 			this.positionX = x;
 			this.holdTime = type == 3 ? holdTime : 0;
 			this.speed = isNaN(speed) ? 1 : speed; //默认值不为0不能改成Number(speed)||1
-			this.floorPosition = time % 1e9 / 104 * 1.2;
+			//this.floorPosition = time % 1e9 / 104 * 1.2;
 		}
 	}
 	//test start

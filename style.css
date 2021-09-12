@@ -1,7 +1,4 @@
-@font-face {
-	font-family: Exo;
-	src: url('src/Exo-Regular.otf');
-}
+@import url("//fonts.loli.net/css?family=Mina");
 
 ::-webkit-scrollbar {
 	display: none;
@@ -45,7 +42,7 @@ body {
 
 #stage-mask {
 	color: gray;
-	font-family: Exo, Consolas, Menlo, monospace;
+	font-family: Mina, Consolas, Menlo, monospace;
 	font-size: 4vmin;
 	position: absolute;
 	width: 70vmin;
