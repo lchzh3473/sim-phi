@@ -1,10 +1,9 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 5], 1611795955, 1631210033];
+const _i = ['Phigros模拟器', [1, 4, 6], 1611795955, 1631663051];
 document.oncontextmenu = e => e.returnValue = false; //qwq
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
-const out = document.getElementById("output");
-const stage = document.getElementById("stage");
+const output = document.getElementById("output");
 const mask = document.getElementById("stage-mask");
 const select = document.getElementById("select");
 const selectbg = document.getElementById("select-bg");
@@ -24,20 +23,18 @@ const showPoint = document.getElementById("showPoint");
 const lineColor = document.getElementById("lineColor");
 const autoplay = document.getElementById("autoplay");
 const showTransition = document.getElementById("showTransition");
-const videoRecorder = document.getElementById("videoRecorder");
+const videoRecorder = document.getElementById("videoRecorder"); //videotest
 const canvas = document.getElementById("canvas");
-const canvasbg = document.getElementById("canvas-bg");
 const bgs = {};
 const bgsBlur = {};
 const bgms = {};
 const charts = {};
 const chartLineData = []; //line.csv
 const chartInfoData = []; //info.csv
-//调节画面尺寸和全屏相关
-const adjustSize = (sw, sh, dw, dh) => (dw * sh > dh * sw) ? [0, (dh - dw * sh / sw) / 2, dw, dw * sh / sw] : [(dw - dh * sw / sh) / 2, 0, dh * sw / sh, dh];
 const AspectRatio = 16 / 9; //宽高比上限
 const Deg = Math.PI / 180; //角度转弧度
 let wlen, hlen, wlen2, hlen2, noteScale, lineScale; //背景图相关
+const canvasos = document.createElement("canvas"); //离屏canvas用于绘制游戏主界面
 const Renderer = { //存放谱面
 	chart: null,
 	backgroundImage: null,
@@ -52,7 +49,38 @@ const Renderer = { //存放谱面
 	reverseholds: [],
 	tapholds: []
 };
-if (!document.fullscreenEnabled) document.getElementById("full").innerText = "；暂不支持全屏"; //试图适配Safari
+//兼容相关
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+class Fullscreen {
+	static toggle(elem) {
+		if (!this.enabled) return false;
+		if (this.element) {
+			if (document.exitFullscreen) return document.exitFullscreen();
+			if (document.cancelFullScreen) return document.cancelFullScreen();
+			if (document.webkitCancelFullScreen) return document.webkitCancelFullScreen();
+			if (document.mozCancelFullScreen) return document.mozCancelFullScreen();
+			if (document.msExitFullscreen) return document.msExitFullscreen();
+		} else {
+			if (!(elem instanceof HTMLElement)) elem = document.body;
+			if (elem.requestFullscreen) return elem.requestFullscreen();
+			if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen();
+			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen();
+			if (elem.msRequestFullscreen) return elem.msRequestFullscreen();
+		}
+	}
+	static check(elem) {
+		//if (!elem || !navigator.userAgent.match(/Firefox/i)) return true;
+		if (!(elem instanceof HTMLElement)) elem = document.body;
+		return this.element == elem;
+	}
+	static get element() {
+		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+	}
+	static get enabled() {
+		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled);
+	}
+}
+if (!Fullscreen.enabled) document.getElementById("full").innerText = "；暂不支持全屏";
 //qwq
 selectbg.onchange = () => {
 	Renderer.backgroundImage = bgs[selectbg.value];
@@ -84,8 +112,6 @@ function adjustInfo() {
 		}
 	}
 }
-//
-canvas.style.cssText = `max-width:calc(100vh*${AspectRatio});`;
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 document.addEventListener("fullscreenchange", resizeCanvas);
@@ -94,25 +120,25 @@ selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
 //适应画面尺寸
 function resizeCanvas() {
-	const width = window.innerWidth * window.devicePixelRatio;
-	const height = window.innerHeight * window.devicePixelRatio;
-	if (document.fullscreenElement) {
-		canvasbg.classList.remove("hide");
-		canvas.width = Math.min(width, height * AspectRatio);
+	const width = window.innerWidth * devicePixelRatio;
+	const height = window.innerHeight * devicePixelRatio;
+	if (Fullscreen.check(canvas)) {
+		canvas.width = width;
 		canvas.height = height;
-		canvasbg.width = width;
-		canvasbg.height = height;
+		canvasos.width = Math.min(width, height * AspectRatio);
+		canvasos.height = height;
 	} else {
-		canvasbg.classList.add("hide");
 		canvas.width = width;
 		canvas.height = canvas.width / selectaspectratio.value;
+		canvasos.width = width;
+		canvasos.height = canvasos.width / selectaspectratio.value;
 	}
-	wlen = canvas.width / 2;
-	hlen = canvas.height / 2;
-	wlen2 = canvas.width / 18;
-	hlen2 = canvas.height * 0.6; //控制note流速
-	noteScale = canvas.width / Number(selectscaleratio.value); //note、特效缩放
-	lineScale = canvas.width > canvas.height * 0.75 ? canvas.height / 18.75 : canvas.width / 14.0625; //判定线、文字缩放
+	wlen = canvasos.width / 2;
+	hlen = canvasos.height / 2;
+	wlen2 = canvasos.width / 18;
+	hlen2 = canvasos.height * 0.6; //控制note流速
+	noteScale = canvasos.width / selectscaleratio.value; //note、特效缩放
+	lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //判定线、文字缩放
 }
 //qwq[water,demo,democlick]
 const qwq = [true, false, 3];
@@ -133,8 +159,8 @@ document.getElementById("demo").addEventListener("click", function() {
 	xhr.responseType = 'blob';
 	xhr.send();
 	xhr.onprogress = progress => { //显示加载文件进度
-		out.className = "accept";
-		out.innerText = `加载文件：${Math.floor(progress.loaded / 6331675 * 100)}%`;
+		output.className = "accept";
+		output.innerText = `加载文件：${Math.floor(progress.loaded / 5079057 * 100)}%`;
 	};
 	xhr.onload = () => {
 		document.getElementById("filename").value = "demo.zip";
@@ -153,8 +179,7 @@ const specialClick = {
 		btnPlay.click();
 		btnPlay.click();
 	}, () => {
-		if (document.fullscreenElement) document.exitFullscreen().then(resizeCanvas);
-		else stage.requestFullscreen().then(resizeCanvas);
+		Fullscreen.toggle(canvas);
 	}],
 	click: function(id) {
 		const now = Date.now();
@@ -172,8 +197,8 @@ class Click {
 	static activate(offsetX, offsetY) {
 		taps.push(new Click(offsetX, offsetY));
 		if (offsetX < lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(0);
-		if (offsetX > canvas.width - lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(1);
-		if (offsetX > canvas.width - lineScale * 1.5 && offsetY > canvas.height - lineScale * 1.5) specialClick.click(2);
+		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(1);
+		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(2);
 		return new Click(offsetX, offsetY);
 	}
 	move(offsetX, offsetY) {
@@ -184,9 +209,9 @@ class Click {
 	}
 	animate() {
 		if (!this.time++) {
-			if (this.isMoving) clickEvents.push(ClickEvent.getClickMove(this.offsetX, this.offsetY));
-			else clickEvents.push(ClickEvent.getClickTap(this.offsetX, this.offsetY));
-		} else clickEvents.push(ClickEvent.getClickHold(this.offsetX, this.offsetY));
+			if (this.isMoving) clickEvents0.push(ClickEvent0.getClickMove(this.offsetX, this.offsetY));
+			else clickEvents0.push(ClickEvent0.getClickTap(this.offsetX, this.offsetY));
+		} else clickEvents0.push(ClickEvent0.getClickHold(this.offsetX, this.offsetY));
 	}
 }
 class Judgement {
@@ -262,23 +287,23 @@ class Judgements extends Array {
 							//console.log("Bad", i.name);
 							if (!this[j].catched) {
 								i.status = 3;
-								clickEvents.push(ClickEvent.getClickBad(i.offsetX, i.offsetY, i.cosr, i.sinr));
+								i.badtime = Date.now();
 							}
 						} else if (i.realTime - realTime > 0.08) {
 							//console.log("Good(Early)", i.name);
 							i.status = 2;
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
-							clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 						} else if (i.realTime - realTime > -0.08) {
 							//console.log("Perfect", i.name);
 							i.status = 1;
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
-							clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+							clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 						} else {
 							//console.log("Good(Late)", i.name);
 							i.status = 2;
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
-							clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 						}
 						if (i.status) {
 							stat.addCombo(i.status, 1);
@@ -291,7 +316,7 @@ class Judgements extends Array {
 			} else if (i.type == 2) {
 				if (i.status == 1 && i.realTime - realTime < 0) {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong1"], false, true, videoRecorder.checked, 0);
-					clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 					stat.addCombo(1, 2);
 					i.scored = true;
 				} else if (!i.status) {
@@ -306,9 +331,9 @@ class Judgements extends Array {
 				}
 			} else if (i.type == 3) {
 				if (i.status3) {
-					if (Date.now() - i.status3 >= 150) {
-						if (i.status2 == 1) clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
-						else if (i.status2 == 2) clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+					if ((Date.now() - i.status3) * i.holdTime >= 1.6e4 * i.realHoldTime) { //间隔时间与bpm成反比，待实测
+						if (i.status2 == 1) clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+						else if (i.status2 == 2) clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 						i.status3 = Date.now();
 					}
 					if (i.realTime + i.realHoldTime - 0.2 < realTime) {
@@ -325,17 +350,17 @@ class Judgements extends Array {
 							if (i.realTime - realTime > 0.08) {
 								//console.log("Good(Early)", i.name);
 								i.status2 = 2;
-								clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							} else if (i.realTime - realTime > -0.08) {
 								//console.log("Perfect", i.name);
 								i.status2 = 1;
-								clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+								clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							} else {
 								//console.log("Good(Late)", i.name);
 								i.status2 = 2;
-								clickEvents.push(ClickEvent.getClickGood(i.projectX, i.projectY));
+								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							}
 							this.splice(j, 1);
@@ -353,7 +378,7 @@ class Judgements extends Array {
 			} else if (i.type == 4) {
 				if (i.status == 1 && i.realTime - realTime < 0) {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong2"], false, true, videoRecorder.checked, 0);
-					clickEvents.push(ClickEvent.getClickPerfect(i.projectX, i.projectY));
+					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 					stat.addCombo(1, 4);
 					i.scored = true;
 				} else if (!i.status) {
@@ -382,83 +407,73 @@ class ClickEvents extends Array {
 		return this;
 	}
 }
-const clickEvents = new ClickEvents(); //存放点击特效
-class ClickEvent {
-	constructor(offsetX, offsetY, type, n1, n2, n3) {
+const clickEvents0 = new ClickEvents(); //存放点击特效
+const clickEvents1 = new ClickEvents(); //存放点击特效
+class ClickEvent0 {
+	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
-		this.type = Number(type) || 0;
-		switch (this.type) {
-			case 0:
-				this.color = String(n1);
-				this.text = String(n2);
-				this.time = 0;
-				break;
-			case 1:
-				this.time = Date.now();
-				this.duration = 500;
-				this.images = res.Clicks[n1]; //以后做缺少检测
-				this.color = String(n3);
-				this.rand = [];
-				for (let i = 0; i < (Number(n2) || 0); i++) this.rand.push([Math.random() * 80 + 185, Math.random() * 2 * Math.PI]); //qwq
-				break;
-			case 2:
-				this.time = Date.now();
-				this.duration = 500;
-				this.image = n1;
-				this.cosr = n2;
-				this.sinr = n3;
-				break;
-			default:
-		}
+		this.color = String(n1);
+		this.text = String(n2);
+		this.time = 0;
 	}
 	static getClickTap(offsetX, offsetY) {
 		//console.log("Tap", offsetX, offsetY);
-		return new ClickEvent(offsetX, offsetY, 0, "cyan", "");
+		return new ClickEvent0(offsetX, offsetY, "cyan", "");
 	}
 	static getClickHold(offsetX, offsetY) {
 		//console.log("Hold", offsetX, offsetY);
-		return new ClickEvent(offsetX, offsetY, 0, "lime", "");
+		return new ClickEvent0(offsetX, offsetY, "lime", "");
 	}
 	static getClickMove(offsetX, offsetY) {
 		//console.log("Move", offsetX, offsetY);
-		return new ClickEvent(offsetX, offsetY, 0, "violet", "");
+		return new ClickEvent0(offsetX, offsetY, "violet", "");
+	}
+}
+class ClickEvent1 {
+	constructor(offsetX, offsetY, n1, n2, n3) {
+		this.offsetX = Number(offsetX) || 0;
+		this.offsetY = Number(offsetY) || 0;
+		this.time = Date.now();
+		this.duration = 500;
+		this.images = res["Clicks"][n1]; //以后做缺少检测
+		this.color = String(n3);
+		this.rand = Array(Number(n2) || 0).fill().map(() => [Math.random() * 80 + 185, Math.random() * 2 * Math.PI]);
 	}
 	static getClickPerfect(offsetX, offsetY) {
-		return new ClickEvent(offsetX, offsetY, 1, "rgba(255,236,160,0.8823529)", 4, "#ffeca0");
+		return new ClickEvent1(offsetX, offsetY, "rgba(255,236,160,0.8823529)", 4, "#ffeca0");
 	}
 	static getClickGood(offsetX, offsetY) {
-		return new ClickEvent(offsetX, offsetY, 1, "rgba(180,225,255,0.9215686)", 3, "#b4e1ff");
-	}
-	static getClickBad(offsetX, offsetY, cosr, sinr) {
-		return new ClickEvent(offsetX, offsetY, 2, res.TapBad, cosr, sinr);
+		return new ClickEvent1(offsetX, offsetY, "rgba(180,225,255,0.9215686)", 3, "#b4e1ff");
 	}
 }
 //适配PC鼠标
-const isMouseDown = [];
-canvas.addEventListener("mousedown", evt => {
+const isMouseDown = {};
+canvas.addEventListener("mousedown", function(evt) {
 	evt.preventDefault();
 	const idx = evt.button;
-	const i = evt;
-	mouse[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+	const dx = (Fullscreen.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+	const dy = (Fullscreen.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+	mouse[idx] = Click.activate(dx, dy);
 	isMouseDown[idx] = true;
 });
-canvas.addEventListener("mousemove", evt => {
+canvas.addEventListener("mousemove", function(evt) {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			const i = evt;
-			mouse[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+			const dx = (Fullscreen.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+			const dy = (Fullscreen.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+			mouse[idx].move(dx, dy);
 		}
 	}
 });
-canvas.addEventListener("mouseup", evt => {
+canvas.addEventListener("mouseup", function(evt) {
 	evt.preventDefault();
 	const idx = evt.button;
 	delete mouse[idx];
 	delete isMouseDown[idx];
 });
-canvas.addEventListener("mouseout", evt => {
+canvas.addEventListener("mouseout", function(evt) {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
@@ -468,7 +483,7 @@ canvas.addEventListener("mouseout", evt => {
 	}
 });
 //适配键盘(喵喵喵?)
-window.addEventListener("keydown", evt => {
+window.addEventListener("keydown", function(evt) {
 	if (document.activeElement.classList.value == "input") return;
 	if (btnPlay.value != "停止") return;
 	evt.preventDefault();
@@ -476,7 +491,7 @@ window.addEventListener("keydown", evt => {
 	else if (keyboard[evt.code] instanceof Click);
 	else keyboard[evt.code] = Click.activate(NaN, NaN);
 }, false);
-window.addEventListener("keyup", evt => {
+window.addEventListener("keyup", function(evt) {
 	if (document.activeElement.classList.value == "input") return;
 	if (btnPlay.value != "停止") return;
 	evt.preventDefault();
@@ -490,27 +505,31 @@ window.addEventListener("blur", () => {
 const passive = {
 	passive: false
 }; //不加这玩意会出现warning
-canvas.addEventListener("touchstart", evt => {
+canvas.addEventListener("touchstart", function(evt) {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
-		touch[idx] = Click.activate((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+		const dx = (Fullscreen.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+		const dy = (Fullscreen.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+		touch[idx] = Click.activate(dx, dy);
 	}
 }, passive);
-canvas.addEventListener("touchmove", evt => {
+canvas.addEventListener("touchmove", function(evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		touch[idx].move((i.pageX - getOffsetLeft(canvas)) / canvas.offsetWidth * canvas.width, (i.pageY - getOffsetTop(canvas)) / canvas.offsetHeight * canvas.height);
+		const dx = (Fullscreen.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+		const dy = (Fullscreen.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+		touch[idx].move(dx, dy);
 	}
 }, passive);
-canvas.addEventListener("touchend", evt => {
+canvas.addEventListener("touchend", function(evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
 		delete touch[idx];
 	}
 });
-canvas.addEventListener("touchcancel", evt => {
+canvas.addEventListener("touchcancel", function(evt) {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
 		delete touch[idx];
@@ -539,34 +558,21 @@ function getOffsetTop(element) {
 	return a;
 }
 const ctx = canvas.getContext("2d"); //游戏界面(alpha:false会出现兼容问题)
-/*const qwqcanvas=document.createElement("canvas");
-const qwqctx=qwqcanvas.getContext("2d");
-const ctxbuff = {
-	fontSize: 10,
-	fontFamily: "sans-serif",
-	textAlign: "start",
-	textBaseline: "alphabetic",
-	fillStyle: "#000000",
-	fillText:function(text,x,y,size,font,style,align,baseline){
-		this.fontSize
-	}
-}*/
-const ctxbg = canvasbg.getContext("2d"); //游戏背景
+const ctxos = canvasos.getContext("2d");
 const imgClick = {
 	perfect: [],
 	good: []
 };
 window.addEventListener("load", init);
 //声音组件
-const actx = new AudioContext();
-const actx2 = new oggmented.OggmentedAudioContext(); //兼容Safari
-const dest = actx.createMediaStreamDestination(); //testvideo
+const actx = new oggmented.OggmentedAudioContext(); //兼容Safari
+const dest = actx.createMediaStreamDestination(); //videotest
 const playSound = (res, loop, isOut, isRecord, offset) => {
 	const bufferSource = actx.createBufferSource();
 	bufferSource.buffer = res;
 	bufferSource.loop = loop; //循环播放
 	if (isOut) bufferSource.connect(actx.destination);
-	if (isRecord) bufferSource.connect(dest); //testvideo
+	if (isRecord) bufferSource.connect(dest); //videotest
 	bufferSource.start(0, offset);
 	return () => bufferSource.stop();
 }
@@ -618,23 +624,23 @@ function init() {
 			xhr.send();
 			return new Promise(resolve => {
 				xhr.onload = async () => {
-					if (/\.(mp3|wav|ogg)$/i.test(src)) res[name] = await actx2.decodeAudioData(xhr.response);
+					if (/\.(mp3|wav|ogg)$/i.test(src)) res[name] = await actx.decodeAudioData(xhr.response);
 					else if (/\.(png|jpeg|jpg)$/i.test(src)) res[name] = await createImageBitmap(new Blob([xhr.response]));
-					out.className = "accept";
-					out.innerText = `加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`;
+					output.className = "accept";
+					output.innerText = `加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`;
 					resolve();
 				};
 			});
 		}));
-		res.JudgeLineAP = await createImageBitmap(imgShader(res.JudgeLine, "#feffa9"));
-		res.JudgeLineFC = await createImageBitmap(imgShader(res.JudgeLine, "#a2eeff"));
-		res.TapBad = await createImageBitmap(imgShader(res.Tap2, "#6c4343"));
-		res.Clicks = {};
-		//res.Clicks.default = await qwqImage(res.clickRaw, "white");
-		res.Ranks = await qwqImage(res.Rank, "white");
-		res.Clicks["rgba(255,236,160,0.8823529)"] = await qwqImage(res.clickRaw, "rgba(255,236,160,0.8823529)"); //#fce491
-		res.Clicks["rgba(180,225,255,0.9215686)"] = await qwqImage(res.clickRaw, "rgba(180,225,255,0.9215686)"); //#9ed5f3
-		out.innerText = "等待上传文件...";
+		res["JudgeLineAP"] = await createImageBitmap(imgShader(res["JudgeLine"], "#feffa9"));
+		res["JudgeLineFC"] = await createImageBitmap(imgShader(res["JudgeLine"], "#a2eeff"));
+		res["TapBad"] = await createImageBitmap(imgShader(res["Tap2"], "#6c4343"));
+		res["Clicks"] = {};
+		//res["Clicks"].default = await qwqImage(res["clickRaw"], "white");
+		res["Ranks"] = await qwqImage(res["Rank"], "white");
+		res["Clicks"]["rgba(255,236,160,0.8823529)"] = await qwqImage(res["clickRaw"], "rgba(255,236,160,0.8823529)"); //#fce491
+		res["Clicks"]["rgba(180,225,255,0.9215686)"] = await qwqImage(res["clickRaw"], "rgba(180,225,255,0.9215686)"); //#9ed5f3
+		output.innerText = "等待上传文件...";
 		upload.parentElement.classList.remove("disabled");
 	}
 }
@@ -704,7 +710,7 @@ const Stat = class {
 		const arr = [];
 		for (const i in this.data) arr.push(i + this.data[i]);
 		localStorage.setItem("phi", arr.sort(() => Math.random() - 0.5).join(""));
-		if (isAuto) return [false, scoreBest, "+ 0", true];
+		if (isAuto) return [false, scoreBest, "", true];
 		return [s2 < l2, scoreBest, (s2 > l2 ? "- " : "+ ") + Math.abs(scoreBest - this.scoreStr), false];
 	}
 	reset(numOfNotes, id) {
@@ -755,8 +761,8 @@ upload.onchange = function() {
 	const file = this.files[0];
 	document.getElementById("filename").value = file ? file.name : "";
 	if (!file) {
-		out.className = "error";
-		out.innerText = "未选择任何文件";
+		output.className = "error";
+		output.innerText = "未选择任何文件";
 		return;
 	}
 	uploads.classList.add("disabled");
@@ -822,8 +828,8 @@ const loadFile = function(file) {
 	reader.readAsArrayBuffer(file);
 	reader.onprogress = progress => { //显示加载文件进度
 		const size = file.size;
-		out.className = "accept";
-		out.innerText = `加载文件：${Math.floor(progress.loaded / size * 100)}%`;
+		output.className = "accept";
+		output.innerText = `加载文件：${Math.floor(progress.loaded / size * 100)}%`;
 	};
 	reader.onload = async function() {
 		//加载zip(https://gildas-lormeau.github.io/zip.js)
@@ -852,33 +858,16 @@ const loadFile = function(file) {
 					});
 				} else i.getData(new zip.Uint8ArrayWriter()).then(async data => {
 					const audioData = await actx.decodeAudioData(data.buffer);
-					const option = document.createElement("option");
-					option.innerHTML = i.filename;
-					option.value = i.filename;
 					bgms[i.filename] = audioData;
-					selectbgm.appendChild(option);
+					selectbgm.appendChild(createOption(i.filename, i.filename));
 					loading(++loadedNum);
 					resolve(audioData);
 				}).catch(() => {
-					return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
-						const audioData = await actx2.decodeAudioData(data.buffer);
-						const option = document.createElement("option");
-						option.innerHTML = i.filename;
-						option.value = i.filename;
-						bgms[i.filename] = audioData;
-						selectbgm.appendChild(option);
-						loading(++loadedNum);
-						resolve(audioData);
-					});
-				}).catch(() => {
 					return i.getData(new zip.BlobWriter()).then(async data => {
 						const imageData = await createImageBitmap(data);
-						const option = document.createElement("option");
-						option.innerHTML = i.filename;
-						option.value = i.filename;
 						bgs[i.filename] = imageData;
 						bgsBlur[i.filename] = await createImageBitmap(imgBlur(imageData));
-						selectbg.appendChild(option);
+						selectbg.appendChild(createOption(i.filename, i.filename));
 						loading(++loadedNum);
 						resolve(imageData);
 					});
@@ -886,24 +875,18 @@ const loadFile = function(file) {
 					return i.getData(new zip.TextWriter()).then(async data => {
 						console.log(JSON.parse(data)); //test
 						const jsonData = await chart123(JSON.parse(data));
-						const option = document.createElement("option");
-						option.innerHTML = i.filename;
-						option.value = i.filename;
 						charts[i.filename] = jsonData;
 						charts[i.filename]["md5"] = md5(data);
-						selectchart.appendChild(option);
+						selectchart.appendChild(createOption(i.filename, i.filename));
 						loading(++loadedNum);
 						resolve(jsonData);
 					});
 				}).catch(() => {
 					return i.getData(new zip.TextWriter()).then(async data => {
 						const jsonData = await chart123(chartp23(data));
-						const option = document.createElement("option");
-						option.innerHTML = i.filename;
-						option.value = i.filename;
 						charts[i.filename] = jsonData;
 						charts[i.filename]["md5"] = md5(data);
-						selectchart.appendChild(option);
+						selectchart.appendChild(createOption(i.filename, i.filename));
 						loading(++loadedNum);
 						resolve(jsonData);
 					});
@@ -914,16 +897,25 @@ const loadFile = function(file) {
 				});
 			})));
 
+			function createOption(innerhtml, value) {
+				const option = document.createElement("option");
+				const isHidden = /(^|\/)\./.test(innerhtml);
+				option.innerHTML = isHidden ? "" : innerhtml;
+				option.value = value;
+				if (isHidden) option.classList.add("hide");
+				return option;
+			}
+
 			function loading(num) {
-				out.className = "accept";
-				out.innerText = `读取文件：${Math.floor(num/zipData.length * 100)}%`;
+				output.className = "accept";
+				output.innerText = `读取文件：${Math.floor(num/zipData.length * 100)}%`;
 				if (num == zipData.length) {
 					if (selectchart.children.length == 0) {
-						out.className = "error";
-						out.innerText = "读取出错：未发现谱面文件"; //test
+						output.className = "error";
+						output.innerText = "读取出错：未发现谱面文件"; //test
 					} else if (selectbgm.children.length == 0) {
-						out.className = "error";
-						out.innerText = "读取出错：未发现音乐文件"; //test
+						output.className = "error";
+						output.innerText = "读取出错：未发现音乐文件"; //test
 					} else {
 						select.classList.remove("disabled");
 						btnPause.classList.add("disabled");
@@ -933,8 +925,8 @@ const loadFile = function(file) {
 			}
 			console.log(zipRaw);
 		}, () => {
-			out.className = "error";
-			out.innerText = "读取出错：不是zip文件"; //test
+			output.className = "error";
+			output.innerText = "读取出错：不是zip文件"; //test
 		});
 		reader.close();
 	}
@@ -952,7 +944,7 @@ function prerenderChart(chart) {
 		i.alpha = 0;
 		i.rotation = 0;
 		i.positionY = 0; //临时过渡用
-		i.images = [res.JudgeLine, res.JudgeLineAP, res.JudgeLineFC];
+		i.images = [res["JudgeLine"], res["JudgeLineAP"], res["JudgeLineFC"]];
 		i.imageH = 0.008;
 		i.imageW = 1.042;
 		i.imageB = 0;
@@ -1108,8 +1100,8 @@ btnPlay.addEventListener("click", async function() {
 				Renderer.chart.judgeLineList[i.LineId].imageB = Number(i.IsDark);
 			}
 		}
-		Renderer.backgroundImage = bgs[selectbg.value] || res.NoImage;
-		Renderer.backgroundImageBlur = bgsBlur[selectbg.value] || res.NoImage;
+		Renderer.backgroundImage = bgs[selectbg.value] || res["NoImage"];
+		Renderer.backgroundImageBlur = bgsBlur[selectbg.value] || res["NoImage"];
 		Renderer.backgroundMusic = bgms[selectbgm.value];
 		this.value = "停止";
 		resizeCanvas();
@@ -1124,32 +1116,41 @@ btnPlay.addEventListener("click", async function() {
 		mask.classList.add("fade");
 		btnPause.classList.remove("disabled");
 		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.add("disabled");
-		if (videoRecorder.checked) btnPause.classList.add("disabled"); //testvideo录制时不允许暂停(存在bug)
-		draw();
+		if (videoRecorder.checked) btnPause.classList.add("disabled"); //videotest录制时不允许暂停(存在bug)
+		loop();
 		qwqIn.play();
 		if (videoRecorder.checked) {
+			const support = [
+				"video/mp4;codecs=avc1", "video/mp4;codecs=mp4a",
+				"video/webm;codecs=vp9,pcm", "video/webm;codecs=vp8,pcm",
+				"video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus",
+			].find(n => MediaRecorder.isTypeSupported(n));
 			const cStream = canvas.captureStream();
 			const aStream = dest.stream;
 			const mixStream = new MediaStream([cStream.getVideoTracks()[0], aStream.getAudioTracks()[0]]);
-			const recorder = new MediaRecorder(mixStream, {
-				videoBitsPerSecond: 20000000,
-				mimeType: 'video/webm;codecs=h264'
-			}); //mixStream
-			const chunks = [];
-			recorder.ondataavailable = evt => evt.data && evt.data.size && chunks.push(evt.data);
-			recorder.onstop = () => {
-				if (chunks.length) {
-					const blob = new Blob(chunks);
-					const a = document.createElement("a");
-					a.href = URL.createObjectURL(blob);
-					a.download = `${parseInt(Date.now()/1e3)}.webm`;
-					a.click();
-					chunks.length = 0;
-				} else alert("Recording Failed");
-			};
-			recorder.start();
-			stopPlaying.push(() => recorder.stop());
-		} //testvideo
+			try {
+				const recorder = new MediaRecorder(mixStream, {
+					videoBitsPerSecond: 2e7,
+					mimeType: support || ""
+				}); //mixStream
+				const chunks = [];
+				recorder.ondataavailable = evt => evt.data && evt.data.size && chunks.push(evt.data);
+				recorder.onstop = () => {
+					if (chunks.length) {
+						const blob = new Blob(chunks);
+						const a = document.createElement("a");
+						a.href = URL.createObjectURL(blob);
+						a.download = `${parseInt(Date.now()/1e3)}.${support.match(/\/(.+)?;/)[1]}`;
+						a.click();
+						chunks.length = 0;
+					} else alert("Recording Failed");
+				};
+				recorder.start();
+				stopPlaying.push(() => recorder.stop());
+			} catch (e) {
+				alert("Recording Failed:" + e.message);
+			}
+		} //videotest
 	} else {
 		if (videoRecorder.checked) btnPlay.classList.add("disabled"); //只许录制一次(存在bug)
 		while (stopPlaying.length) stopPlaying.shift()();
@@ -1160,7 +1161,10 @@ btnPlay.addEventListener("click", async function() {
 		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.remove("disabled");
 		btnPause.classList.add("disabled");
 		//清除原有数据
-		clickEvents.length = 0;
+		fucktemp = false;
+		fucktemp2 = false;
+		clickEvents0.length = 0;
+		clickEvents1.length = 0;
 		qwqIn.reset();
 		qwqOut.reset();
 		qwqEnd.reset();
@@ -1198,10 +1202,36 @@ function playBgm(data, offset) {
 	curTimestamp = Date.now();
 	stopPlaying.push(playSound(data, false, true, videoRecorder.checked, offset));
 }
+let fucktemp = false;
+let fucktemp2 = false;
 //作图
-function draw() {
+function loop() {
 	const now = Date.now();
 	//计算时间
+	if (qwqOut.second < 0.67) {
+		calcqwq(now);
+		qwqdraw1(now);
+	} else if (!fucktemp) qwqdraw2();
+	if (fucktemp2) qwqdraw3(fucktemp2);
+	ctx.globalAlpha = 1;
+	if (document.getElementById("imageBlur").checked) ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvas, 1.1));
+	else ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvas, 1.1));
+	ctx.fillStyle = "#000";
+	ctx.globalAlpha = 0.4;
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.globalAlpha = 1;
+	ctx.drawImage(canvasos, (canvas.width - canvasos.width) / 2, 0);
+	//Copyright
+	ctx.font = `${lineScale*0.4}px Mina`;
+	ctx.fillStyle = "#ccc";
+	ctx.globalAlpha = 0.8;
+	ctx.textAlign = "right";
+	ctx.textBaseline = "middle";
+	ctx.fillText(`Phigros Simulator v${_i[1].join('.')} - Code by lch\zh3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
+	stopDrawing = requestAnimationFrame(loop); //回调更新动画
+}
+
+function calcqwq(now) {
 	if (!isInEnd && qwqIn.second >= 3) {
 		isInEnd = true;
 		playBgm(Renderer.backgroundMusic);
@@ -1227,8 +1257,8 @@ function draw() {
 			if (timeChart > i.endRealTime) continue;
 			const t2 = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
 			const t1 = 1 - t2;
-			line.offsetX = canvas.width * (i.start * t1 + i.end * t2);
-			line.offsetY = canvas.height * (1 - i.start2 * t1 - i.end2 * t2);
+			line.offsetX = canvasos.width * (i.start * t1 + i.end * t2);
+			line.offsetY = canvasos.height * (1 - i.start2 * t1 - i.end2 * t2);
 		}
 		for (const i of line.judgeLineRotateEvents) {
 			if (timeChart < i.startRealTime) break;
@@ -1256,6 +1286,13 @@ function draw() {
 		}
 
 		function getY(i) {
+			if (!i.badtime) return realgetY(i);
+			if (Date.now() - i.badtime > 500) delete i.badtime;
+			if (!i.badY) i.badY = realgetY(i);
+			return i.badY;
+		}
+
+		function realgetY(i) {
 			if (i.type != 3) return (i.floorPosition - line.positionY) * i.speed;
 			if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed;
 			return i.floorPosition - line.positionY;
@@ -1267,85 +1304,78 @@ function draw() {
 			i.projectY = line.offsetY + dx * i.sinr;
 			i.offsetY = i.projectY - dy * i.cosr;
 			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed;
-			if (i.realTime > timeChart) {
+			if (i.badtime) i.alpha = 1 - range((Date.now() - i.badtime) / 500);
+			else if (i.realTime > timeChart) {
 				if (dy > -1e-3) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1;
 				else i.alpha = showPoint.checked ? 0.45 : 0;
 			} else {
-				if (i.type == 3) i.speed == 0 ? (showPoint.checked ? 0.45 : 0) : (i.status == 4 ? 0.45 : 1);
+				if (i.type == 3) i.alpha = i.speed == 0 ? (showPoint.checked ? 0.45 : 0) : (i.status == 4 ? 0.45 : 1);
 				else i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0); //过线后0.16s消失
 			}
 		}
 	}
 	judgements.addJudgement(Renderer.notes, timeChart);
-	judgements.judgeNote(Renderer.drags, timeChart, canvas.width * 0.117775);
-	judgements.judgeNote(Renderer.flicks, timeChart, canvas.width * 0.117775);
-	judgements.judgeNote(Renderer.tapholds, timeChart, canvas.width * 0.117775); //播放打击音效和判定
+	judgements.judgeNote(Renderer.drags, timeChart, canvasos.width * 0.117775);
+	judgements.judgeNote(Renderer.flicks, timeChart, canvasos.width * 0.117775);
+	judgements.judgeNote(Renderer.tapholds, timeChart, canvasos.width * 0.117775); //播放打击音效和判定
 	taps.length = 0; //qwq
 	frameTimer.addTick(); //计算fps
-	clickEvents.defilter(i => i.type ? (now >= i.time + i.duration) : (i.time++ > 0)); //清除打击特效
-	ctx.clearRect(0, 0, canvas.width, canvas.height); //重置画面
-	ctx.globalCompositeOperation = "destination-over"; //由后往前绘制
-	for (const i of clickEvents) { //绘制打击特效1
-		if (i.type == 1) {
-			const tick = (now - i.time) / i.duration;
-			ctx.globalAlpha = 1;
-			ctx.setTransform(noteScale * 6, 0, 0, noteScale * 6, i.offsetX, i.offsetY); //缩放
-			ctx.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //停留约0.5秒
-			ctx.fillStyle = i.color;
-			ctx.globalAlpha = 1 - tick; //不透明度
-			const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //方块大小
-			for (const j of i.rand) {
-				const ds = j[0] * (9 * tick / (8 * tick + 1)); //打击点距离
-				ctx.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
-			}
-		}
-	}
+	clickEvents0.defilter(i => i.time++ > 0); //清除打击特效
+	clickEvents1.defilter(i => now >= i.time + i.duration); //清除打击特效
 	for (const i in mouse) mouse[i] instanceof Click && mouse[i].animate();
 	for (const i in touch) touch[i] instanceof Click && touch[i].animate();
-	if (document.getElementById("feedback").checked) {
-		for (const i of clickEvents) { //绘制打击特效0
-			ctx.globalAlpha = 0.85;
-			if (i.type == 0) {
-				ctx.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
-				ctx.fillStyle = i.color;
-				ctx.beginPath();
-				ctx.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
-				ctx.fill();
-				i.time++;
-			}
+}
+
+function qwqdraw1(now) {
+	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
+	ctxos.globalCompositeOperation = "destination-over"; //由后往前绘制
+	for (const i of clickEvents1) { //绘制打击特效1
+		const tick = (now - i.time) / i.duration;
+		ctxos.globalAlpha = 1;
+		ctxos.setTransform(noteScale * 6, 0, 0, noteScale * 6, i.offsetX, i.offsetY); //缩放
+		ctxos.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //停留约0.5秒
+		ctxos.fillStyle = i.color;
+		ctxos.globalAlpha = 1 - tick; //不透明度
+		const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //方块大小
+		for (const j of i.rand) {
+			const ds = j[0] * (9 * tick / (8 * tick + 1)); //打击点距离
+			ctxos.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
 		}
 	}
-	for (const i of clickEvents) { //绘制打击特效2
-		if (i.type == 2) {
-			const tick = (now - i.time) / i.duration;
-			ctx.globalAlpha = 1 - tick;
-			ctx.setTransform(noteScale * i.cosr, noteScale * i.sinr, -noteScale * i.sinr, noteScale * i.cosr, i.offsetX, i.offsetY); //缩放
-			ctx.drawImage(i.image, -i.image.width / 2, -i.image.height / 2); //停留约0.5秒
+	if (document.getElementById("feedback").checked) {
+		for (const i of clickEvents0) { //绘制打击特效0
+			ctxos.globalAlpha = 0.85;
+			ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
+			ctxos.fillStyle = i.color;
+			ctxos.beginPath();
+			ctxos.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
+			ctxos.fill();
+			i.time++;
 		}
 	}
 	if (qwqIn.second >= 3 && qwqOut.second == 0) {
 		if (showPoint.checked) { //绘制定位点
-			ctx.font = `${lineScale}px Mina`;
-			ctx.textAlign = "center";
-			ctx.textBaseline = "bottom";
+			ctxos.font = `${lineScale}px Mina`;
+			ctxos.textAlign = "center";
+			ctxos.textBaseline = "bottom";
 			for (const i of Renderer.notes) {
 				if (!i.visible) continue;
-				ctx.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
-				ctx.fillStyle = "cyan";
-				ctx.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
-				ctx.fillText(i.name, 0, -lineScale * 0.1);
-				ctx.globalAlpha = 1;
-				ctx.fillStyle = "lime";
-				ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+				ctxos.fillStyle = "cyan";
+				ctxos.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
+				ctxos.fillText(i.name, 0, -lineScale * 0.1);
+				ctxos.globalAlpha = 1;
+				ctxos.fillStyle = "lime";
+				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 			}
 			for (const i of Renderer.lines) {
-				ctx.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
-				ctx.fillStyle = "yellow";
-				ctx.globalAlpha = (i.alpha + 0.5) / 1.5;
-				ctx.fillText(i.lineId, 0, -lineScale * 0.1);
-				ctx.globalAlpha = 1;
-				ctx.fillStyle = "violet";
-				ctx.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+				ctxos.fillStyle = "yellow";
+				ctxos.globalAlpha = (i.alpha + 0.5) / 1.5;
+				ctxos.fillText(i.lineId, 0, -lineScale * 0.1);
+				ctxos.globalAlpha = 1;
+				ctxos.fillStyle = "violet";
+				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 			}
 		}
 		//绘制note
@@ -1356,239 +1386,223 @@ function draw() {
 	}
 	//绘制背景
 	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
-	ctx.resetTransform();
-	ctx.fillStyle = "#000"; //背景变暗
-	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctxos.resetTransform();
+	ctxos.fillStyle = "#000"; //背景变暗
+	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
+	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0); //绘制判定线(背景后0)
-	ctx.globalAlpha = 1;
-	ctx.resetTransform();
+	ctxos.globalAlpha = 1;
+	ctxos.resetTransform();
 	if (document.getElementById("imageBlur").checked) {
-		ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvas.width, canvas.height));
-		ctxbg.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvasbg.width, canvasbg.height));
+		ctxos.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvasos, 1));
 	} else {
-		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-		ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+		ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
 	}
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	ctx.globalCompositeOperation = "source-over";
+	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
+	ctxos.globalCompositeOperation = "source-over";
 	//绘制进度条
-	ctx.setTransform(canvas.width / 1920, 0, 0, canvas.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
-	ctx.drawImage(res.ProgressBar, timeBgm / duration * 1920 - 1920, 0);
+	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
+	ctxos.drawImage(res["ProgressBar"], timeBgm / duration * 1920 - 1920, 0);
 	//绘制文字
-	ctx.resetTransform();
-	ctx.fillStyle = "#fff";
+	ctxos.resetTransform();
+	ctxos.fillStyle = "#fff";
 	//开头过渡动画
 	if (qwqIn.second < 3) {
-		if (qwqIn.second < 0.67) ctx.globalAlpha = tween[2](qwqIn.second * 1.5);
-		else if (qwqIn.second >= 2.5) ctx.globalAlpha = tween[2](6 - qwqIn.second * 2);
-		ctx.textAlign = "center";
+		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
+		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween[2](6 - qwqIn.second * 2);
+		ctxos.textAlign = "center";
 		//歌名
-		ctx.textBaseline = "alphabetic";
-		ctx.font = `${lineScale*1.1}px Mina`;
-		ctx.fillText(inputName.value || inputName.placeholder, wlen, hlen * 0.75);
+		ctxos.textBaseline = "alphabetic";
+		ctxos.font = `${lineScale*1.1}px Mina`;
+		ctxos.fillText(inputName.value || inputName.placeholder, wlen, hlen * 0.75);
 		//曲绘和谱师
-		ctx.textBaseline = "top";
-		ctx.font = `${lineScale*0.55}px Mina`;
-		ctx.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, wlen, hlen * 1.25 + lineScale * 0.15);
-		ctx.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, wlen, hlen * 1.25 + lineScale * 1.0);
+		ctxos.textBaseline = "top";
+		ctxos.font = `${lineScale*0.55}px Mina`;
+		ctxos.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, wlen, hlen * 1.25 + lineScale * 0.15);
+		ctxos.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, wlen, hlen * 1.25 + lineScale * 1.0);
 		//判定线(装饰用)
-		ctx.globalAlpha = 1;
-		ctx.setTransform(1, 0, 0, 1, wlen, hlen);
+		ctxos.globalAlpha = 1;
+		ctxos.setTransform(1, 0, 0, 1, wlen, hlen);
 		const imgW = lineScale * 48 * (qwqIn.second < 0.67 ? tween[3](qwqIn.second * 1.5) : 1);
 		const imgH = lineScale * 0.15;
-		if (qwqIn.second >= 2.5) ctx.globalAlpha = tween[2](6 - qwqIn.second * 2);
-		ctx.drawImage(lineColor.checked ? res.JudgeLineAP : res.JudgeLine, -imgW / 2, -imgH / 2, imgW, imgH);
+		if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween[2](6 - qwqIn.second * 2);
+		ctxos.drawImage(lineColor.checked ? res["JudgeLineAP"] : res["JudgeLine"], -imgW / 2, -imgH / 2, imgW, imgH);
 	}
 	//绘制分数和combo以及暂停按钮
-	ctx.globalAlpha = 1;
-	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
-	ctx.textBaseline = "alphabetic";
-	ctx.font = `${lineScale*0.95}px Mina`;
-	ctx.textAlign = "right";
-	ctx.fillText(stat.scoreStr, canvas.width - lineScale * 0.65, lineScale * 1.35);
-	if (!qwq[0]) ctx.drawImage(res.Pause, lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
+	ctxos.globalAlpha = 1;
+	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
+	ctxos.textBaseline = "alphabetic";
+	ctxos.font = `${lineScale*0.95}px Mina`;
+	ctxos.textAlign = "right";
+	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
+	if (!qwq[0]) ctxos.drawImage(res["Pause"], lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
 	if (stat.combo > 2) {
-		ctx.textAlign = "center";
-		ctx.font = `${lineScale*1.3}px Mina`;
-		ctx.fillText(stat.combo, wlen, lineScale * 1.35);
-		ctx.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
-		ctx.textBaseline = "top";
-		ctx.font = `${lineScale*0.65}px Mina`;
-		ctx.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 1.50);
+		ctxos.textAlign = "center";
+		ctxos.font = `${lineScale*1.32}px Mina`;
+		ctxos.fillText(stat.combo, wlen, lineScale * 1.375);
+		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
+		ctxos.font = `${lineScale*0.66}px Mina`;
+		ctxos.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 2.05);
 	}
 	//绘制歌名和等级
-	ctx.globalAlpha = 1;
-	ctx.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
-	ctx.textBaseline = "alphabetic";
-	ctx.textAlign = "right";
-	ctx.font = `${lineScale*0.65}px Mina`;
-	ctx.fillText(inputLevel.value || inputLevel.placeholder, canvas.width - lineScale * 0.75, canvas.height - lineScale * 0.65);
-	ctx.drawImage(res.SongsNameBar, lineScale * 0.53, canvas.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
-	ctx.textAlign = "left";
-	ctx.font = `${lineScale*0.62}px Mina`;
-	ctx.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvas.height - lineScale * 0.65);
-	ctx.resetTransform();
+	ctxos.globalAlpha = 1;
+	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
+	ctxos.textBaseline = "alphabetic";
+	ctxos.textAlign = "right";
+	ctxos.font = `${lineScale*0.63}px Mina`;
+	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
+	ctxos.drawImage(res["SongsNameBar"], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
+	ctxos.textAlign = "left";
+	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvasos.height - lineScale * 0.66);
+	ctxos.resetTransform();
 	if (qwq[0]) {
 		//绘制时间和帧率以及note打击数
-		if (qwqIn.second < 0.67) ctx.globalAlpha = tween[2](qwqIn.second * 1.5);
-		else ctx.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
-		ctx.textBaseline = "top";
-		ctx.font = `${lineScale*0.4}px Mina`;
-		ctx.textAlign = "left";
-		ctx.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}`, 0, lineScale * 0.3);
-		ctx.textAlign = "right";
-		ctx.fillText(frameTimer.fps, canvas.width, lineScale * 0.3);
-		ctx.textBaseline = "alphabetic";
+		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
+		else ctxos.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
+		ctxos.textBaseline = "middle";
+		ctxos.font = `${lineScale*0.4}px Mina`;
+		ctxos.textAlign = "left";
+		ctxos.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}`, lineScale * 0.05, lineScale * 0.5);
+		ctxos.textAlign = "right";
+		ctxos.fillText(frameTimer.fps, canvasos.width - lineScale * 0.05, lineScale * 0.5);
+		ctxos.textBaseline = "alphabetic";
 		if (showPoint.checked) stat.combos.forEach((val, idx) => {
-			ctx.fillStyle = comboColor[idx];
-			ctx.fillText(val, lineScale * (idx + 1) * 1.1, canvas.height - lineScale * 0.1);
+			ctxos.fillStyle = comboColor[idx];
+			ctxos.fillText(val, lineScale * (idx + 1) * 1.1, canvasos.height - lineScale * 0.1);
 		});
-		//Copyright
-		ctx.fillStyle = "#fff";
-		ctx.globalAlpha = 0.4;
-		ctx.textAlign = "right";
-		ctx.textBaseline = "bottom";
-		ctx.fillText("Code by lch\zh3473", canvas.width - lineScale * 0.1, canvas.height - lineScale * 0.1);
-		ctx.globalAlpha = 1;
 	}
+	//
 	//判定线函数，undefined/0:默认,1:非,2:恒成立
 	function drawLine(bool) {
-		ctx.globalAlpha = 1;
+		ctxos.globalAlpha = 1;
 		const tw = 1 - tween[2](qwqOut.second * 1.5);
 		for (const i of Renderer.lines) {
 			if (bool ^ i.imageB && qwqOut.second < 0.67) {
-				ctx.globalAlpha = i.alpha;
-				ctx.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, wlen + (i.offsetX - wlen) * tw, i.offsetY); //hiahiah
-				const imgH = i.imageH > 0 ? lineScale * 18.75 * i.imageH : canvas.height * -i.imageH; // hlen*0.008
+				ctxos.globalAlpha = i.alpha;
+				ctxos.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, wlen + (i.offsetX - wlen) * tw, i.offsetY); //hiahiah
+				const imgH = i.imageH > 0 ? lineScale * 18.75 * i.imageH : canvasos.height * -i.imageH; // hlen*0.008
 				const imgW = imgH * i.images[0].width / i.images[0].height * i.imageW; //* 38.4*25 * i.imageH* i.imageW; //wlen*3
-				ctx.drawImage(i.images[lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
+				ctxos.drawImage(i.images[lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
 			}
 		}
 	}
-	stopDrawing = requestAnimationFrame(qwqOut.second >= 0.67 ? draw2 : draw); //回调更新动画
 }
 
-function draw2() {
+function qwqdraw2() {
+	fucktemp = true;
 	btnPause.click(); //isPaused = true;
 	while (stopPlaying.length) stopPlaying.shift()();
 	cancelAnimationFrame(stopDrawing);
 	btnPause.classList.add("disabled");
-	ctx.globalCompositeOperation = "source-over";
-	ctx.resetTransform();
-	ctx.globalAlpha = 1;
+	ctxos.globalCompositeOperation = "source-over";
+	ctxos.resetTransform();
+	ctxos.globalAlpha = 1;
 	if (document.getElementById("imageBlur").checked) {
-		ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvas.width, canvas.height));
-		ctxbg.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvasbg.width, canvasbg.height));
+		ctxos.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvasos, 1));
+		ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvas, 1));
 	} else {
-		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-		ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
+		ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
+		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvas, 1));
 	}
-	ctx.fillStyle = "#000"; //背景变暗
-	ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctxos.fillStyle = "#000"; //背景变暗
+	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
+	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	const qwq = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
-	const statData = stat.getData(autoplay.checked);
 	const xhr = new XMLHttpRequest();
 	xhr.open("get", `src/LevelOver${qwq<0?2:qwq}.ogg`, true);
 	xhr.responseType = 'arraybuffer';
 	xhr.send();
 	xhr.onload = async () => {
-		const bgm = await actx2.decodeAudioData(xhr.response);
+		const bgm = await actx.decodeAudioData(xhr.response);
 		setTimeout(() => {
 			stopPlaying.push(playSound(bgm, true, true, videoRecorder.checked, 0));
 			qwqEnd.reset();
 			qwqEnd.play();
-			qwqwq();
+			fucktemp2 = stat.getData(autoplay.checked);
 		}, 1000);
 	}
+}
 
-	function qwqwq() {
-		ctx.resetTransform();
-		ctx.globalCompositeOperation = "source-over";
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		ctx.globalAlpha = 1;
-		if (document.getElementById("imageBlur").checked) {
-			ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvas.width, canvas.height));
-			ctxbg.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur.width, Renderer.backgroundImageBlur.height, canvasbg.width, canvasbg.height));
-		} else {
-			ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-			ctxbg.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvasbg.width, canvasbg.height));
-		}
-		ctx.fillStyle = "#000"; //背景变暗
-		ctx.globalAlpha = selectglobalalpha.value; //背景不透明度
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		ctx.globalCompositeOperation = "destination-out";
-		ctx.globalAlpha = 1;
-		const k = 3.7320508075688776; //tan75°
-		ctx.setTransform(canvas.width - canvas.height / k, 0, -canvas.height / k, canvas.height, canvas.height / k, 0);
-		ctx.fillRect(0, 0, 1, tween[8](range((qwqEnd.second - 0.13) * 0.94)));
-		ctx.resetTransform();
-		ctx.globalCompositeOperation = "destination-over";
-		const qwq0 = (canvas.width - canvas.height / k) / (16 - 9 / k);
-		ctx.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
-		ctx.drawImage(res.LevelOver4, 183, 42, 1184, 228);
-		ctx.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
-		ctx.drawImage(res.LevelOver1, 102, 378);
-		ctx.globalCompositeOperation = "source-over";
-		ctx.globalAlpha = 1;
-		ctx.drawImage(res.LevelOver5, 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
-		ctx.fillStyle = "#fff";
-		ctx.textBaseline = "middle";
-		ctx.textAlign = "left";
-		ctx.font = "80px Mina";
-		ctx.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 319, 135);
-		ctx.font = "32px Mina";
-		ctx.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 319, 203);
-		ctx.font = "30px Mina";
-		ctx.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
-		ctx.fillStyle = statData[0] ? "#18ffbf" : "#fff";
-		ctx.fillText(statData[0] ? "NEW BEST" : "BEST", 898, 424);
-		ctx.fillStyle = "#fff";
-		ctx.textAlign = "center";
-		ctx.fillText(statData[1], 1182, 424);
-		ctx.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
-		ctx.textAlign = "right";
-		ctx.fillText(statData[2], 1414, 424);
-		ctx.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
-		ctx.textAlign = "left";
-		ctx.fillText(stat.accStr, 351, 541);
-		ctx.fillText(stat.maxcombo, 1527, 541);
-		if (statData[3]) {
-			ctx.fillStyle = "#fe4365";
-			ctx.fillText("AUTO PLAY", 1355, 586);
-		} else if (stat.lineStatus) {
-			ctx.fillStyle = stat.lineStatus == 1 ? "#ffc500" : "#00bef1";
-			ctx.fillText(stat.lineStatus == 1 ? "ALL  PERFECT" : "FULL  COMBO", 1355, 586);
-		}
-		ctx.fillStyle = "#fff";
-		ctx.textAlign = "center";
-		ctx.font = "86px Mina";
-		ctx.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
-		ctx.fillText(stat.scoreStr, 1075, 544);
-		ctx.font = "26px Mina";
-		ctx.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
-		ctx.fillText(stat.perfect, 890, 641);
-		ctx.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
-		ctx.fillText(stat.good, 1043, 641);
-		ctx.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
-		ctx.fillText(stat.bad, 1196, 641);
-		ctx.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
-		ctx.fillText(stat.miss, 1349, 641);
-		ctx.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
-		ctx.transform(1, 0, 0, 1, 661.5, 544.5);
-		const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
-		const qwq3 = 410 - range((qwqEnd.second - 1.87) * 2.14) * 164;
-		ctx.drawImage(res.LevelOver3, -qwq2 / 2, -qwq2 / 2, qwq2, qwq2);
-		ctx.drawImage(res.Ranks[stat.rankStatus], -qwq3 / 2, -qwq3 / 2, qwq3, qwq3);
-		ctx.resetTransform();
-		ctx.globalCompositeOperation = "destination-over";
-		ctx.globalAlpha = 1;
-		ctx.fillStyle = "#000";
-		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage.width, Renderer.backgroundImage.height, canvas.width, canvas.height));
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		stopDrawing = requestAnimationFrame(qwqwq); //回调更新动画
+function qwqdraw3(statData) {
+	ctxos.resetTransform();
+	ctxos.globalCompositeOperation = "source-over";
+	ctxos.clearRect(0, 0, canvasos.width, canvasos.height);
+	ctxos.globalAlpha = 1;
+	if (document.getElementById("imageBlur").checked) ctxos.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvasos, 1));
+	else ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
+	ctxos.fillStyle = "#000"; //背景变暗
+	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
+	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
+	ctxos.globalCompositeOperation = "destination-out";
+	ctxos.globalAlpha = 1;
+	const k = 3.7320508075688776; //tan75°
+	ctxos.setTransform(canvasos.width - canvasos.height / k, 0, -canvasos.height / k, canvasos.height, canvasos.height / k, 0);
+	ctxos.fillRect(0, 0, 1, tween[8](range((qwqEnd.second - 0.13) * 0.94)));
+	ctxos.resetTransform();
+	ctxos.globalCompositeOperation = "destination-over";
+	const qwq0 = (canvasos.width - canvasos.height / k) / (16 - 9 / k);
+	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
+	ctxos.drawImage(res["LevelOver4"], 183, 42, 1184, 228);
+	ctxos.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
+	ctxos.drawImage(res["LevelOver1"], 102, 378);
+	ctxos.globalCompositeOperation = "source-over";
+	ctxos.globalAlpha = 1;
+	ctxos.drawImage(res["LevelOver5"], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
+	//歌名和等级
+	ctxos.fillStyle = "#fff";
+	ctxos.textBaseline = "middle";
+	ctxos.textAlign = "left";
+	ctxos.font = "80px Mina";
+	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145);
+	ctxos.font = "30px Mina";
+	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 317, 208);
+	//Rank图标
+	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
+	const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
+	const qwq3 = 410 - range((qwqEnd.second - 1.87) * 2.14) * 164;
+	ctxos.drawImage(res["LevelOver3"], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
+	ctxos.drawImage(res["Ranks"][stat.rankStatus], 661 - qwq3 / 2, 545 - qwq3 / 2, qwq3, qwq3);
+	//各种数据
+	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
+	ctxos.fillStyle = statData[0] ? "#18ffbf" : "#fff";
+	ctxos.fillText(statData[0] ? "NEW BEST" : "BEST", 898, 428);
+	ctxos.fillStyle = "#fff";
+	ctxos.textAlign = "center";
+	ctxos.fillText(statData[1], 1180, 428);
+	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
+	ctxos.textAlign = "right";
+	ctxos.fillText(statData[2], 1414, 428);
+	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
+	ctxos.textAlign = "left";
+	ctxos.fillText(stat.accStr, 352, 545);
+	ctxos.fillText(stat.maxcombo, 1528, 545);
+	if (statData[3]) {
+		ctxos.fillStyle = "#fe4365";
+		ctxos.fillText("AUTO PLAY", 1355, 590);
+	} else if (stat.lineStatus) {
+		ctxos.fillStyle = stat.lineStatus == 1 ? "#ffc500" : "#00bef1";
+		ctxos.fillText(stat.lineStatus == 1 ? "ALL  PERFECT" : "FULL  COMBO", 1355, 590);
 	}
+	ctxos.fillStyle = "#fff";
+	ctxos.textAlign = "center";
+	ctxos.font = "86px Mina";
+	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
+	ctxos.fillText(stat.scoreStr, 1075, 554);
+	ctxos.font = "26px Mina";
+	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
+	ctxos.fillText(stat.perfect, 891, 645);
+	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
+	ctxos.fillText(stat.good, 1043, 645);
+	ctxos.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
+	ctxos.fillText(stat.bad, 1196, 645);
+	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
+	ctxos.fillText(stat.miss, 1349, 645);
+	ctxos.resetTransform();
+	ctxos.globalCompositeOperation = "destination-over";
+	ctxos.globalAlpha = 1;
+	ctxos.fillStyle = "#000";
+	ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
+	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 }
 
 function range(num) {
@@ -1600,29 +1614,31 @@ function range(num) {
 //绘制Note
 function drawNote(note, realTime, type) {
 	if (!note.visible) return;
-	if (note.type != 3 && note.scored) return;
+	if (note.type != 3 && note.scored && !note.badtime) return;
 	if (note.type == 3 && note.realTime + note.realHoldTime < realTime) return; //qwq
-	ctx.globalAlpha = note.alpha;
-	ctx.setTransform(noteScale * note.cosr, noteScale * note.sinr, -noteScale * note.sinr, noteScale * note.cosr, note.offsetX, note.offsetY);
+	ctxos.globalAlpha = note.alpha;
+	ctxos.setTransform(noteScale * note.cosr, noteScale * note.sinr, -noteScale * note.sinr, noteScale * note.cosr, note.offsetX, note.offsetY);
 	if (type == 3) {
 		const baseLength = hlen2 / noteScale * note.speed;
 		const holdLength = baseLength * note.realHoldTime;
 		if (note.realTime > realTime) {
-			ctx.drawImage(res.HoldHead, -res.HoldHead.width * 0.5, 0);
-			ctx.drawImage(res.Hold, -res.Hold.width * 0.5, -holdLength, res.Hold.width, holdLength);
-			ctx.drawImage(res.HoldEnd, -res.HoldEnd.width * 0.5, -holdLength - res.HoldEnd.height);
+			ctxos.drawImage(res["HoldHead"], -res["HoldHead"].width * 0.5, 0);
+			ctxos.drawImage(res["Hold"], -res["Hold"].width * 0.5, -holdLength, res["Hold"].width, holdLength);
+			ctxos.drawImage(res["HoldEnd"], -res["HoldEnd"].width * 0.5, -holdLength - res["HoldEnd"].height);
 		} else {
-			ctx.drawImage(res.Hold, -res.Hold.width * 0.5, -holdLength, res.Hold.width, holdLength - baseLength * (realTime - note.realTime));
-			ctx.drawImage(res.HoldEnd, -res.HoldEnd.width * 0.5, -holdLength - res.HoldEnd.height);
+			ctxos.drawImage(res["Hold"], -res["Hold"].width * 0.5, -holdLength, res["Hold"].width, holdLength - baseLength * (realTime - note.realTime));
+			ctxos.drawImage(res["HoldEnd"], -res["HoldEnd"].width * 0.5, -holdLength - res["HoldEnd"].height);
 		}
+	} else if (note.badtime) {
+		if (type == 1) ctxos.drawImage(res["TapBad"], -res["TapBad"].width * 0.5, -res["TapBad"].height * 0.5);
 	} else if (note.isMulti && document.getElementById("highLight").checked) {
-		if (type == 1) ctx.drawImage(res.TapHL, -res.TapHL.width * 0.5, -res.TapHL.height * 0.5);
-		else if (type == 2) ctx.drawImage(res.DragHL, -res.DragHL.width * 0.5, -res.DragHL.height * 0.5);
-		else if (type == 4) ctx.drawImage(res.FlickHL, -res.FlickHL.width * 0.5, -res.FlickHL.height * 0.5);
+		if (type == 1) ctxos.drawImage(res["TapHL"], -res["TapHL"].width * 0.5, -res["TapHL"].height * 0.5);
+		else if (type == 2) ctxos.drawImage(res["DragHL"], -res["DragHL"].width * 0.5, -res["DragHL"].height * 0.5);
+		else if (type == 4) ctxos.drawImage(res["FlickHL"], -res["FlickHL"].width * 0.5, -res["FlickHL"].height * 0.5);
 	} else {
-		if (type == 1) ctx.drawImage(res.Tap, -res.Tap.width * 0.5, -res.Tap.height * 0.5);
-		else if (type == 2) ctx.drawImage(res.Drag, -res.Drag.width * 0.5, -res.Drag.height * 0.5);
-		else if (type == 4) ctx.drawImage(res.Flick, -res.Flick.width * 0.5, -res.Flick.height * 0.5);
+		if (type == 1) ctxos.drawImage(res["Tap"], -res["Tap"].width * 0.5, -res["Tap"].height * 0.5);
+		else if (type == 2) ctxos.drawImage(res["Drag"], -res["Drag"].width * 0.5, -res["Drag"].height * 0.5);
+		else if (type == 4) ctxos.drawImage(res["Flick"], -res["Flick"].width * 0.5, -res["Flick"].height * 0.5);
 	}
 }
 //test
@@ -1772,7 +1788,7 @@ function chartp23(pec) {
 	const rawarr = [];
 	let fuckarr = [1, 1]; //n指令的#和&
 	let rawstr = "";
-	if (!isNaN(rawChart[0])) qwqChart.offset = (rawChart.shift() / 1e3 - 0.15); //官方转谱似乎是0.14
+	if (!isNaN(rawChart[0])) qwqChart.offset = (rawChart.shift() / 1e3 - 0.175); //0.15//官方转谱似乎是0.14
 	for (let i = 0; i < rawChart.length; i++) {
 		let p = rawChart[i];
 		if (!isNaN(p)) rawarr.push(p);
@@ -2098,6 +2114,12 @@ function chartify(json) {
 	}
 	return newChart;
 }
+//调节画面尺寸和全屏相关
+function adjustSize(source, dest, scale) {
+	const [sw, sh, dw, dh] = [source.width, source.height, dest.width, dest.height];
+	if (dw * sh > dh * sw) return [dw * (1 - scale) / 2, (dh - dw * sh / sw * scale) / 2, dw * scale, dw * sh / sw * scale];
+	return [(dw - dh * sw / sh * scale) / 2, dh * (1 - scale) / 2, dh * sw / sh * scale, dh * scale];
+}
 //给图片上色
 function imgShader(img, color) {
 	const canvas = document.createElement("canvas");
@@ -2117,14 +2139,6 @@ function imgShader(img, color) {
 }
 
 function imgBlur(img) {
-	/*const canvas = document.createElement("canvas");
-	canvas.width = img.width;
-	canvas.height = img.height;
-	const ctx = canvas.getContext("2d");
-	ctx.drawImage(img, 0, 0); //防止边界半透明
-	ctx.filter = `blur(${Math.min(img.width,img.height)*0.0065}px)`;
-	ctx.drawImage(img, 0, 0);
-	return ctx.getImageData(0, 0, img.width, img.height);*/
 	const canvas = document.createElement("canvas");
 	canvas.width = img.width;
 	canvas.height = img.height;

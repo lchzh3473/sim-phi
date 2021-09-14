@@ -10,9 +10,10 @@
 	<script>
 		var vConsole = new VConsole();
 	</script>
-	<script src="/lib/zip.min.js"></script>
 	<script src="/lib/createImageBitmap.js"></script>
 	<script src="/lib/oggmented-bundle.js"></script>
+	<script src="./rubbish/oggmented-bundle.js"></script>
+	<script src="//cdn.jsdelivr.net/gh/gildas-lormeau/zip.js@master/dist/zip.min.js"></script>
 	<script src="//cdn.jsdelivr.net/gh/flozz/StackBlur@master/dist/stackblur.min.js"></script>
 	<script src="//cdn.jsdelivr.net/gh/hapjs/md5-js@master/md5.min.js"></script>
 	<script async src="/utils/stat.js"></script>
@@ -84,7 +85,6 @@
 		</div>
 		<div><strong id="output"></strong></div>
 		<div id="stage">
-			<canvas id="canvas-bg"></canvas>
 			<canvas id="canvas"></canvas>
 			<div id="stage-mask" class="fade">
 				<div>Tips: Do not distribute the URL in case the proliferation of low-tech videos!</div>
@@ -129,18 +129,19 @@
 						<td class="left"><a name="content2" href="#content1">[1]</a></td>
 						<td class="right">
 							zip支持文件路径包含文件夹，暂不支持zip嵌套<br>
+							以.开头的文件和文件夹将被隐藏，不会显示在选项框
 						</td>
 					</tr>
 					<tr>
 						<td class="left"><a name="format2" href="#format1">[2]</a></td>
 						<td class="right">
-							仅供参考，事实上部分浏览器可能支持更多格式(若不确定是否可用，可尝试一并打包，模拟器支持过滤无效文件)<br>
+							仅供参考，事实上部分浏览器可能支持更多格式(若不确定是否可用，可尝试一并打包，模拟器支持过滤无效文件)
 						</td>
 					</tr>
 					<tr>
 						<td class="left"><a name="json2" href="#json1">[3]</a></td>
 						<td class="right">
-							json即官方谱面，模拟器几乎完全支持(不提供谱面下载)<br>
+							json即官方谱面，模拟器几乎完全支持(不提供谱面下载)
 						</td>
 					</tr>
 					<tr>
@@ -151,13 +152,13 @@
 							&bull;&ensp;FakeNote可能存在显示错误;<br>
 							&bull;&ensp;Hold打击时无法变速;<br>
 							&bull;&ensp;不支持Alpha扩展(负数);<br>
-							其他PhiEditer独有特性也有可能无法正常显示<br>
+							其他PhiEditer独有特性也有可能无法正常显示
 						</td>
 					</tr>
 					<tr>
 						<td class="left"><a name="gif2" href="#gif1">[5]</a></td>
 						<td class="right">
-							动态图片将取第一帧以静态图显示<br>
+							动态图片将取第一帧以静态图显示
 						</td>
 					</tr>
 					<tr>

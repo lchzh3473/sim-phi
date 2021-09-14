@@ -25,16 +25,6 @@ body {
 	line-height: 0;
 }
 
-#canvas-bg {
-	position: absolute;
-	width: 100vw;
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-	filter: brightness(0.8);
-	z-index: -1;
-}
-
 #canvas {
 	margin: auto;
 	width: 100%;
