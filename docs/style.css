@@ -1,0 +1,61 @@
+/*@import url("//fonts.loli.net/css?family=Noto+Sans");*/
+
+::-webkit-scrollbar {
+	display: none;
+}
+
+body {
+	background-color: transparent;
+	font-family: Consolas, Menlo, monospace/*, 'Noto Sans'*/;
+	word-break: keep-all;
+	text-align: left;
+	font-size: calc(12px + 1vmin);
+}
+
+.view-content {
+	font-weight: bold;
+	margin: 0px;
+	text-align: left;
+	line-height: 1.5em;
+	width: 100%;
+}
+
+.view-table {
+	margin: 0px;
+	text-align: left;
+	line-height: 1.5em;
+}
+
+.view-table tr {
+	vertical-align: top;
+}
+
+.view-table .left {
+	word-break: keep-all;
+}
+
+.view-table .right {
+	word-break: break-all;
+}
+
+.real-table {
+	border: #000 1px solid;
+	border-spacing: 0;
+	text-align: center;
+	width: 100%;
+}
+
+.real-table .left {
+	word-break: keep-all;
+}
+
+.real-table .right {
+	word-break: break-all;
+}
+
+.real-table tr th,
+.real-table tr td {
+	vertical-align: middle;
+	border: 1px solid gray;
+	padding: 2px 5px;
+}

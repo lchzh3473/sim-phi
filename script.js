@@ -1,10 +1,81 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 6], 1611795955, 1631663051];
+const _i = ['Phigros模拟器', [1, 4, 7], 1611795955, 1632127692];
 document.oncontextmenu = e => e.returnValue = false; //qwq
+for (const i of document.getElementById("view-nav").children) {
+	i.addEventListener("click", function() {
+		for (const j of this.parentElement.children) j.classList.remove("active");
+		const doc = document.getElementById("view-doc");
+		const msg = document.getElementById("view-msg");
+		this.classList.add("active");
+		if (i.id == "msg") {
+			doc.src = "";
+			doc.classList.add("hide");
+			msg.classList.remove("hide");
+		} else {
+			if (doc.getAttribute("src") != `docs/${i.id}.html`) doc.src = `docs/${i.id}.html`;
+			msg.classList.add("hide");
+			doc.classList.remove("hide");
+		}
+	});
+}
+document.getElementById("cover-dark").addEventListener("click", () => {
+	document.getElementById("cover-dark").classList.add("fade");
+	document.getElementById("cover-view").classList.add("fade");
+});
+document.getElementById("qwq").addEventListener("click", () => {
+	document.getElementById("cover-dark").classList.remove("fade");
+	document.getElementById("cover-view").classList.remove("fade");
+	document.getElementById("res").click();
+});
+document.getElementById("msg-out").addEventListener("click", () => {
+	document.getElementById("cover-dark").classList.remove("fade");
+	document.getElementById("cover-view").classList.remove("fade");
+	document.getElementById("msg").click();
+});
+const message = {
+	out: document.getElementById("msg-out"),
+	view: document.getElementById("view-msg"),
+	lastMessage: "",
+	isError: false,
+	get num() {
+		return this.view.querySelectorAll(".msgbox").length;
+	},
+	sendMessage(msg) {
+		const num = this.num;
+		this.out.className = num ? "warning" : "accept";
+		this.out.innerText = msg + (num ? `（发现${num}个问题，点击查看）` : "");
+		this.lastMessage = msg;
+		this.isError = false;
+	},
+	sendWarning(msg) {
+		const msgbox = document.createElement("div");
+		msgbox.innerText = msg;
+		msgbox.classList.add("msgbox");
+		const btn = document.createElement("a");
+		btn.innerText = "忽略";
+		btn.style.float = "right";
+		btn.onclick = () => {
+			msgbox.remove();
+			if (this.isError) this.sendError(this.lastMessage);
+			else this.sendMessage(this.lastMessage);
+		}
+		msgbox.appendChild(btn);
+		this.view.appendChild(msgbox);
+		if (this.isError) this.sendError(this.lastMessage);
+		else this.sendMessage(this.lastMessage);
+	},
+	sendError(msg) {
+		const num = this.num;
+		this.out.className = "error";
+		this.out.innerText = msg + (num ? `（发现${num}个问题，点击查看）` : "");
+		this.lastMessage = msg;
+		this.isError = true;
+	}
+}
+//
 const upload = document.getElementById("upload");
 const uploads = document.getElementById("uploads");
-const output = document.getElementById("output");
-const mask = document.getElementById("stage-mask");
+const mask = document.getElementById("mask");
 const select = document.getElementById("select");
 const selectbg = document.getElementById("select-bg");
 const btnPlay = document.getElementById("btn-play");
@@ -24,7 +95,6 @@ const lineColor = document.getElementById("lineColor");
 const autoplay = document.getElementById("autoplay");
 const showTransition = document.getElementById("showTransition");
 const videoRecorder = document.getElementById("videoRecorder"); //videotest
-const canvas = document.getElementById("canvas");
 const bgs = {};
 const bgsBlur = {};
 const bgms = {};
@@ -34,7 +104,12 @@ const chartInfoData = []; //info.csv
 const AspectRatio = 16 / 9; //宽高比上限
 const Deg = Math.PI / 180; //角度转弧度
 let wlen, hlen, wlen2, hlen2, noteScale, lineScale; //背景图相关
+const canvas = document.getElementById("canvas");
+//const canvasbg = document.createElement("canvas"); //离屏canvas用于绘制游戏背景
 const canvasos = document.createElement("canvas"); //离屏canvas用于绘制游戏主界面
+const ctx = canvas.getContext("2d"); //游戏界面(alpha:false会出现兼容问题)
+//const ctxbg = canvasbg.getContext("2d");
+const ctxos = canvasos.getContext("2d");
 const Renderer = { //存放谱面
 	chart: null,
 	backgroundImage: null,
@@ -49,10 +124,9 @@ const Renderer = { //存放谱面
 	reverseholds: [],
 	tapholds: []
 };
-//兼容相关
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-class Fullscreen {
-	static toggle(elem) {
+//全屏相关
+const full = {
+	toggle(elem) {
 		if (!this.enabled) return false;
 		if (this.element) {
 			if (document.exitFullscreen) return document.exitFullscreen();
@@ -67,36 +141,38 @@ class Fullscreen {
 			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen();
 			if (elem.msRequestFullscreen) return elem.msRequestFullscreen();
 		}
-	}
-	static check(elem) {
-		//if (!elem || !navigator.userAgent.match(/Firefox/i)) return true;
+	},
+	check(elem) {
+		//if (!elem || !UA.UA.match(/Firefox/i)) return true;
 		if (!(elem instanceof HTMLElement)) elem = document.body;
 		return this.element == elem;
-	}
-	static get element() {
+	},
+	get element() {
 		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-	}
-	static get enabled() {
+	},
+	get enabled() {
 		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled);
 	}
+};
+//兼容性检测
+try {
+	eval("window?.Array");
+} catch (e) {
+	message.sendWarning("检测到当前浏览器不支持可选链操作符，可能无法正常渲染图片");
 }
-if (!Fullscreen.enabled) document.getElementById("full").innerText = "；暂不支持全屏";
+if (typeof WebAssembly != "object") message.sendWarning("检测到当前浏览器不支持WebAssembly，可能无法正常渲染图片");
+if (typeof createImageBitmap != "function") message.sendWarning("检测到当前浏览器不支持ImageBitmap，将无法使用模拟器");
+if (!(window.AudioContext || window.webkitAudioContext)) message.sendWarning("检测到当前浏览器不支持AudioContext，将无法使用模拟器");
+if (!full.enabled) message.sendWarning("检测到当前浏览器不支持全屏，播放时双击右下角将无反应");
 //qwq
 selectbg.onchange = () => {
 	Renderer.backgroundImage = bgs[selectbg.value];
 	Renderer.backgroundImageBlur = bgsBlur[selectbg.value];
 	resizeCanvas();
 }
-document.getElementById("cover-dark").addEventListener("click", () => {
-	document.getElementById("cover-dark").classList.add("fade");
-	document.getElementById("cover-view").classList.add("fade");
-});
-document.getElementById("qwq").addEventListener("click", () => {
-	document.getElementById("cover-dark").classList.remove("fade");
-	document.getElementById("cover-view").classList.remove("fade");
-});
-selectchart.addEventListener("change", adjustInfo);
 //自动填写歌曲信息
+selectchart.addEventListener("change", adjustInfo);
+
 function adjustInfo() {
 	for (const i of chartInfoData) {
 		if (selectchart.value == i.Chart) {
@@ -112,7 +188,6 @@ function adjustInfo() {
 		}
 	}
 }
-resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 document.addEventListener("fullscreenchange", resizeCanvas);
 //document.addEventListener("webkitfullscreenchange", resizeCanvas); //Safari
@@ -120,17 +195,24 @@ selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
 //适应画面尺寸
 function resizeCanvas() {
-	const width = window.innerWidth * devicePixelRatio;
-	const height = window.innerHeight * devicePixelRatio;
-	if (Fullscreen.check(canvas)) {
-		canvas.width = width;
-		canvas.height = height;
-		canvasos.width = Math.min(width, height * AspectRatio);
-		canvasos.height = height;
+	const width = document.documentElement.clientWidth;
+	const height = document.documentElement.clientHeight;
+	if (full.check(canvas)) {
+		canvas.style.cssText = "";
+		canvas.width = width * devicePixelRatio;
+		canvas.height = height * devicePixelRatio;
+		//canvasbg.width = width * devicePixelRatio;
+		//canvasbg.height = height * devicePixelRatio;
+		canvasos.width = Math.min(width, height * AspectRatio) * devicePixelRatio;
+		canvasos.height = height * devicePixelRatio;
 	} else {
-		canvas.width = width;
+		const defaultWidth = Math.min(854, width * 0.8);
+		canvas.style.cssText = `width:${Math.floor(defaultWidth)}px;height:${Math.floor(defaultWidth/selectaspectratio.value)}px`;
+		canvas.width = defaultWidth * devicePixelRatio;
 		canvas.height = canvas.width / selectaspectratio.value;
-		canvasos.width = width;
+		//canvasbg.width = defaultWidth * devicePixelRatio;
+		//canvasbg.height = canvasbg.width / selectaspectratio.value;
+		canvasos.width = defaultWidth * devicePixelRatio;
 		canvasos.height = canvasos.width / selectaspectratio.value;
 	}
 	wlen = canvasos.width / 2;
@@ -159,8 +241,7 @@ document.getElementById("demo").addEventListener("click", function() {
 	xhr.responseType = 'blob';
 	xhr.send();
 	xhr.onprogress = progress => { //显示加载文件进度
-		output.className = "accept";
-		output.innerText = `加载文件：${Math.floor(progress.loaded / 5079057 * 100)}%`;
+		message.sendMessage(`加载文件：${Math.floor(progress.loaded / 5079057 * 100)}%`);
 	};
 	xhr.onload = () => {
 		document.getElementById("filename").value = "demo.zip";
@@ -172,14 +253,14 @@ const touch = {}; //存放触摸事件
 const keyboard = {}; //存放键盘事件
 const taps = []; //额外处理tap(试图修复吃音bug)
 const specialClick = {
-	time: [0, 0, 0],
+	time: [0, 0, 0, 0],
 	func: [() => {
 		btnPause.click();
 	}, () => {
 		btnPlay.click();
 		btnPlay.click();
-	}, () => {
-		Fullscreen.toggle(canvas);
+	}, () => {}, () => {
+		full.toggle(canvas);
 	}],
 	click: function(id) {
 		const now = Date.now();
@@ -198,7 +279,8 @@ class Click {
 		taps.push(new Click(offsetX, offsetY));
 		if (offsetX < lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(0);
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(1);
-		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(2);
+		if (offsetX < lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(2);
+		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(3);
 		return new Click(offsetX, offsetY);
 	}
 	move(offsetX, offsetY) {
@@ -452,8 +534,8 @@ const isMouseDown = {};
 canvas.addEventListener("mousedown", function(evt) {
 	evt.preventDefault();
 	const idx = evt.button;
-	const dx = (Fullscreen.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-	const dy = (Fullscreen.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+	const dx = (full.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+	const dy = (full.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 	mouse[idx] = Click.activate(dx, dy);
 	isMouseDown[idx] = true;
 });
@@ -461,8 +543,8 @@ canvas.addEventListener("mousemove", function(evt) {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			const dx = (Fullscreen.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-			const dy = (Fullscreen.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+			const dx = (full.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+			const dy = (full.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 			mouse[idx].move(dx, dy);
 		}
 	}
@@ -508,8 +590,8 @@ const passive = {
 canvas.addEventListener("touchstart", function(evt) {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
-		const dx = (Fullscreen.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-		const dy = (Fullscreen.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+		const dx = (full.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+		const dy = (full.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 		touch[idx] = Click.activate(dx, dy);
 	}
 }, passive);
@@ -517,8 +599,8 @@ canvas.addEventListener("touchmove", function(evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		const dx = (Fullscreen.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-		const dy = (Fullscreen.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+		const dx = (full.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+		const dy = (full.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 		touch[idx].move(dx, dy);
 	}
 }, passive);
@@ -557,15 +639,9 @@ function getOffsetTop(element) {
 	}
 	return a;
 }
-const ctx = canvas.getContext("2d"); //游戏界面(alpha:false会出现兼容问题)
-const ctxos = canvasos.getContext("2d");
-const imgClick = {
-	perfect: [],
-	good: []
-};
-window.addEventListener("load", init);
 //声音组件
-const actx = new oggmented.OggmentedAudioContext(); //兼容Safari
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.OggmentedAudioContext() : new AudioContext(); //兼容Safari
 const dest = actx.createMediaStreamDestination(); //videotest
 const playSound = (res, loop, isOut, isRecord, offset) => {
 	const bufferSource = actx.createBufferSource();
@@ -577,15 +653,13 @@ const playSound = (res, loop, isOut, isRecord, offset) => {
 	return () => bufferSource.stop();
 }
 const res = {}; //存放资源
+resizeCanvas();
+uploads.classList.add("disabled");
+select.classList.add("disabled");
 //初始化
-function init() {
-	uploads.classList.add("disabled");
-	select.classList.add("disabled");
-	canvas.classList.add("fade");
-	mask.classList.remove("fade");
-	loadResourse();
+window.onload = function() {
 	//加载资源
-	async function loadResourse() {
+	(async function() {
 		let loadedNum = 0;
 		await Promise.all((obj => {
 			const arr = [];
@@ -626,8 +700,7 @@ function init() {
 				xhr.onload = async () => {
 					if (/\.(mp3|wav|ogg)$/i.test(src)) res[name] = await actx.decodeAudioData(xhr.response);
 					else if (/\.(png|jpeg|jpg)$/i.test(src)) res[name] = await createImageBitmap(new Blob([xhr.response]));
-					output.className = "accept";
-					output.innerText = `加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`;
+					message.sendMessage(`加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`);
 					resolve();
 				};
 			});
@@ -640,9 +713,9 @@ function init() {
 		res["Ranks"] = await qwqImage(res["Rank"], "white");
 		res["Clicks"]["rgba(255,236,160,0.8823529)"] = await qwqImage(res["clickRaw"], "rgba(255,236,160,0.8823529)"); //#fce491
 		res["Clicks"]["rgba(180,225,255,0.9215686)"] = await qwqImage(res["clickRaw"], "rgba(180,225,255,0.9215686)"); //#9ed5f3
-		output.innerText = "等待上传文件...";
+		message.sendMessage("等待上传文件...");
 		upload.parentElement.classList.remove("disabled");
-	}
+	})();
 }
 async function qwqImage(img, color) {
 	const clickqwq = imgShader(img, color);
@@ -761,8 +834,7 @@ upload.onchange = function() {
 	const file = this.files[0];
 	document.getElementById("filename").value = file ? file.name : "";
 	if (!file) {
-		output.className = "error";
-		output.innerText = "未选择任何文件";
+		message.sendError("未选择任何文件");
 		return;
 	}
 	uploads.classList.add("disabled");
@@ -828,11 +900,10 @@ const loadFile = function(file) {
 	reader.readAsArrayBuffer(file);
 	reader.onprogress = progress => { //显示加载文件进度
 		const size = file.size;
-		output.className = "accept";
-		output.innerText = `加载文件：${Math.floor(progress.loaded / size * 100)}%`;
+		message.sendMessage(`加载文件：${Math.floor(progress.loaded / size * 100)}%`);
 	};
 	reader.onload = async function() {
-		//加载zip(https://gildas-lormeau.github.io/zip.js)
+		//加载zip//gildas-lormeau.github.io/zip.js)
 		const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(this.result)));
 		reader.getEntries().then(async zipDataRaw => {
 			const zipData = [];
@@ -883,7 +954,7 @@ const loadFile = function(file) {
 					});
 				}).catch(() => {
 					return i.getData(new zip.TextWriter()).then(async data => {
-						const jsonData = await chart123(chartp23(data));
+						const jsonData = await chart123(chartp23(data, i.filename));
 						charts[i.filename] = jsonData;
 						charts[i.filename]["md5"] = md5(data);
 						selectchart.appendChild(createOption(i.filename, i.filename));
@@ -892,7 +963,7 @@ const loadFile = function(file) {
 					});
 				}).catch(() => {
 					loading(++loadedNum);
-					console.warn("Unsupported file:", i.filename); //以后移到日志里
+					message.sendWarning(`不支持的文件：${i.filename}`);
 					resolve(undefined);
 				});
 			})));
@@ -907,15 +978,12 @@ const loadFile = function(file) {
 			}
 
 			function loading(num) {
-				output.className = "accept";
-				output.innerText = `读取文件：${Math.floor(num/zipData.length * 100)}%`;
+				message.sendMessage(`读取文件：${Math.floor(num/zipData.length * 100)}%`);
 				if (num == zipData.length) {
 					if (selectchart.children.length == 0) {
-						output.className = "error";
-						output.innerText = "读取出错：未发现谱面文件"; //test
+						message.sendError("读取出错：未发现谱面文件"); //test
 					} else if (selectbgm.children.length == 0) {
-						output.className = "error";
-						output.innerText = "读取出错：未发现音乐文件"; //test
+						message.sendError("读取出错：未发现音乐文件"); //test
 					} else {
 						select.classList.remove("disabled");
 						btnPause.classList.add("disabled");
@@ -925,8 +993,7 @@ const loadFile = function(file) {
 			}
 			console.log(zipRaw);
 		}, () => {
-			output.className = "error";
-			output.innerText = "读取出错：不是zip文件"; //test
+			message.sendError("读取出错：不是zip文件"); //test
 		});
 		reader.close();
 	}
@@ -1679,7 +1746,7 @@ function chart123(chart) {
 	return JSON.parse(JSON.stringify(oldchart));
 }
 
-function chartp23(pec) {
+function chartp23(pec, filename) {
 	class Chart {
 		constructor() {
 			this.formatVersion = 3;
@@ -1842,18 +1909,26 @@ function chartp23(pec) {
 	for (const i of raw.n1) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(1, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n1 ${i.slice(0,5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
+		if (i[5]) message.sendWarning(`检测到FakeNote\n位于:"n2 ${i.slice(0,6).join(" ")}"\n来自${filename}`);
+		if (i[7] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[6]} & ${i[7]}"\n来自${filename}`);
 	}
 	for (const i of raw.n3) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n3 ${i.slice(0,5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	for (const i of raw.n4) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(2, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n4 ${i.slice(0,5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	//变速
 	for (const i of raw.cv) {
@@ -1864,10 +1939,12 @@ function chartp23(pec) {
 	for (const i of raw.ca) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[1]), i[2] > 0 ? i[2] / 255 : 0); //暂不支持alpha值扩展
+		if (i[2] < 0) message.sendWarning(`检测到负数Alpha:${i[2]}\n位于:"ca ${i.join(" ")}"\n来自${filename}`);
 	}
 	for (const i of raw.cf) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[2]), i[3] > 0 ? i[3] / 255 : 0);
+		if (i[3] < 0) message.sendWarning(`检测到负数Alpha:${i[3]}\n位于:"cf ${i.join(" ")}"\n来自${filename}`);
 	}
 	//移动
 	for (const i of raw.cp) {
@@ -1877,6 +1954,7 @@ function chartp23(pec) {
 	for (const i of raw.cm) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(-2, calcTime(i[1]), calcTime(i[2]), i[3] / 2048, i[4] / 1400, i[5]);
+		if (i[5] && !tween[i[5]] && i[5] != 1) message.sendWarning(`未知的缓动类型:${i[5]}(将被视为1)\n位于:"cm ${i.join(" ")}"\n来自${filename}`);
 	}
 	//旋转
 	for (const i of raw.cd) {
@@ -1886,6 +1964,7 @@ function chartp23(pec) {
 	for (const i of raw.cr) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(-3, calcTime(i[1]), calcTime(i[2]), -i[3], i[4]);
+		if (i[4] && !tween[i[4]] && i[4] != 1) message.sendWarning(`未知的缓动类型:${i[4]}(将被视为1)\n位于:"cr ${i.join(" ")}"\n来自${filename}`);
 	}
 	for (const i of linesPec) {
 		if (i) {
@@ -1948,10 +2027,7 @@ function chartp23(pec) {
 						let pt1 = j.value - ldpValue;
 						i.pushEvent(1, k, k + 1, ldpValue + tween[j.motionType](ptt1) * pt1, ldpValue + tween[j.motionType](ptt2) * pt1);
 					}
-				} else if (j.motionType) {
-					i.pushEvent(1, j.startTime, j.endTime, ldpValue, j.value);
-					if (j.motionType != 1) console.warn("Unknown MotionType: %s(Regarded as 1)", j.motionType);
-				}
+				} else if (j.motionType) i.pushEvent(1, j.startTime, j.endTime, ldpValue, j.value);
 				ldpTime = j.endTime;
 				ldpValue = j.value;
 			}
@@ -1970,10 +2046,7 @@ function chartp23(pec) {
 						let pt2 = j.value2 - lmpValue2;
 						i.pushEvent(2, k, k + 1, lmpValue + tween[j.motionType](ptt1) * pt1, lmpValue + tween[j.motionType](ptt2) * pt1, lmpValue2 + tween[j.motionType](ptt1) * pt2, lmpValue2 + tween[j.motionType](ptt2) * pt2);
 					}
-				} else if (j.motionType) {
-					i.pushEvent(2, j.startTime, j.endTime, lmpValue, j.value, lmpValue2, j.value2);
-					if (j.motionType != 1) console.warn("Unknown MotionType: %s(Regarded as 1)", j.motionType);
-				}
+				} else if (j.motionType) i.pushEvent(2, j.startTime, j.endTime, lmpValue, j.value, lmpValue2, j.value2);
 				lmpTime = j.endTime;
 				lmpValue = j.value;
 				lmpValue2 = j.value2;
@@ -1991,10 +2064,7 @@ function chartp23(pec) {
 						let pt1 = j.value - lrpValue;
 						i.pushEvent(3, k, k + 1, lrpValue + tween[j.motionType](ptt1) * pt1, lrpValue + tween[j.motionType](ptt2) * pt1);
 					}
-				} else if (j.motionType) {
-					i.pushEvent(3, j.startTime, j.endTime, lrpValue, j.value);
-					if (j.motionType != 1) console.warn("Unknown MotionType: %s(Regarded as 1)", j.motionType);
-				}
+				} else if (j.motionType) i.pushEvent(3, j.startTime, j.endTime, lrpValue, j.value);
 				lrpTime = j.endTime;
 				lrpValue = j.value;
 			}
