@@ -106,11 +106,7 @@ body {
 	transition-duration: 0.2s;
 }
 
-#view-nav a:hover {
-	background-color: #f0f1fe;
-	color: #89a7f3;
-}
-
+#view-nav a:hover,
 #view-nav a.active {
 	background-color: #f0f1fe;
 	color: #89a7f3;
@@ -125,11 +121,13 @@ body {
 }
 
 .msgbox {
+	display: flow-root;
 	background-color: #fffbe5;
-	margin: 0 0 calc(6px + 1vmin) 0;
+	margin: calc(6px + 1vmin) 0;
 	border: 1px solid gray;
 	border-radius: calc(6px + 1vmin);
 	text-align: left;
+	word-break: break-all;
 	padding: calc(6px + 1vmin);
 	font-size: calc(6px + 1vmin);
 	font-family: Consolas, Menlo, monospace;

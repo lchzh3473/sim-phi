@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 7], 1611795955, 1632127692];
+const _i = ['Phigros模拟器', [1, 4, 8], 1611795955, 1632230639];
 document.oncontextmenu = e => e.returnValue = false; //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function() {
@@ -105,16 +105,14 @@ const AspectRatio = 16 / 9; //宽高比上限
 const Deg = Math.PI / 180; //角度转弧度
 let wlen, hlen, wlen2, hlen2, noteScale, lineScale; //背景图相关
 const canvas = document.getElementById("canvas");
-//const canvasbg = document.createElement("canvas"); //离屏canvas用于绘制游戏背景
-const canvasos = document.createElement("canvas"); //离屏canvas用于绘制游戏主界面
 const ctx = canvas.getContext("2d"); //游戏界面(alpha:false会出现兼容问题)
-//const ctxbg = canvasbg.getContext("2d");
+const canvasos = document.createElement("canvas"); //用于绘制游戏主界面
 const ctxos = canvasos.getContext("2d");
 const Renderer = { //存放谱面
 	chart: null,
-	backgroundImage: null,
-	backgroundImageBlur: null,
-	backgroundMusic: null,
+	bgImage: null,
+	bgImageBlur: null,
+	bgMusic: null,
 	lines: [],
 	notes: [],
 	taps: [],
@@ -143,7 +141,6 @@ const full = {
 		}
 	},
 	check(elem) {
-		//if (!elem || !UA.UA.match(/Firefox/i)) return true;
 		if (!(elem instanceof HTMLElement)) elem = document.body;
 		return this.element == elem;
 	},
@@ -166,8 +163,8 @@ if (!(window.AudioContext || window.webkitAudioContext)) message.sendWarning("�
 if (!full.enabled) message.sendWarning("检测到当前浏览器不支持全屏，播放时双击右下角将无反应");
 //qwq
 selectbg.onchange = () => {
-	Renderer.backgroundImage = bgs[selectbg.value];
-	Renderer.backgroundImageBlur = bgsBlur[selectbg.value];
+	Renderer.bgImage = bgs[selectbg.value];
+	Renderer.bgImageBlur = bgsBlur[selectbg.value];
 	resizeCanvas();
 }
 //自动填写歌曲信息
@@ -190,31 +187,21 @@ function adjustInfo() {
 }
 window.addEventListener("resize", resizeCanvas);
 document.addEventListener("fullscreenchange", resizeCanvas);
-//document.addEventListener("webkitfullscreenchange", resizeCanvas); //Safari
 selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
 //适应画面尺寸
 function resizeCanvas() {
 	const width = document.documentElement.clientWidth;
 	const height = document.documentElement.clientHeight;
-	if (full.check(canvas)) {
-		canvas.style.cssText = "";
-		canvas.width = width * devicePixelRatio;
-		canvas.height = height * devicePixelRatio;
-		//canvasbg.width = width * devicePixelRatio;
-		//canvasbg.height = height * devicePixelRatio;
-		canvasos.width = Math.min(width, height * AspectRatio) * devicePixelRatio;
-		canvasos.height = height * devicePixelRatio;
-	} else {
-		const defaultWidth = Math.min(854, width * 0.8);
-		canvas.style.cssText = `width:${Math.floor(defaultWidth)}px;height:${Math.floor(defaultWidth/selectaspectratio.value)}px`;
-		canvas.width = defaultWidth * devicePixelRatio;
-		canvas.height = canvas.width / selectaspectratio.value;
-		//canvasbg.width = defaultWidth * devicePixelRatio;
-		//canvasbg.height = canvasbg.width / selectaspectratio.value;
-		canvasos.width = defaultWidth * devicePixelRatio;
-		canvasos.height = canvasos.width / selectaspectratio.value;
-	}
+	const defaultWidth = Math.min(854, width * 0.8);
+	const defaultHeight = defaultWidth / selectaspectratio.value;
+	const realWidth = Math.floor(full.check(canvas) ? width : defaultWidth);
+	const realHeight = Math.floor(full.check(canvas) ? height : defaultHeight);
+	canvas.style.cssText += `;width:${realWidth}px;height:${realHeight}px`;
+	canvas.width = realWidth * devicePixelRatio;
+	canvas.height = realHeight * devicePixelRatio;
+	canvasos.width = Math.min(realWidth, realHeight * AspectRatio) * devicePixelRatio;
+	canvasos.height = realHeight * devicePixelRatio;
 	wlen = canvasos.width / 2;
 	hlen = canvasos.height / 2;
 	wlen2 = canvasos.width / 18;
@@ -230,7 +217,7 @@ document.querySelector(".title").addEventListener("click", function() {
 	if (qwq[1]) qwq[0] = !qwq[0];
 	else if (!--qwq[2]) {
 		document.getElementById("demo").classList.remove("hide");
-		videoRecorder.nextElementSibling.classList.remove("hide");
+		if (video.msdest) videoRecorder.nextElementSibling.classList.remove("hide");
 	}
 });
 document.getElementById("demo").addEventListener("click", function() {
@@ -374,17 +361,17 @@ class Judgements extends Array {
 						} else if (i.realTime - realTime > 0.08) {
 							//console.log("Good(Early)", i.name);
 							i.status = 2;
-							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 						} else if (i.realTime - realTime > -0.08) {
 							//console.log("Perfect", i.name);
 							i.status = 1;
-							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 						} else {
 							//console.log("Good(Late)", i.name);
 							i.status = 2;
-							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 						}
 						if (i.status) {
@@ -397,7 +384,7 @@ class Judgements extends Array {
 				}
 			} else if (i.type == 2) {
 				if (i.status == 1 && i.realTime - realTime < 0) {
-					if (document.getElementById("hitSong").checked) playSound(res["HitSong1"], false, true, videoRecorder.checked, 0);
+					if (document.getElementById("hitSong").checked) playSound(res["HitSong1"], false, true, 0);
 					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 					stat.addCombo(1, 2);
 					i.scored = true;
@@ -428,7 +415,7 @@ class Judgements extends Array {
 				for (let j = 0; j < this.length; j++) {
 					if (!i.status3) {
 						if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
-							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, videoRecorder.checked, 0);
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							if (i.realTime - realTime > 0.08) {
 								//console.log("Good(Early)", i.name);
 								i.status2 = 2;
@@ -459,7 +446,7 @@ class Judgements extends Array {
 				}
 			} else if (i.type == 4) {
 				if (i.status == 1 && i.realTime - realTime < 0) {
-					if (document.getElementById("hitSong").checked) playSound(res["HitSong2"], false, true, videoRecorder.checked, 0);
+					if (document.getElementById("hitSong").checked) playSound(res["HitSong2"], false, true, 0);
 					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 					stat.addCombo(1, 4);
 					i.scored = true;
@@ -588,6 +575,7 @@ const passive = {
 	passive: false
 }; //不加这玩意会出现warning
 canvas.addEventListener("touchstart", function(evt) {
+	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
 		const dx = (full.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
@@ -612,6 +600,7 @@ canvas.addEventListener("touchend", function(evt) {
 	}
 });
 canvas.addEventListener("touchcancel", function(evt) {
+	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
 		delete touch[idx];
@@ -642,13 +631,49 @@ function getOffsetTop(element) {
 //声音组件
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.OggmentedAudioContext() : new AudioContext(); //兼容Safari
-const dest = actx.createMediaStreamDestination(); //videotest
-const playSound = (res, loop, isOut, isRecord, offset) => {
+const stopPlaying = [];
+const video = { //videotest
+	msdest: actx.createMediaStreamDestination && canvas.captureStream ? actx.createMediaStreamDestination() : null,
+	record: function() {
+		if (!this.msdest) return;
+		const support = [
+			"video/mp4;codecs=avc1", "video/mp4;codecs=mp4a",
+			"video/webm;codecs=vp9,pcm", "video/webm;codecs=vp8,pcm",
+			"video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus",
+		].find(n => MediaRecorder.isTypeSupported(n));
+		const cStream = canvas.captureStream();
+		const aStream = this.msdest.stream;
+		const mixStream = new MediaStream([cStream.getVideoTracks()[0], aStream.getAudioTracks()[0]]);
+		try {
+			const recorder = new MediaRecorder(mixStream, {
+				videoBitsPerSecond: 2e7,
+				mimeType: support || ""
+			}); //mixStream
+			const chunks = [];
+			recorder.ondataavailable = evt => evt.data && evt.data.size && chunks.push(evt.data);
+			recorder.onstop = () => {
+				if (chunks.length) {
+					const blob = new Blob(chunks);
+					const a = document.createElement("a");
+					a.href = URL.createObjectURL(blob);
+					a.download = `${parseInt(Date.now()/1e3)}.${support.match(/\/(.+)?;/)[1]}`;
+					a.click();
+					chunks.length = 0;
+				} else alert("Recording Failed");
+			};
+			recorder.start();
+			stopPlaying.push(() => recorder.stop());
+		} catch (e) {
+			alert("Recording Failed:" + e.message);
+		}
+	}
+}
+const playSound = (res, loop, isOut, offset) => {
 	const bufferSource = actx.createBufferSource();
 	bufferSource.buffer = res;
 	bufferSource.loop = loop; //循环播放
 	if (isOut) bufferSource.connect(actx.destination);
-	if (isRecord) bufferSource.connect(dest); //videotest
+	if (videoRecorder.checked) bufferSource.connect(video.msdest); //videotest
 	bufferSource.start(0, offset);
 	return () => bufferSource.stop();
 }
@@ -727,34 +752,30 @@ async function qwqImage(img, color) {
 }
 //必要组件
 let stopDrawing;
-const stopPlaying = [];
-const Stat = class {
-	constructor(numOfNotes) {
-		this.reset(numOfNotes);
-	}
+const stat = {
 	get all() {
 		return this.perfect + this.good + this.bad + this.miss;
-	}
+	},
 	get scoreNum() {
 		const a = 1e6 * (this.perfect * 0.9 + this.good * 0.585 + this.maxcombo * 0.1) / this.numOfNotes;
 		return isFinite(a) ? a : 0;
-	}
+	},
 	get scoreStr() {
 		const a = this.scoreNum.toFixed(0);
 		return ("0").repeat(a.length < 7 ? 7 - a.length : 0) + a;
-	}
+	},
 	get accNum() {
 		const a = (this.perfect + this.good * 0.65) / this.all;
 		return isFinite(a) ? a : 0;
-	}
+	},
 	get accStr() {
 		return (100 * this.accNum).toFixed(2) + "%";
-	}
+	},
 	get lineStatus() {
 		if (this.bad + this.miss) return 0;
 		if (this.good) return 2;
 		return 1;
-	}
+	},
 	get rankStatus() {
 		const a = Math.round(this.scoreNum);
 		if (a >= 1e6) return 0;
@@ -764,13 +785,13 @@ const Stat = class {
 		if (a >= 8.2e5) return 4;
 		if (a >= 7e5) return 5;
 		return 6;
-	}
+	},
 	get localData() {
 		const l1 = Math.round(this.accNum * 1e4 + 566).toString(22).slice(-3);
 		const l2 = Math.round(this.scoreNum + 40672).toString(32).slice(-4);
 		const l3 = (Number(inputLevel.value.match(/\d+$/))).toString(36).slice(-1);
 		return l1 + l2 + l3;
-	}
+	},
 	getData(isAuto) {
 		const s1 = this.data[this.id].slice(0, 3);
 		const s2 = this.data[this.id].slice(3, 7);
@@ -785,7 +806,7 @@ const Stat = class {
 		localStorage.setItem("phi", arr.sort(() => Math.random() - 0.5).join(""));
 		if (isAuto) return [false, scoreBest, "", true];
 		return [s2 < l2, scoreBest, (s2 > l2 ? "- " : "+ ") + Math.abs(scoreBest - this.scoreStr), false];
-	}
+	},
 	reset(numOfNotes, id) {
 		this.numOfNotes = Number(numOfNotes) || 0;
 		this.perfect = 0;
@@ -806,7 +827,7 @@ const Stat = class {
 			if (!this.data[id]) this.data[id] = this.localData;
 			this.id = id;
 		}
-	}
+	},
 	addCombo(status, type) {
 		if (status == 1) {
 			this.perfect++;
@@ -827,7 +848,7 @@ const Stat = class {
 		this.combos[type]++;
 	}
 }
-const stat = new Stat();
+//const stat = new Stat();
 const comboColor = ["#fff", "#0ac3ff", "#f0ed69", "#a0e9fd", "#fe4365"];
 //读取文件
 upload.onchange = function() {
@@ -849,6 +870,8 @@ const frameTimer = { //计算fps
 		if (++this.tick >= fr) {
 			this.tick = 0;
 			this.fps = (1e3 * fr / (-this.time + (this.time = Date.now()))).toFixed(0);
+			btnPause.click();
+			btnPause.click(); //音频与谱面按时同步
 		}
 		return this.fps;
 	}
@@ -1153,7 +1176,7 @@ const qwqEnd = new Timer();
 btnPlay.addEventListener("click", async function() {
 	btnPause.value = "暂停";
 	if (this.value == "播放") {
-		stopPlaying.push(playSound(res["mute"], true, false, videoRecorder.checked, 0)); //播放空音频(防止音画不同步)
+		stopPlaying.push(playSound(res["mute"], true, false, 0)); //播放空音频(防止音画不同步)
 		for (const i of ["lines", "notes", "taps", "drags", "flicks", "holds", "reverseholds", "tapholds"]) Renderer[i] = [];
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
 		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5);
@@ -1167,12 +1190,12 @@ btnPlay.addEventListener("click", async function() {
 				Renderer.chart.judgeLineList[i.LineId].imageB = Number(i.IsDark);
 			}
 		}
-		Renderer.backgroundImage = bgs[selectbg.value] || res["NoImage"];
-		Renderer.backgroundImageBlur = bgsBlur[selectbg.value] || res["NoImage"];
-		Renderer.backgroundMusic = bgms[selectbgm.value];
+		Renderer.bgImage = bgs[selectbg.value] || res["NoImage"];
+		Renderer.bgImageBlur = bgsBlur[selectbg.value] || res["NoImage"];
+		Renderer.bgMusic = bgms[selectbgm.value];
 		this.value = "停止";
 		resizeCanvas();
-		duration = Renderer.backgroundMusic.duration;
+		duration = Renderer.bgMusic.duration;
 		isInEnd = false;
 		isOutStart = false;
 		isOutEnd = false;
@@ -1186,38 +1209,7 @@ btnPlay.addEventListener("click", async function() {
 		if (videoRecorder.checked) btnPause.classList.add("disabled"); //videotest录制时不允许暂停(存在bug)
 		loop();
 		qwqIn.play();
-		if (videoRecorder.checked) {
-			const support = [
-				"video/mp4;codecs=avc1", "video/mp4;codecs=mp4a",
-				"video/webm;codecs=vp9,pcm", "video/webm;codecs=vp8,pcm",
-				"video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus",
-			].find(n => MediaRecorder.isTypeSupported(n));
-			const cStream = canvas.captureStream();
-			const aStream = dest.stream;
-			const mixStream = new MediaStream([cStream.getVideoTracks()[0], aStream.getAudioTracks()[0]]);
-			try {
-				const recorder = new MediaRecorder(mixStream, {
-					videoBitsPerSecond: 2e7,
-					mimeType: support || ""
-				}); //mixStream
-				const chunks = [];
-				recorder.ondataavailable = evt => evt.data && evt.data.size && chunks.push(evt.data);
-				recorder.onstop = () => {
-					if (chunks.length) {
-						const blob = new Blob(chunks);
-						const a = document.createElement("a");
-						a.href = URL.createObjectURL(blob);
-						a.download = `${parseInt(Date.now()/1e3)}.${support.match(/\/(.+)?;/)[1]}`;
-						a.click();
-						chunks.length = 0;
-					} else alert("Recording Failed");
-				};
-				recorder.start();
-				stopPlaying.push(() => recorder.stop());
-			} catch (e) {
-				alert("Recording Failed:" + e.message);
-			}
-		} //videotest
+		if (videoRecorder.checked) video.record(); //videotest
 	} else {
 		if (videoRecorder.checked) btnPlay.classList.add("disabled"); //只许录制一次(存在bug)
 		while (stopPlaying.length) stopPlaying.shift()();
@@ -1254,7 +1246,7 @@ btnPause.addEventListener("click", function() {
 		qwqIn.play();
 		if (showTransition.checked && isOutStart) qwqOut.play();
 		isPaused = false;
-		if (isInEnd && !isOutStart) playBgm(Renderer.backgroundMusic, timeBgm);
+		if (isInEnd && !isOutStart) playBgm(Renderer.bgMusic, timeBgm);
 		this.value = "暂停";
 	}
 });
@@ -1267,7 +1259,7 @@ function playBgm(data, offset) {
 	isPaused = false;
 	if (!offset) offset = 0;
 	curTimestamp = Date.now();
-	stopPlaying.push(playSound(data, false, true, videoRecorder.checked, offset));
+	stopPlaying.push(playSound(data, false, true, offset));
 }
 let fucktemp = false;
 let fucktemp2 = false;
@@ -1281,8 +1273,8 @@ function loop() {
 	} else if (!fucktemp) qwqdraw2();
 	if (fucktemp2) qwqdraw3(fucktemp2);
 	ctx.globalAlpha = 1;
-	if (document.getElementById("imageBlur").checked) ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvas, 1.1));
-	else ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvas, 1.1));
+	if (document.getElementById("imageBlur").checked) ctx.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvas, 1.1));
+	else ctx.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvas, 1.1));
 	ctx.fillStyle = "#000";
 	ctx.globalAlpha = 0.4;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1301,7 +1293,7 @@ function loop() {
 function calcqwq(now) {
 	if (!isInEnd && qwqIn.second >= 3) {
 		isInEnd = true;
-		playBgm(Renderer.backgroundMusic);
+		playBgm(Renderer.bgMusic);
 	}
 	if (!isPaused && isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
 	if (timeBgm >= duration) isOutStart = true;
@@ -1381,11 +1373,13 @@ function calcqwq(now) {
 			}
 		}
 	}
-	judgements.addJudgement(Renderer.notes, timeChart);
-	judgements.judgeNote(Renderer.drags, timeChart, canvasos.width * 0.117775);
-	judgements.judgeNote(Renderer.flicks, timeChart, canvasos.width * 0.117775);
-	judgements.judgeNote(Renderer.tapholds, timeChart, canvasos.width * 0.117775); //播放打击音效和判定
-	taps.length = 0; //qwq
+	if (isInEnd) {
+		judgements.addJudgement(Renderer.notes, timeChart);
+		judgements.judgeNote(Renderer.drags, timeChart, canvasos.width * 0.117775);
+		judgements.judgeNote(Renderer.flicks, timeChart, canvasos.width * 0.117775);
+		judgements.judgeNote(Renderer.tapholds, timeChart, canvasos.width * 0.117775); //播放打击音效和判定
+		taps.length = 0; //qwq
+	}
 	frameTimer.addTick(); //计算fps
 	clickEvents0.defilter(i => i.time++ > 0); //清除打击特效
 	clickEvents1.defilter(i => now >= i.time + i.duration); //清除打击特效
@@ -1461,9 +1455,9 @@ function qwqdraw1(now) {
 	ctxos.globalAlpha = 1;
 	ctxos.resetTransform();
 	if (document.getElementById("imageBlur").checked) {
-		ctxos.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvasos, 1));
+		ctxos.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvasos, 1));
 	} else {
-		ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
+		ctxos.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvasos, 1));
 	}
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalCompositeOperation = "source-over";
@@ -1565,11 +1559,11 @@ function qwqdraw2() {
 	ctxos.resetTransform();
 	ctxos.globalAlpha = 1;
 	if (document.getElementById("imageBlur").checked) {
-		ctxos.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvasos, 1));
-		ctx.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvas, 1));
+		ctxos.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvasos, 1));
+		ctx.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvas, 1));
 	} else {
-		ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
-		ctx.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvas, 1));
+		ctxos.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvasos, 1));
+		ctx.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvas, 1));
 	}
 	ctxos.fillStyle = "#000"; //背景变暗
 	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
@@ -1581,12 +1575,13 @@ function qwqdraw2() {
 	xhr.send();
 	xhr.onload = async () => {
 		const bgm = await actx.decodeAudioData(xhr.response);
-		setTimeout(() => {
-			stopPlaying.push(playSound(bgm, true, true, videoRecorder.checked, 0));
+		const timeout = setTimeout(() => {
+			stopPlaying.push(playSound(bgm, true, true, 0));
 			qwqEnd.reset();
 			qwqEnd.play();
 			fucktemp2 = stat.getData(autoplay.checked);
 		}, 1000);
+		stopPlaying.push(() => clearTimeout(timeout));
 	}
 }
 
@@ -1595,8 +1590,8 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = "source-over";
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalAlpha = 1;
-	if (document.getElementById("imageBlur").checked) ctxos.drawImage(Renderer.backgroundImageBlur, ...adjustSize(Renderer.backgroundImageBlur, canvasos, 1));
-	else ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
+	if (document.getElementById("imageBlur").checked) ctxos.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvasos, 1));
+	else ctxos.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvasos, 1));
 	ctxos.fillStyle = "#000"; //背景变暗
 	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
@@ -1668,7 +1663,7 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = "destination-over";
 	ctxos.globalAlpha = 1;
 	ctxos.fillStyle = "#000";
-	ctxos.drawImage(Renderer.backgroundImage, ...adjustSize(Renderer.backgroundImage, canvasos, 1));
+	ctxos.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvasos, 1));
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 }
 
