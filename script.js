@@ -1,8 +1,8 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 8], 1611795955, 1632230639];
+const _i = ['Phigros模拟器', [1, 4, 9], 1611795955, 1633226211];
 document.oncontextmenu = e => e.returnValue = false; //qwq
 for (const i of document.getElementById("view-nav").children) {
-	i.addEventListener("click", function() {
+	i.addEventListener("click", function () {
 		for (const j of this.parentElement.children) j.classList.remove("active");
 		const doc = document.getElementById("view-doc");
 		const msg = document.getElementById("view-msg");
@@ -213,14 +213,14 @@ function resizeCanvas() {
 const qwq = [true, false, 3];
 document.getElementById("demo").classList.add("hide");
 videoRecorder.nextElementSibling.classList.add("hide");
-document.querySelector(".title").addEventListener("click", function() {
+document.querySelector(".title").addEventListener("click", function () {
 	if (qwq[1]) qwq[0] = !qwq[0];
 	else if (!--qwq[2]) {
 		document.getElementById("demo").classList.remove("hide");
 		if (video.msdest) videoRecorder.nextElementSibling.classList.remove("hide");
 	}
 });
-document.getElementById("demo").addEventListener("click", function() {
+document.getElementById("demo").addEventListener("click", function () {
 	document.getElementById("demo").classList.add("hide");
 	uploads.classList.add("disabled");
 	const xhr = new XMLHttpRequest();
@@ -246,10 +246,10 @@ const specialClick = {
 	}, () => {
 		btnPlay.click();
 		btnPlay.click();
-	}, () => {}, () => {
+	}, () => void 0, () => {
 		full.toggle(canvas);
 	}],
-	click: function(id) {
+	click(id) {
 		const now = Date.now();
 		if (now - this.time[id] < 300) this.func[id]();
 		this.time[id] = now;
@@ -518,7 +518,7 @@ class ClickEvent1 {
 }
 //适配PC鼠标
 const isMouseDown = {};
-canvas.addEventListener("mousedown", function(evt) {
+canvas.addEventListener("mousedown", function (evt) {
 	evt.preventDefault();
 	const idx = evt.button;
 	const dx = (full.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
@@ -526,7 +526,7 @@ canvas.addEventListener("mousedown", function(evt) {
 	mouse[idx] = Click.activate(dx, dy);
 	isMouseDown[idx] = true;
 });
-canvas.addEventListener("mousemove", function(evt) {
+canvas.addEventListener("mousemove", function (evt) {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
@@ -536,13 +536,13 @@ canvas.addEventListener("mousemove", function(evt) {
 		}
 	}
 });
-canvas.addEventListener("mouseup", function(evt) {
+canvas.addEventListener("mouseup", function (evt) {
 	evt.preventDefault();
 	const idx = evt.button;
 	delete mouse[idx];
 	delete isMouseDown[idx];
 });
-canvas.addEventListener("mouseout", function(evt) {
+canvas.addEventListener("mouseout", function (evt) {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
@@ -552,7 +552,7 @@ canvas.addEventListener("mouseout", function(evt) {
 	}
 });
 //适配键盘(喵喵喵?)
-window.addEventListener("keydown", function(evt) {
+window.addEventListener("keydown", function (evt) {
 	if (document.activeElement.classList.value == "input") return;
 	if (btnPlay.value != "停止") return;
 	evt.preventDefault();
@@ -560,7 +560,7 @@ window.addEventListener("keydown", function(evt) {
 	else if (keyboard[evt.code] instanceof Click);
 	else keyboard[evt.code] = Click.activate(NaN, NaN);
 }, false);
-window.addEventListener("keyup", function(evt) {
+window.addEventListener("keyup", function (evt) {
 	if (document.activeElement.classList.value == "input") return;
 	if (btnPlay.value != "停止") return;
 	evt.preventDefault();
@@ -571,10 +571,8 @@ window.addEventListener("blur", () => {
 	for (const i in keyboard) delete keyboard[i]; //失去焦点清除键盘事件
 });
 //适配移动设备
-const passive = {
-	passive: false
-}; //不加这玩意会出现warning
-canvas.addEventListener("touchstart", function(evt) {
+const passive = { passive: false }; //不加这玩意会出现warning
+canvas.addEventListener("touchstart", function (evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
@@ -583,7 +581,7 @@ canvas.addEventListener("touchstart", function(evt) {
 		touch[idx] = Click.activate(dx, dy);
 	}
 }, passive);
-canvas.addEventListener("touchmove", function(evt) {
+canvas.addEventListener("touchmove", function (evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
@@ -592,14 +590,14 @@ canvas.addEventListener("touchmove", function(evt) {
 		touch[idx].move(dx, dy);
 	}
 }, passive);
-canvas.addEventListener("touchend", function(evt) {
+canvas.addEventListener("touchend", function (evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
 		delete touch[idx];
 	}
 });
-canvas.addEventListener("touchcancel", function(evt) {
+canvas.addEventListener("touchcancel", function (evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
@@ -634,7 +632,7 @@ const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.Oggmen
 const stopPlaying = [];
 const video = { //videotest
 	msdest: actx.createMediaStreamDestination && canvas.captureStream ? actx.createMediaStreamDestination() : null,
-	record: function() {
+	record() {
 		if (!this.msdest) return;
 		const support = [
 			"video/mp4;codecs=avc1", "video/mp4;codecs=mp4a",
@@ -656,7 +654,7 @@ const video = { //videotest
 					const blob = new Blob(chunks);
 					const a = document.createElement("a");
 					a.href = URL.createObjectURL(blob);
-					a.download = `${parseInt(Date.now()/1e3)}.${support.match(/\/(.+)?;/)[1]}`;
+					a.download = `${parseInt(Date.now() / 1e3)}.${support.match(/\/(.+)?;/)[1]}`;
 					a.click();
 					chunks.length = 0;
 				} else alert("Recording Failed");
@@ -682,9 +680,9 @@ resizeCanvas();
 uploads.classList.add("disabled");
 select.classList.add("disabled");
 //初始化
-window.onload = function() {
+window.onload = function () {
 	//加载资源
-	(async function() {
+	(async function () {
 		let loadedNum = 0;
 		await Promise.all((obj => {
 			const arr = [];
@@ -851,7 +849,7 @@ const stat = {
 //const stat = new Stat();
 const comboColor = ["#fff", "#0ac3ff", "#f0ed69", "#a0e9fd", "#fe4365"];
 //读取文件
-upload.onchange = function() {
+upload.onchange = function () {
 	const file = this.files[0];
 	document.getElementById("filename").value = file ? file.name : "";
 	if (!file) {
@@ -861,17 +859,15 @@ upload.onchange = function() {
 	uploads.classList.add("disabled");
 	loadFile(file);
 }
-const time2Str = time => `${`00${parseInt(time/60)}`.slice(-2)}:${`00${parseInt(time%60)}`.slice(-2)}`;
+const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
 const frameTimer = { //计算fps
 	tick: 0,
 	time: Date.now(),
 	fps: "",
-	addTick: function(fr = 10) {
+	addTick(fr = 10) {
 		if (++this.tick >= fr) {
 			this.tick = 0;
 			this.fps = (1e3 * fr / (-this.time + (this.time = Date.now()))).toFixed(0);
-			btnPause.click();
-			btnPause.click(); //音频与谱面按时同步
 		}
 		return this.fps;
 	}
@@ -916,7 +912,7 @@ let isOutStart = false; //结尾过渡动画
 let isOutEnd = false; //临时变量
 let isPaused = true; //暂停
 //加载文件
-const loadFile = function(file) {
+const loadFile = function (file) {
 	qwq[1] = true;
 	document.getElementById("demo").classList.add("hide");
 	const reader = new FileReader();
@@ -925,7 +921,7 @@ const loadFile = function(file) {
 		const size = file.size;
 		message.sendMessage(`加载文件：${Math.floor(progress.loaded / size * 100)}%`);
 	};
-	reader.onload = async function() {
+	reader.onload = async function () {
 		//加载zip//gildas-lormeau.github.io/zip.js)
 		const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(this.result)));
 		reader.getEntries().then(async zipDataRaw => {
@@ -935,56 +931,52 @@ const loadFile = function(file) {
 			}
 			console.log(zipData);
 			let loadedNum = 0;
-			const zipRaw = await Promise.all(zipData.map(i => new Promise(resolve => {
+			const zipRaw = await Promise.all(zipData.map(i => new Promise(async resolve => {
 				if (i.filename == "line.csv") {
-					return i.getData(new zip.TextWriter()).then(async data => {
-						const chartLine = csv2array(data, true);
-						chartLineData.push(...chartLine);
-						loading(++loadedNum);
-						resolve(chartLine);
-					});
+					const data = await i.getData(new zip.TextWriter());
+					const chartLine = csv2array(data, true);
+					chartLineData.push(...chartLine);
+					loading(++loadedNum);
+					resolve(chartLine);
 				} else if (i.filename == "info.csv") {
-					return i.getData(new zip.TextWriter()).then(async data => {
-						const chartInfo = csv2array(data, true);
-						chartInfoData.push(...chartInfo);
-						loading(++loadedNum);
-						resolve(chartInfo);
-					});
+					const data_2 = await i.getData(new zip.TextWriter());
+					const chartInfo = csv2array(data_2, true);
+					chartInfoData.push(...chartInfo);
+					loading(++loadedNum);
+					resolve(chartInfo);
 				} else i.getData(new zip.Uint8ArrayWriter()).then(async data => {
 					const audioData = await actx.decodeAudioData(data.buffer);
 					bgms[i.filename] = audioData;
 					selectbgm.appendChild(createOption(i.filename, i.filename));
 					loading(++loadedNum);
 					resolve(audioData);
-				}).catch(() => {
-					return i.getData(new zip.BlobWriter()).then(async data => {
-						const imageData = await createImageBitmap(data);
-						bgs[i.filename] = imageData;
-						bgsBlur[i.filename] = await createImageBitmap(imgBlur(imageData));
-						selectbg.appendChild(createOption(i.filename, i.filename));
-						loading(++loadedNum);
-						resolve(imageData);
-					});
-				}).catch(() => {
-					return i.getData(new zip.TextWriter()).then(async data => {
-						console.log(JSON.parse(data)); //test
-						const jsonData = await chart123(JSON.parse(data));
-						charts[i.filename] = jsonData;
-						charts[i.filename]["md5"] = md5(data);
-						selectchart.appendChild(createOption(i.filename, i.filename));
-						loading(++loadedNum);
-						resolve(jsonData);
-					});
-				}).catch(() => {
-					return i.getData(new zip.TextWriter()).then(async data => {
-						const jsonData = await chart123(chartp23(data, i.filename));
-						charts[i.filename] = jsonData;
-						charts[i.filename]["md5"] = md5(data);
-						selectchart.appendChild(createOption(i.filename, i.filename));
-						loading(++loadedNum);
-						resolve(jsonData);
-					});
-				}).catch(() => {
+				}).catch(async () => {
+					const data = await i.getData(new zip.BlobWriter());
+					const imageData = await createImageBitmap(data);
+					bgs[i.filename] = imageData;
+					bgsBlur[i.filename] = await createImageBitmap(imgBlur(imageData));
+					selectbg.appendChild(createOption(i.filename, i.filename));
+					loading(++loadedNum);
+					resolve(imageData);
+				}).catch(async () => {
+					const data = await i.getData(new zip.TextWriter());
+					console.log(JSON.parse(data)); //test
+					const jsonData = await chart123(JSON.parse(data));
+					charts[i.filename] = jsonData;
+					charts[i.filename]["md5"] = md5(data);
+					selectchart.appendChild(createOption(i.filename, i.filename));
+					loading(++loadedNum);
+					resolve(jsonData);
+				}).catch(async () => {
+					const data = await i.getData(new zip.TextWriter());
+					const jsonData = await chart123(chartp23(data, i.filename));
+					charts[i.filename] = jsonData;
+					charts[i.filename]["md5"] = md5(data);
+					selectchart.appendChild(createOption(i.filename, i.filename));
+					loading(++loadedNum);
+					resolve(jsonData);
+				}).catch(error => {
+					console.log(error);
 					loading(++loadedNum);
 					message.sendWarning(`不支持的文件：${i.filename}`);
 					resolve(undefined);
@@ -1001,7 +993,7 @@ const loadFile = function(file) {
 			}
 
 			function loading(num) {
-				message.sendMessage(`读取文件：${Math.floor(num/zipData.length * 100)}%`);
+				message.sendMessage(`读取文件：${Math.floor(num / zipData.length * 100)}%`);
 				if (num == zipData.length) {
 					if (selectchart.children.length == 0) {
 						message.sendError("读取出错：未发现谱面文件"); //test
@@ -1065,7 +1057,7 @@ function prerenderChart(chart) {
 		note.lineId = lineId;
 		note.noteId = noteId;
 		note.isAbove = isAbove;
-		note.name = `${lineId}${isAbove?"+":"-"}${noteId}`;
+		note.name = `${lineId}${isAbove ? "+" : "-"}${noteId}`;
 		Renderer.notes.push(note);
 		if (note.type == 1) Renderer.taps.push(note);
 		else if (note.type == 2) Renderer.drags.push(note);
@@ -1173,7 +1165,7 @@ const qwqIn = new Timer();
 const qwqOut = new Timer();
 const qwqEnd = new Timer();
 //play
-btnPlay.addEventListener("click", async function() {
+btnPlay.addEventListener("click", async function () {
 	btnPause.value = "暂停";
 	if (this.value == "播放") {
 		stopPlaying.push(playSound(res["mute"], true, false, 0)); //播放空音频(防止音画不同步)
@@ -1233,7 +1225,7 @@ btnPlay.addEventListener("click", async function() {
 		this.value = "播放";
 	}
 });
-btnPause.addEventListener("click", function() {
+btnPause.addEventListener("click", function () {
 	if (this.classList.contains("disabled") || btnPlay.value == "播放") return;
 	if (this.value == "暂停") {
 		qwqIn.pause();
@@ -1250,7 +1242,7 @@ btnPause.addEventListener("click", function() {
 		this.value = "暂停";
 	}
 });
-inputOffset.addEventListener("input", function() {
+inputOffset.addEventListener("input", function () {
 	if (this.value < -400) this.value = -400;
 	if (this.value > 600) this.value = 600;
 });
@@ -1281,7 +1273,7 @@ function loop() {
 	ctx.globalAlpha = 1;
 	ctx.drawImage(canvasos, (canvas.width - canvasos.width) / 2, 0);
 	//Copyright
-	ctx.font = `${lineScale*0.4}px Mina`;
+	ctx.font = `${lineScale * 0.4}px Mina`;
 	ctx.fillStyle = "#ccc";
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = "right";
@@ -1378,8 +1370,8 @@ function calcqwq(now) {
 		judgements.judgeNote(Renderer.drags, timeChart, canvasos.width * 0.117775);
 		judgements.judgeNote(Renderer.flicks, timeChart, canvasos.width * 0.117775);
 		judgements.judgeNote(Renderer.tapholds, timeChart, canvasos.width * 0.117775); //播放打击音效和判定
-		taps.length = 0; //qwq
 	}
+	taps.length = 0; //qwq
 	frameTimer.addTick(); //计算fps
 	clickEvents0.defilter(i => i.time++ > 0); //清除打击特效
 	clickEvents1.defilter(i => now >= i.time + i.duration); //清除打击特效
@@ -1474,11 +1466,11 @@ function qwqdraw1(now) {
 		ctxos.textAlign = "center";
 		//歌名
 		ctxos.textBaseline = "alphabetic";
-		ctxos.font = `${lineScale*1.1}px Mina`;
+		ctxos.font = `${lineScale * 1.1}px Mina`;
 		ctxos.fillText(inputName.value || inputName.placeholder, wlen, hlen * 0.75);
 		//曲绘和谱师
 		ctxos.textBaseline = "top";
-		ctxos.font = `${lineScale*0.55}px Mina`;
+		ctxos.font = `${lineScale * 0.55}px Mina`;
 		ctxos.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, wlen, hlen * 1.25 + lineScale * 0.15);
 		ctxos.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, wlen, hlen * 1.25 + lineScale * 1.0);
 		//判定线(装饰用)
@@ -1493,16 +1485,16 @@ function qwqdraw1(now) {
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = "alphabetic";
-	ctxos.font = `${lineScale*0.95}px Mina`;
+	ctxos.font = `${lineScale * 0.95}px Mina`;
 	ctxos.textAlign = "right";
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
 	if (!qwq[0]) ctxos.drawImage(res["Pause"], lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
 	if (stat.combo > 2) {
 		ctxos.textAlign = "center";
-		ctxos.font = `${lineScale*1.32}px Mina`;
+		ctxos.font = `${lineScale * 1.32}px Mina`;
 		ctxos.fillText(stat.combo, wlen, lineScale * 1.375);
 		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
-		ctxos.font = `${lineScale*0.66}px Mina`;
+		ctxos.font = `${lineScale * 0.66}px Mina`;
 		ctxos.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 2.05);
 	}
 	//绘制歌名和等级
@@ -1510,7 +1502,7 @@ function qwqdraw1(now) {
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = "alphabetic";
 	ctxos.textAlign = "right";
-	ctxos.font = `${lineScale*0.63}px Mina`;
+	ctxos.font = `${lineScale * 0.63}px Mina`;
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
 	ctxos.drawImage(res["SongsNameBar"], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctxos.textAlign = "left";
@@ -1521,7 +1513,7 @@ function qwqdraw1(now) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
 		else ctxos.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
 		ctxos.textBaseline = "middle";
-		ctxos.font = `${lineScale*0.4}px Mina`;
+		ctxos.font = `${lineScale * 0.4}px Mina`;
 		ctxos.textAlign = "left";
 		ctxos.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}`, lineScale * 0.05, lineScale * 0.5);
 		ctxos.textAlign = "right";
@@ -1570,10 +1562,11 @@ function qwqdraw2() {
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	const qwq = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
 	const xhr = new XMLHttpRequest();
-	xhr.open("get", `src/LevelOver${qwq<0?2:qwq}.ogg`, true);
+	xhr.open("get", `src/LevelOver${qwq < 0 ? 2 : qwq}.ogg`, true);
 	xhr.responseType = 'arraybuffer';
 	xhr.send();
 	xhr.onload = async () => {
+		if (!fucktemp) return;
 		const bgm = await actx.decodeAudioData(xhr.response);
 		const timeout = setTimeout(() => {
 			stopPlaying.push(playSound(bgm, true, true, 0));
@@ -1705,11 +1698,11 @@ function drawNote(note, realTime, type) {
 }
 //test
 function chart123(chart) {
-	let oldchart = JSON.parse(JSON.stringify(chart)); //深拷贝
-	switch (oldchart.formatVersion) { //加花括号以避免beautify缩进bug
+	const newChart = JSON.parse(JSON.stringify(chart)); //深拷贝
+	switch (newChart.formatVersion) { //加花括号以避免beautify缩进bug
 		case 1: {
-			oldchart.formatVersion = 3;
-			for (const i of oldchart.judgeLineList) {
+			newChart.formatVersion = 3;
+			for (const i of newChart.judgeLineList) {
 				let y = 0;
 				for (const j of i.speedEvents) {
 					if (j.startTime < 0) j.startTime = 0;
@@ -1732,13 +1725,13 @@ function chart123(chart) {
 				}
 			}
 		}
-		case 3: {}
+		case 3: { }
 		case 3473:
 			break;
 		default:
-			throw `Unsupported formatVersion: ${oldchart.formatVersion}`;
+			throw `Unsupported formatVersion: ${newChart.formatVersion}`;
 	}
-	return JSON.parse(JSON.stringify(oldchart));
+	return newChart;
 }
 
 function chartp23(pec, filename) {
@@ -1904,26 +1897,26 @@ function chartp23(pec, filename) {
 	for (const i of raw.n1) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(1, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n1 ${i.slice(0,5).join(" ")}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n1 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
-		if (i[5]) message.sendWarning(`检测到FakeNote\n位于:"n2 ${i.slice(0,6).join(" ")}"\n来自${filename}`);
-		if (i[7] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[6]} & ${i[7]}"\n来自${filename}`);
+		if (i[5]) message.sendWarning(`检测到FakeNote\n位于:"n2 ${i.slice(0, 6).join(" ")}"\n来自${filename}`);
+		if (i[7] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[6]} & ${i[7]}"\n来自${filename}`);
 	}
 	for (const i of raw.n3) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n3 ${i.slice(0,5).join(" ")}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n3 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	for (const i of raw.n4) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(2, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n4 ${i.slice(0,5).join(" ")}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0,5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n4 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	//变速
 	for (const i of raw.cv) {
