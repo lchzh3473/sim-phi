@@ -1,6 +1,6 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 9], 1611795955, 1633226211];
-document.oncontextmenu = e => e.returnValue = false; //qwq
+const _i = ['Phigros模拟器', [1, 4, 10], 1611795955, 1633850749];
+document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function () {
 		for (const j of this.parentElement.children) j.classList.remove("active");
@@ -194,7 +194,7 @@ function resizeCanvas() {
 	const width = document.documentElement.clientWidth;
 	const height = document.documentElement.clientHeight;
 	const defaultWidth = Math.min(854, width * 0.8);
-	const defaultHeight = defaultWidth / selectaspectratio.value;
+	const defaultHeight = defaultWidth / (selectaspectratio.value || 16 / 9);
 	const realWidth = Math.floor(full.check(canvas) ? width : defaultWidth);
 	const realHeight = Math.floor(full.check(canvas) ? height : defaultHeight);
 	canvas.style.cssText += `;width:${realWidth}px;height:${realHeight}px`;
@@ -206,7 +206,7 @@ function resizeCanvas() {
 	hlen = canvasos.height / 2;
 	wlen2 = canvasos.width / 18;
 	hlen2 = canvasos.height * 0.6; //控制note流速
-	noteScale = canvasos.width / selectscaleratio.value; //note、特效缩放
+	noteScale = canvasos.width / (selectscaleratio.value || 8e3); //note、特效缩放
 	lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //判定线、文字缩放
 }
 //qwq[water,demo,democlick]
@@ -329,14 +329,14 @@ class Judgements extends Array {
 			for (const i of notes) {
 				if (i.scored) continue;
 				if (i.type == 1) {
-					if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
+					if (i.realTime - realTime < 0.0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
 				} else if (i.type == 2) {
-					if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					if (i.realTime - realTime < 0.2) this.push(new Judgement(i.offsetX, i.offsetY, 2));
 				} else if (i.type == 3) {
 					if (i.status3) this.push(new Judgement(i.offsetX, i.offsetY, 2));
-					else if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
+					else if (i.realTime - realTime < 0.0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
 				} else if (i.type == 4) {
-					if (i.realTime - realTime < 0) this.push(new Judgement(i.offsetX, i.offsetY, 3));
+					if (i.realTime - realTime < 0.2) this.push(new Judgement(i.offsetX, i.offsetY, 3));
 				}
 			}
 		}
@@ -1441,7 +1441,7 @@ function qwqdraw1(now) {
 	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
 	ctxos.resetTransform();
 	ctxos.fillStyle = "#000"; //背景变暗
-	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
+	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0); //绘制判定线(背景后0)
 	ctxos.globalAlpha = 1;
@@ -1515,7 +1515,7 @@ function qwqdraw1(now) {
 		ctxos.textBaseline = "middle";
 		ctxos.font = `${lineScale * 0.4}px Mina`;
 		ctxos.textAlign = "left";
-		ctxos.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}`, lineScale * 0.05, lineScale * 0.5);
+		ctxos.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}${isPaused ? "(Paused)" : ""}`, lineScale * 0.05, lineScale * 0.5);
 		ctxos.textAlign = "right";
 		ctxos.fillText(frameTimer.fps, canvasos.width - lineScale * 0.05, lineScale * 0.5);
 		ctxos.textBaseline = "alphabetic";
@@ -1558,7 +1558,7 @@ function qwqdraw2() {
 		ctx.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvas, 1));
 	}
 	ctxos.fillStyle = "#000"; //背景变暗
-	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
+	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	const qwq = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
 	const xhr = new XMLHttpRequest();
@@ -1566,9 +1566,9 @@ function qwqdraw2() {
 	xhr.responseType = 'arraybuffer';
 	xhr.send();
 	xhr.onload = async () => {
-		if (!fucktemp) return;
 		const bgm = await actx.decodeAudioData(xhr.response);
 		const timeout = setTimeout(() => {
+			if (!fucktemp) return;
 			stopPlaying.push(playSound(bgm, true, true, 0));
 			qwqEnd.reset();
 			qwqEnd.play();
@@ -1586,7 +1586,7 @@ function qwqdraw3(statData) {
 	if (document.getElementById("imageBlur").checked) ctxos.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvasos, 1));
 	else ctxos.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvasos, 1));
 	ctxos.fillStyle = "#000"; //背景变暗
-	ctxos.globalAlpha = selectglobalalpha.value; //背景不透明度
+	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalCompositeOperation = "destination-out";
 	ctxos.globalAlpha = 1;
