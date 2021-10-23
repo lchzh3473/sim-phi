@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 10], 1611795955, 1633850749];
+const _i = ['Phigros模拟器', [1, 4, 11], 1611795955, 1634971621];
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function () {
@@ -700,7 +700,9 @@ window.onload = function () {
 			Drag: "src/Drag.png",
 			DragHL: "src/DragHL.png",
 			HoldHead: "src/HoldHead.png",
+			HoldHeadHL: "src/HoldHeadHL.png",
 			Hold: "src/Hold.png",
+			HoldHL: "src/HoldHL.png",
 			HoldEnd: "src/HoldEnd.png",
 			Flick: "src/Flick.png",
 			FlickHL: "src/FlickHL.png",
@@ -1357,7 +1359,7 @@ function calcqwq(now) {
 			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed;
 			if (i.badtime) i.alpha = 1 - range((Date.now() - i.badtime) / 500);
 			else if (i.realTime > timeChart) {
-				if (dy > -1e-3) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1;
+				if (dy > -1e-3 * hlen2) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1;
 				else i.alpha = showPoint.checked ? 0.45 : 0;
 			} else {
 				if (i.type == 3) i.alpha = i.speed == 0 ? (showPoint.checked ? 0.45 : 0) : (i.status == 4 ? 0.45 : 1);
@@ -1560,9 +1562,9 @@ function qwqdraw2() {
 	ctxos.fillStyle = "#000"; //背景变暗
 	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
-	const qwq = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
+	const difficulty = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
 	const xhr = new XMLHttpRequest();
-	xhr.open("get", `src/LevelOver${qwq < 0 ? 2 : qwq}.ogg`, true);
+	xhr.open("get", `src/LevelOver${difficulty < 0 ? 2 : difficulty}${qwq[2] == -1 ? "_v2" : ""}.ogg`, true);
 	xhr.responseType = 'arraybuffer';
 	xhr.send();
 	xhr.onload = async () => {
@@ -1668,6 +1670,7 @@ function range(num) {
 
 //绘制Note
 function drawNote(note, realTime, type) {
+	const HL = note.isMulti && document.getElementById("highLight").checked;
 	if (!note.visible) return;
 	if (note.type != 3 && note.scored && !note.badtime) return;
 	if (note.type == 3 && note.realTime + note.realHoldTime < realTime) return; //qwq
@@ -1677,16 +1680,22 @@ function drawNote(note, realTime, type) {
 		const baseLength = hlen2 / noteScale * note.speed;
 		const holdLength = baseLength * note.realHoldTime;
 		if (note.realTime > realTime) {
-			ctxos.drawImage(res["HoldHead"], -res["HoldHead"].width * 0.5, 0);
-			ctxos.drawImage(res["Hold"], -res["Hold"].width * 0.5, -holdLength, res["Hold"].width, holdLength);
+			if (HL) {
+				ctxos.drawImage(res["HoldHeadHL"], -res["HoldHeadHL"].width * 1.026 * 0.5, 0, res["HoldHeadHL"].width * 1.026, res["HoldHeadHL"].height * 1.026);
+				ctxos.drawImage(res["HoldHL"], -res["HoldHL"].width * 1.026 * 0.5, -holdLength, res["HoldHL"].width * 1.026, holdLength);
+			} else {
+				ctxos.drawImage(res["HoldHead"], -res["HoldHead"].width * 0.5, 0);
+				ctxos.drawImage(res["Hold"], -res["Hold"].width * 0.5, -holdLength, res["Hold"].width, holdLength);
+			}
 			ctxos.drawImage(res["HoldEnd"], -res["HoldEnd"].width * 0.5, -holdLength - res["HoldEnd"].height);
 		} else {
-			ctxos.drawImage(res["Hold"], -res["Hold"].width * 0.5, -holdLength, res["Hold"].width, holdLength - baseLength * (realTime - note.realTime));
+			if (HL) ctxos.drawImage(res["HoldHL"], -res["HoldHL"].width * 1.026 * 0.5, -holdLength, res["HoldHL"].width * 1.026, holdLength - baseLength * (realTime - note.realTime));
+			else ctxos.drawImage(res["Hold"], -res["Hold"].width * 0.5, -holdLength, res["Hold"].width, holdLength - baseLength * (realTime - note.realTime));
 			ctxos.drawImage(res["HoldEnd"], -res["HoldEnd"].width * 0.5, -holdLength - res["HoldEnd"].height);
 		}
 	} else if (note.badtime) {
 		if (type == 1) ctxos.drawImage(res["TapBad"], -res["TapBad"].width * 0.5, -res["TapBad"].height * 0.5);
-	} else if (note.isMulti && document.getElementById("highLight").checked) {
+	} else if (HL) {
 		if (type == 1) ctxos.drawImage(res["TapHL"], -res["TapHL"].width * 0.5, -res["TapHL"].height * 0.5);
 		else if (type == 2) ctxos.drawImage(res["DragHL"], -res["DragHL"].width * 0.5, -res["DragHL"].height * 0.5);
 		else if (type == 4) ctxos.drawImage(res["FlickHL"], -res["FlickHL"].width * 0.5, -res["FlickHL"].height * 0.5);
@@ -1778,6 +1787,10 @@ function chartp23(pec, filename) {
 				startTime: startTime,
 				endTime: endTime,
 			}
+			if (typeof startTime == 'number' && typeof endTime == 'number' && startTime > endTime) {
+				console.warn("Warning: startTime " + startTime + " is larger than endTime " + endTime);
+				//return;
+			}
 			switch (type) {
 				case 0:
 					evt.value = n1;
@@ -1849,20 +1862,10 @@ function chartp23(pec, filename) {
 		if (!isNaN(p)) rawarr.push(p);
 		else if (p == "#" && rawstr[0] == "n") fuckarr[0] = rawChart[++i];
 		else if (p == "&" && rawstr[0] == "n") fuckarr[1] = rawChart[++i];
-		else if (!raw[p]) throw `Unknown Command: ${p}`;
-		else {
-			if (raw[rawstr]) {
-				if (rawstr[0] == "n") {
-					rawarr.push(...fuckarr);
-					fuckarr = [1, 1];
-				}
-				raw[rawstr].push(JSON.parse(JSON.stringify(rawarr)));
-			}
-			rawarr.length = 0;
-			rawstr = p;
-		}
+		else if (raw[p]) pushCommand(p);
+		else throw `Unknown Command: ${p}`;
 	}
-	if (raw[rawstr]) raw[rawstr].push(JSON.parse(JSON.stringify(rawarr))); //补充最后一个元素(bug)
+	pushCommand(""); //补充最后一个元素(bug)
 	//处理bpm变速
 	if (!raw.bp[0]) raw.bp.push([0, 120]);
 	const baseBpm = raw.bp[0][1];
@@ -1882,6 +1885,17 @@ function chartp23(pec, filename) {
 		});
 		fuckBpm += (end - start) / bpm;
 	});
+	function pushCommand(next) {
+		if (raw[rawstr]) {
+			if (rawstr[0] == "n") {
+				rawarr.push(...fuckarr);
+				fuckarr = [1, 1];
+			}
+			raw[rawstr].push(JSON.parse(JSON.stringify(rawarr)));
+		}
+		rawarr.length = 0;
+		rawstr = next;
+	}
 	//将pec时间转换为pgr时间
 	function calcTime(timePec) {
 		let timePhi = 0;
@@ -1897,26 +1911,26 @@ function chartp23(pec, filename) {
 	for (const i of raw.n1) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(1, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n1 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
-		if (i[5]) message.sendWarning(`检测到FakeNote\n位于:"n2 ${i.slice(0, 6).join(" ")}"\n来自${filename}`);
-		if (i[7] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[6]} & ${i[7]}"\n来自${filename}`);
+		if (i[5]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n2 ${i.slice(0, 6).join(" ")}"\n来自${filename}`);
+		if (i[7] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n2 ${i.slice(0, 5).join(" ")} # ${i[6]} & ${i[7]}"\n来自${filename}`);
 	}
 	for (const i of raw.n3) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n3 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	for (const i of raw.n4) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(2, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`检测到FakeNote\n位于:"n4 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
+		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	//变速
 	for (const i of raw.cv) {
@@ -1927,12 +1941,16 @@ function chartp23(pec, filename) {
 	for (const i of raw.ca) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[1]), i[2] > 0 ? i[2] / 255 : 0); //暂不支持alpha值扩展
-		if (i[2] < 0) message.sendWarning(`检测到负数Alpha:${i[2]}\n位于:"ca ${i.join(" ")}"\n来自${filename}`);
+		if (i[2] < 0) message.sendWarning(`检测到负数Alpha:${i[2]}(将被视为0)\n位于:"ca ${i.join(" ")}"\n来自${filename}`);
 	}
 	for (const i of raw.cf) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
+		if (i[1] > i[2]) {
+			message.sendWarning(`检测到开始时间大于结束时间(将禁用此事件)\n位于:"cf ${i.join(" ")}"\n来自${filename}`);
+			continue;
+		}
 		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[2]), i[3] > 0 ? i[3] / 255 : 0);
-		if (i[3] < 0) message.sendWarning(`检测到负数Alpha:${i[3]}\n位于:"cf ${i.join(" ")}"\n来自${filename}`);
+		if (i[3] < 0) message.sendWarning(`检测到负数Alpha:${i[3]}(将被视为0)\n位于:"cf ${i.join(" ")}"\n来自${filename}`);
 	}
 	//移动
 	for (const i of raw.cp) {
@@ -1941,6 +1959,10 @@ function chartp23(pec, filename) {
 	}
 	for (const i of raw.cm) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
+		if (i[1] > i[2]) {
+			message.sendWarning(`检测到开始时间大于结束时间(将禁用此事件)\n位于:"cm ${i.join(" ")}"\n来自${filename}`);
+			continue;
+		}
 		linesPec[i[0]].pushEvent(-2, calcTime(i[1]), calcTime(i[2]), i[3] / 2048, i[4] / 1400, i[5]);
 		if (i[5] && !tween[i[5]] && i[5] != 1) message.sendWarning(`未知的缓动类型:${i[5]}(将被视为1)\n位于:"cm ${i.join(" ")}"\n来自${filename}`);
 	}
@@ -1951,6 +1973,10 @@ function chartp23(pec, filename) {
 	}
 	for (const i of raw.cr) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
+		if (i[1] > i[2]) {
+			message.sendWarning(`检测到开始时间大于结束时间(将禁用此事件)\n位于:"cr ${i.join(" ")}"\n来自${filename}`);
+			continue;
+		}
 		linesPec[i[0]].pushEvent(-3, calcTime(i[1]), calcTime(i[2]), -i[3], i[4]);
 		if (i[4] && !tween[i[4]] && i[4] != 1) message.sendWarning(`未知的缓动类型:${i[4]}(将被视为1)\n位于:"cr ${i.join(" ")}"\n来自${filename}`);
 	}
