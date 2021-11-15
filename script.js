@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 11], 1611795955, 1634971621];
+const _i = ['Phigros模拟器', [1, 4, 12], 1611795955, 1636990294];
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function () {
@@ -94,7 +94,6 @@ const showPoint = document.getElementById("showPoint");
 const lineColor = document.getElementById("lineColor");
 const autoplay = document.getElementById("autoplay");
 const showTransition = document.getElementById("showTransition");
-const videoRecorder = document.getElementById("videoRecorder"); //videotest
 const bgs = {};
 const bgsBlur = {};
 const bgms = {};
@@ -152,12 +151,7 @@ const full = {
 	}
 };
 //兼容性检测
-try {
-	eval("window?.Array");
-} catch (e) {
-	message.sendWarning("检测到当前浏览器不支持可选链操作符，可能无法正常渲染图片");
-}
-if (typeof WebAssembly != "object") message.sendWarning("检测到当前浏览器不支持WebAssembly，可能无法正常渲染图片");
+if (typeof zip != "object") message.sendWarning("检测到zip组件未正常加载，将无法使用模拟器");
 if (typeof createImageBitmap != "function") message.sendWarning("检测到当前浏览器不支持ImageBitmap，将无法使用模拟器");
 if (!(window.AudioContext || window.webkitAudioContext)) message.sendWarning("检测到当前浏览器不支持AudioContext，将无法使用模拟器");
 if (!full.enabled) message.sendWarning("检测到当前浏览器不支持全屏，播放时双击右下角将无反应");
@@ -212,13 +206,9 @@ function resizeCanvas() {
 //qwq[water,demo,democlick]
 const qwq = [true, false, 3];
 document.getElementById("demo").classList.add("hide");
-videoRecorder.nextElementSibling.classList.add("hide");
 document.querySelector(".title").addEventListener("click", function () {
 	if (qwq[1]) qwq[0] = !qwq[0];
-	else if (!--qwq[2]) {
-		document.getElementById("demo").classList.remove("hide");
-		if (video.msdest) videoRecorder.nextElementSibling.classList.remove("hide");
-	}
+	else if (!--qwq[2]) document.getElementById("demo").classList.remove("hide");
 });
 document.getElementById("demo").addEventListener("click", function () {
 	document.getElementById("demo").classList.add("hide");
@@ -521,8 +511,8 @@ const isMouseDown = {};
 canvas.addEventListener("mousedown", function (evt) {
 	evt.preventDefault();
 	const idx = evt.button;
-	const dx = (full.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-	const dy = (full.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+	const dx = (evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+	const dy = (evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 	mouse[idx] = Click.activate(dx, dy);
 	isMouseDown[idx] = true;
 });
@@ -530,8 +520,8 @@ canvas.addEventListener("mousemove", function (evt) {
 	evt.preventDefault();
 	for (const idx in isMouseDown) {
 		if (isMouseDown[idx]) {
-			const dx = (full.check(this) ? evt.pageX : evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-			const dy = (full.check(this) ? evt.pageY : evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+			const dx = (evt.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+			const dy = (evt.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 			mouse[idx].move(dx, dy);
 		}
 	}
@@ -576,8 +566,8 @@ canvas.addEventListener("touchstart", function (evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
-		const dx = (full.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-		const dy = (full.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+		const dx = (i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+		const dy = (i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 		touch[idx] = Click.activate(dx, dy);
 	}
 }, passive);
@@ -585,8 +575,8 @@ canvas.addEventListener("touchmove", function (evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier;
-		const dx = (full.check(this) ? i.pageX : i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
-		const dy = (full.check(this) ? i.pageY : i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
+		const dx = (i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
+		const dy = (i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 		touch[idx].move(dx, dy);
 	}
 }, passive);
@@ -607,10 +597,11 @@ canvas.addEventListener("touchcancel", function (evt) {
 //优化触摸定位，以后整合进class
 function getOffsetLeft(element) {
 	if (!(element instanceof HTMLElement)) return NaN;
+	if (full.check(element)) return document.documentElement.scrollLeft;
 	let elem = element;
 	let a = 0;
 	while (elem instanceof HTMLElement) {
-		a += elem.offsetLeft;
+		a += elem.offsetLeft + elem.scrollLeft;
 		elem = elem.offsetParent;
 	}
 	return a;
@@ -618,10 +609,11 @@ function getOffsetLeft(element) {
 
 function getOffsetTop(element) {
 	if (!(element instanceof HTMLElement)) return NaN;
+	if (full.check(element)) return document.documentElement.scrollTop;
 	let elem = element;
 	let a = 0;
 	while (elem instanceof HTMLElement) {
-		a += elem.offsetTop;
+		a += elem.offsetTop + elem.scrollTop;
 		elem = elem.offsetParent;
 	}
 	return a;
@@ -630,48 +622,13 @@ function getOffsetTop(element) {
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.OggmentedAudioContext() : new AudioContext(); //兼容Safari
 const stopPlaying = [];
-const video = { //videotest
-	msdest: actx.createMediaStreamDestination && canvas.captureStream ? actx.createMediaStreamDestination() : null,
-	record() {
-		if (!this.msdest) return;
-		const support = [
-			"video/mp4;codecs=avc1", "video/mp4;codecs=mp4a",
-			"video/webm;codecs=vp9,pcm", "video/webm;codecs=vp8,pcm",
-			"video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus",
-		].find(n => MediaRecorder.isTypeSupported(n));
-		const cStream = canvas.captureStream();
-		const aStream = this.msdest.stream;
-		const mixStream = new MediaStream([cStream.getVideoTracks()[0], aStream.getAudioTracks()[0]]);
-		try {
-			const recorder = new MediaRecorder(mixStream, {
-				videoBitsPerSecond: 2e7,
-				mimeType: support || ""
-			}); //mixStream
-			const chunks = [];
-			recorder.ondataavailable = evt => evt.data && evt.data.size && chunks.push(evt.data);
-			recorder.onstop = () => {
-				if (chunks.length) {
-					const blob = new Blob(chunks);
-					const a = document.createElement("a");
-					a.href = URL.createObjectURL(blob);
-					a.download = `${parseInt(Date.now() / 1e3)}.${support.match(/\/(.+)?;/)[1]}`;
-					a.click();
-					chunks.length = 0;
-				} else alert("Recording Failed");
-			};
-			recorder.start();
-			stopPlaying.push(() => recorder.stop());
-		} catch (e) {
-			alert("Recording Failed:" + e.message);
-		}
-	}
-}
+const gain = actx.createGain();
 const playSound = (res, loop, isOut, offset) => {
 	const bufferSource = actx.createBufferSource();
 	bufferSource.buffer = res;
 	bufferSource.loop = loop; //循环播放
-	if (isOut) bufferSource.connect(actx.destination);
-	if (videoRecorder.checked) bufferSource.connect(video.msdest); //videotest
+	bufferSource.connect(gain);
+	if (isOut) gain.connect(actx.destination);
 	bufferSource.start(0, offset);
 	return () => bufferSource.stop();
 }
@@ -1171,7 +1128,7 @@ btnPlay.addEventListener("click", async function () {
 	btnPause.value = "暂停";
 	if (this.value == "播放") {
 		stopPlaying.push(playSound(res["mute"], true, false, 0)); //播放空音频(防止音画不同步)
-		for (const i of ["lines", "notes", "taps", "drags", "flicks", "holds", "reverseholds", "tapholds"]) Renderer[i] = [];
+		("lines,notes,taps,drags,flicks,holds,reverseholds,tapholds").split(",").map(i => Renderer[i] = []);
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
 		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5);
 		for (const i of chartLineData) {
@@ -1200,12 +1157,9 @@ btnPlay.addEventListener("click", async function () {
 		mask.classList.add("fade");
 		btnPause.classList.remove("disabled");
 		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.add("disabled");
-		if (videoRecorder.checked) btnPause.classList.add("disabled"); //videotest录制时不允许暂停(存在bug)
 		loop();
 		qwqIn.play();
-		if (videoRecorder.checked) video.record(); //videotest
 	} else {
-		if (videoRecorder.checked) btnPlay.classList.add("disabled"); //只许录制一次(存在bug)
 		while (stopPlaying.length) stopPlaying.shift()();
 		cancelAnimationFrame(stopDrawing);
 		resizeCanvas();
@@ -1667,7 +1621,6 @@ function range(num) {
 	if (num > 1) return 1;
 	return num;
 }
-
 //绘制Note
 function drawNote(note, realTime, type) {
 	const HL = note.isMulti && document.getElementById("highLight").checked;
@@ -1758,12 +1711,13 @@ function chartp23(pec, filename) {
 		}
 	}
 	class JudgeLine {
+		numOfNotes = 0;
+		numOfNotesAbove = 0;
+		numOfNotesBelow = 0;
+		bpm = 120;
 		constructor(bpm) {
-			this.numOfNotes = 0;
-			this.numOfNotesAbove = 0;
-			this.numOfNotesBelow = 0;
 			this.bpm = bpm;
-			for (const i of ["speedEvents", "notesAbove", "notesBelow", "judgeLineDisappearEvents", "judgeLineMoveEvents", "judgeLineRotateEvents", "judgeLineDisappearEventsPec", "judgeLineMoveEventsPec", "judgeLineRotateEventsPec"]) this[i] = [];
+			("speedEvents,notesAbove,notesBelow,judgeLineDisappearEvents,judgeLineMoveEvents,judgeLineRotateEvents,judgeLineDisappearEventsPec,judgeLineMoveEventsPec,judgeLineRotateEventsPec").split(",").map(i => this[i] = []);
 		}
 		pushNote(note, pos, isFake) {
 			switch (pos) {
@@ -1849,14 +1803,14 @@ function chartp23(pec, filename) {
 		}
 	}
 	//test start
-	const rawChart = pec.split(/[ \n\r]+/).map(i => isNaN(i) ? String(i) : Number(i)); //必要性有待研究
+	const rawChart = pec.match(/[^\n\r ]+/g).map(i => isNaN(i) ? String(i) : Number(i));
 	const qwqChart = new Chart();
 	const raw = {};
-	for (const i of ["bp", "n1", "n2", "n3", "n4", "cv", "cp", "cd", "ca", "cm", "cr", "cf"]) raw[i] = [];
+	("bp,n1,n2,n3,n4,cv,cp,cd,ca,cm,cr,cf").split(",").map(i => raw[i] = []);
 	const rawarr = [];
 	let fuckarr = [1, 1]; //n指令的#和&
 	let rawstr = "";
-	if (!isNaN(rawChart[0])) qwqChart.offset = (rawChart.shift() / 1e3 - 0.175); //0.15//官方转谱似乎是0.14
+	if (!isNaN(rawChart[0])) qwqChart.offset = (rawChart.shift() / 1e3 - 0.175); //v18x固定延迟
 	for (let i = 0; i < rawChart.length; i++) {
 		let p = rawChart[i];
 		if (!isNaN(p)) rawarr.push(p);
@@ -2131,7 +2085,7 @@ function chartify(json) {
 		newLine.numOfNotesAbove = i.numOfNotesAbove;
 		newLine.numOfNotesBelow = i.numOfNotesBelow;
 		newLine.bpm = i.bpm;
-		for (const i of ["speedEvents", "notesAbove", "notesBelow", "judgeLineDisappearEvents", "judgeLineMoveEvents", "judgeLineRotateEvents"]) newLine[i] = [];
+		("speedEvents,notesAbove,notesBelow,judgeLineDisappearEvents,judgeLineMoveEvents,judgeLineRotateEvents").split(",").map(i => newLine[i] = []);
 		for (const j of i.speedEvents) {
 			if (j.startTime == j.endTime) continue;
 			let newEvent = {};
