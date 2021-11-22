@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 12], 1611795955, 1636990294];
+const _i = ['Phigros模拟器', [1, 4, 13], 1611795955, 1637586185];
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function () {
@@ -93,6 +93,7 @@ const inputOffset = document.getElementById("input-offset");
 const showPoint = document.getElementById("showPoint");
 const lineColor = document.getElementById("lineColor");
 const autoplay = document.getElementById("autoplay");
+const hyperMode = document.getElementById("hyperMode");
 const showTransition = document.getElementById("showTransition");
 const bgs = {};
 const bgsBlur = {};
@@ -204,7 +205,7 @@ function resizeCanvas() {
 	lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //判定线、文字缩放
 }
 //qwq[water,demo,democlick]
-const qwq = [true, false, 3];
+const qwq = [true, false, 3, 0];
 document.getElementById("demo").classList.add("hide");
 document.querySelector(".title").addEventListener("click", function () {
 	if (qwq[1]) qwq[0] = !qwq[0];
@@ -258,6 +259,7 @@ class Click {
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(1);
 		if (offsetX < lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(2);
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(3);
+		if (qwqEnd.second > 0) qwq[3] = qwq[3] > 0 ? -qwqEnd.second : qwqEnd.second;
 		return new Click(offsetX, offsetY);
 	}
 	move(offsetX, offsetY) {
@@ -287,7 +289,21 @@ class Judgement {
 class Judgements extends Array {
 	addJudgement(notes, realTime) {
 		this.length = 0;
-		if (!autoplay.checked) {
+		if (autoplay.checked) {
+			for (const i of notes) {
+				if (i.scored) continue;
+				if (i.type == 1) {
+					if (i.realTime - realTime < 0.0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
+				} else if (i.type == 2) {
+					if (i.realTime - realTime < 0.2) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+				} else if (i.type == 3) {
+					if (i.status3) this.push(new Judgement(i.offsetX, i.offsetY, 2));
+					else if (i.realTime - realTime < 0.0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
+				} else if (i.type == 4) {
+					if (i.realTime - realTime < 0.2) this.push(new Judgement(i.offsetX, i.offsetY, 3));
+				}
+			}
+		} else if (!isPaused) {
 			for (const j in mouse) {
 				const i = mouse[j];
 				if (i instanceof Click) {
@@ -315,52 +331,42 @@ class Judgements extends Array {
 			for (const i of taps) {
 				if (i instanceof Click) this.push(new Judgement(i.offsetX, i.offsetY, 1));
 			}
-		} else {
-			for (const i of notes) {
-				if (i.scored) continue;
-				if (i.type == 1) {
-					if (i.realTime - realTime < 0.0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
-				} else if (i.type == 2) {
-					if (i.realTime - realTime < 0.2) this.push(new Judgement(i.offsetX, i.offsetY, 2));
-				} else if (i.type == 3) {
-					if (i.status3) this.push(new Judgement(i.offsetX, i.offsetY, 2));
-					else if (i.realTime - realTime < 0.0) this.push(new Judgement(i.offsetX, i.offsetY, 1));
-				} else if (i.type == 4) {
-					if (i.realTime - realTime < 0.2) this.push(new Judgement(i.offsetX, i.offsetY, 3));
-				}
-			}
 		}
 	};
 	judgeNote(notes, realTime, width) {
 		for (const i of notes) {
 			if (i.scored) continue;
-			if (i.realTime - realTime < -0.16 && !i.status2) {
+			if ((i.realTime - realTime < -(hyperMode.checked ? 0.12 : 0.16) && i.frameCount > (hyperMode.checked ? 3 : 4)) && !i.status2) {
 				//console.log("Miss", i.name);
-				i.status = 4;
-				stat.addCombo(4, i.type);
+				i.status = 2;
+				stat.addCombo(2, i.type);
 				i.scored = true;
 			} else if (i.type == 1) {
 				for (let j = 0; j < this.length; j++) {
-					if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.2 && i.realTime - realTime > -0.16) {
-						if (i.realTime - realTime > 0.16) {
-							//console.log("Bad", i.name);
+					if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.2 && (i.realTime - realTime > -(hyperMode.checked ? 0.12 : 0.16) || i.frameCount < (hyperMode.checked ? 3 : 4))) {
+						if (i.realTime - realTime > (hyperMode.checked ? 0.12 : 0.16)) {
 							if (!this[j].catched) {
-								i.status = 3;
+								i.status = 6;//console.log("Bad", i.name);
 								i.badtime = Date.now();
 							}
 						} else if (i.realTime - realTime > 0.08) {
-							//console.log("Good(Early)", i.name);
-							i.status = 2;
+							i.status = 7;//console.log("Good(Early)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-						} else if (i.realTime - realTime > -0.08) {
-							//console.log("Perfect", i.name);
-							i.status = 1;
+						} else if (i.realTime - realTime > 0.04) {
+							i.status = 5;//console.log("Perfect(Early)", i.name);
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
+							clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+						} else if (i.realTime - realTime > -0.04 || i.frameCount < 1) {
+							i.status = 4;//console.log("Perfect(Max)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+						} else if (i.realTime - realTime > -0.08 || i.frameCount < 2) {
+							i.status = 1;//console.log("Perfect(Late)", i.name);
+							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
+							clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 						} else {
-							//console.log("Good(Late)", i.name);
-							i.status = 2;
+							i.status = 3;//console.log("Good(Late)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 						}
@@ -373,17 +379,17 @@ class Judgements extends Array {
 					}
 				}
 			} else if (i.type == 2) {
-				if (i.status == 1 && i.realTime - realTime < 0) {
+				if (i.status == 4 && i.realTime - realTime < 0) {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong1"], false, true, 0);
 					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-					stat.addCombo(1, 2);
+					stat.addCombo(4, 2);
 					i.scored = true;
 				} else if (!i.status) {
 					for (let j = 0; j < this.length; j++) {
-						if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
+						if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < (hyperMode.checked ? 0.12 : 0.16) && (i.realTime - realTime > -(hyperMode.checked ? 0.12 : 0.16) || i.frameCount < (hyperMode.checked ? 3 : 4))) {
 							//console.log("Perfect", i.name);
 							this[j].catched = true;
-							i.status = 1;
+							i.status = 4;
 							break;
 						}
 					}
@@ -391,8 +397,9 @@ class Judgements extends Array {
 			} else if (i.type == 3) {
 				if (i.status3) {
 					if ((Date.now() - i.status3) * i.holdTime >= 1.6e4 * i.realHoldTime) { //间隔时间与bpm成反比，待实测
-						if (i.status2 == 1) clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-						else if (i.status2 == 2) clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
+						if (i.status2 % 4 == 0) clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+						else if (i.status2 % 4 == 1) clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+						else if (i.status2 % 4 == 3) clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 						i.status3 = Date.now();
 					}
 					if (i.realTime + i.realHoldTime - 0.2 < realTime) {
@@ -404,21 +411,26 @@ class Judgements extends Array {
 				i.status4 = true;
 				for (let j = 0; j < this.length; j++) {
 					if (!i.status3) {
-						if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
+						if (this[j].type == 1 && this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < (hyperMode.checked ? 0.12 : 0.16) && (i.realTime - realTime > -(hyperMode.checked ? 0.12 : 0.16) || i.frameCount < (hyperMode.checked ? 3 : 4))) {
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							if (i.realTime - realTime > 0.08) {
-								//console.log("Good(Early)", i.name);
-								i.status2 = 2;
+								i.status2 = 7;//console.log("Good(Early)", i.name);
 								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 								i.status3 = Date.now();
-							} else if (i.realTime - realTime > -0.08) {
-								//console.log("Perfect", i.name);
-								i.status2 = 1;
+							} else if (i.realTime - realTime > 0.04) {
+								i.status2 = 5;//console.log("Perfect(Early)", i.name);
+								clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+								i.status3 = Date.now();
+							} else if (i.realTime - realTime > -0.04 || i.frameCount < 1) {
+								i.status2 = 4;//console.log("Perfect(Max)", i.name);
 								clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 								i.status3 = Date.now();
+							} else if (i.realTime - realTime > -0.08 || i.frameCount < 2) {
+								i.status2 = 1;//console.log("Perfect(Late)", i.name);
+								clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+								i.status3 = Date.now();
 							} else {
-								//console.log("Good(Late)", i.name);
-								i.status2 = 2;
+								i.status2 = 3;//console.log("Good(Late)", i.name);
 								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							}
@@ -429,24 +441,23 @@ class Judgements extends Array {
 					} else if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width)) i.status4 = false;
 				}
 				if (!isPaused && i.status3 && i.status4) {
-					//console.log("Miss", i.name);
-					i.status = 4;
-					stat.addCombo(4, 3);
+					i.status = 2;//console.log("Miss", i.name);
+					stat.addCombo(2, 3);
 					i.scored = true;
 				}
 			} else if (i.type == 4) {
-				if (i.status == 1 && i.realTime - realTime < 0) {
+				if (i.status == 4 && i.realTime - realTime < 0) {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong2"], false, true, 0);
 					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-					stat.addCombo(1, 4);
+					stat.addCombo(4, 4);
 					i.scored = true;
 				} else if (!i.status) {
 					for (let j = 0; j < this.length; j++) {
-						if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < 0.16 && i.realTime - realTime > -0.16) {
+						if (this[j].isInArea(i.offsetX, i.offsetY, i.cosr, i.sinr, width) && i.realTime - realTime < (hyperMode.checked ? 0.12 : 0.16) && (i.realTime - realTime > -(hyperMode.checked ? 0.12 : 0.16) || i.frameCount < (hyperMode.checked ? 3 : 4))) {
 							//console.log("Perfect", i.name);
 							this[j].catched = true;
 							if (this[j].type == 3) {
-								i.status = 1;
+								i.status = 4;
 								break;
 							}
 						}
@@ -501,6 +512,9 @@ class ClickEvent1 {
 	}
 	static getClickPerfect(offsetX, offsetY) {
 		return new ClickEvent1(offsetX, offsetY, "rgba(255,236,160,0.8823529)", 4, "#ffeca0");
+	}
+	static getClickGreat(offsetX, offsetY) {
+		return new ClickEvent1(offsetX, offsetY, "rgba(168,255,177,0.9016907)", 4, "#a8ffb1");
 	}
 	static getClickGood(offsetX, offsetY) {
 		return new ClickEvent1(offsetX, offsetY, "rgba(180,225,255,0.9215686)", 3, "#b4e1ff");
@@ -601,7 +615,7 @@ function getOffsetLeft(element) {
 	let elem = element;
 	let a = 0;
 	while (elem instanceof HTMLElement) {
-		a += elem.offsetLeft + elem.scrollLeft;
+		a += elem.offsetLeft;
 		elem = elem.offsetParent;
 	}
 	return a;
@@ -613,7 +627,7 @@ function getOffsetTop(element) {
 	let elem = element;
 	let a = 0;
 	while (elem instanceof HTMLElement) {
-		a += elem.offsetTop + elem.scrollTop;
+		a += elem.offsetTop;
 		elem = elem.offsetParent;
 	}
 	return a;
@@ -687,13 +701,15 @@ window.onload = function () {
 				};
 			});
 		}));
-		res["JudgeLineAP"] = await createImageBitmap(imgShader(res["JudgeLine"], "#feffa9"));
+		res["JudgeLineMP"] = await createImageBitmap(imgShader(res["JudgeLine"], "#feffa9"));
+		res["JudgeLineAP"] = await createImageBitmap(imgShader(res["JudgeLine"], "#a3ffac"));
 		res["JudgeLineFC"] = await createImageBitmap(imgShader(res["JudgeLine"], "#a2eeff"));
 		res["TapBad"] = await createImageBitmap(imgShader(res["Tap2"], "#6c4343"));
 		res["Clicks"] = {};
 		//res["Clicks"].default = await qwqImage(res["clickRaw"], "white");
 		res["Ranks"] = await qwqImage(res["Rank"], "white");
 		res["Clicks"]["rgba(255,236,160,0.8823529)"] = await qwqImage(res["clickRaw"], "rgba(255,236,160,0.8823529)"); //#fce491
+		res["Clicks"]["rgba(168,255,177,0.9016907)"] = await qwqImage(res["clickRaw"], "rgba(168,255,177,0.9016907)"); //#97f79d
 		res["Clicks"]["rgba(180,225,255,0.9215686)"] = await qwqImage(res["clickRaw"], "rgba(180,225,255,0.9215686)"); //#9ed5f3
 		message.sendMessage("等待上传文件...");
 		upload.parentElement.classList.remove("disabled");
@@ -710,12 +726,29 @@ async function qwqImage(img, color) {
 //必要组件
 let stopDrawing;
 const stat = {
+	noteRank: [0, 0, 0, 0, 0, 0, 0, 0],
+	combos: [0, 0, 0, 0, 0],
+	maxcombo: 0,
+	combo: 0,
+	get good() {
+		return this.noteRank[7] + this.noteRank[3];
+	},
+	get bad() {
+		return this.noteRank[6] + this.noteRank[2];
+	},
+	get great() {
+		return this.noteRank[5] + this.noteRank[1];
+	},
+	get perfect() {
+		return this.noteRank[4] + this.great;
+	},
 	get all() {
-		return this.perfect + this.good + this.bad + this.miss;
+		return this.perfect + this.good + this.bad;
 	},
 	get scoreNum() {
 		const a = 1e6 * (this.perfect * 0.9 + this.good * 0.585 + this.maxcombo * 0.1) / this.numOfNotes;
-		return isFinite(a) ? a : 0;
+		const b = 1e6 * (this.noteRank[4] + this.great * 0.65 + this.good * 0.35) / this.numOfNotes;
+		return hyperMode.checked ? (isFinite(b) ? b : 0) : (isFinite(a) ? a : 0);
 	},
 	get scoreStr() {
 		const a = this.scoreNum.toFixed(0);
@@ -723,14 +756,16 @@ const stat = {
 	},
 	get accNum() {
 		const a = (this.perfect + this.good * 0.65) / this.all;
-		return isFinite(a) ? a : 0;
+		const b = (this.noteRank[4] + this.great * 0.65 + this.good * 0.35) / this.all;
+		return hyperMode.checked ? (isFinite(b) ? b : 0) : (isFinite(a) ? a : 0);
 	},
 	get accStr() {
 		return (100 * this.accNum).toFixed(2) + "%";
 	},
 	get lineStatus() {
-		if (this.bad + this.miss) return 0;
-		if (this.good) return 2;
+		if (this.bad) return 0;
+		if (this.good) return 3;
+		if (this.great && hyperMode.checked) return 2;
 		return 1;
 	},
 	get rankStatus() {
@@ -766,12 +801,9 @@ const stat = {
 	},
 	reset(numOfNotes, id) {
 		this.numOfNotes = Number(numOfNotes) || 0;
-		this.perfect = 0;
-		this.good = 0;
-		this.bad = 0;
-		this.miss = 0;
 		this.combo = 0;
 		this.maxcombo = 0;
+		this.noteRank = [0, 0, 0, 0, 0, 0, 0, 0];//4:PM,5:PE,1:PL,7:GE,3:GL,6:BE,2:BL
 		this.combos = [0, 0, 0, 0, 0]; //不同种类note实时连击次数
 		this.data = {};
 		if (localStorage.getItem("phi") == null) localStorage.setItem("phi", ""); //初始化存储
@@ -786,21 +818,9 @@ const stat = {
 		}
 	},
 	addCombo(status, type) {
-		if (status == 1) {
-			this.perfect++;
-			this.combo++;
-			if (this.combo > this.maxcombo) this.maxcombo = this.combo;
-		} else if (status == 2) {
-			this.good++;
-			this.combo++;
-			if (this.combo > this.maxcombo) this.maxcombo = this.combo;
-		} else if (status == 3) {
-			this.bad++;
-			this.combo = 0;
-		} else if (status == 4) {
-			this.miss++;
-			this.combo = 0;
-		}
+		this.noteRank[status]++;
+		this.combo = status % 4 == 2 ? 0 : this.combo + 1;
+		if (this.combo > this.maxcombo) this.maxcombo = this.combo;
 		this.combos[0]++;
 		this.combos[type]++;
 	}
@@ -985,7 +1005,7 @@ function prerenderChart(chart) {
 		i.alpha = 0;
 		i.rotation = 0;
 		i.positionY = 0; //临时过渡用
-		i.images = [res["JudgeLine"], res["JudgeLineAP"], res["JudgeLineFC"]];
+		i.images = [res["JudgeLine"], res["JudgeLineMP"], res["JudgeLineAP"], res["JudgeLineFC"]];
 		i.imageH = 0.008;
 		i.imageW = 1.042;
 		i.imageB = 0;
@@ -1135,7 +1155,8 @@ btnPlay.addEventListener("click", async function () {
 			if (selectchart.value == i.Chart) {
 				Renderer.chart.judgeLineList[i.LineId].images[0] = bgs[i.Image];
 				Renderer.chart.judgeLineList[i.LineId].images[1] = await createImageBitmap(imgShader(bgs[i.Image], "#feffa9"));
-				Renderer.chart.judgeLineList[i.LineId].images[2] = await createImageBitmap(imgShader(bgs[i.Image], "#a2eeff"));
+				Renderer.chart.judgeLineList[i.LineId].images[2] = await createImageBitmap(imgShader(bgs[i.Image], "#a3ffac"));
+				Renderer.chart.judgeLineList[i.LineId].images[3] = await createImageBitmap(imgShader(bgs[i.Image], "#a2eeff"));
 				Renderer.chart.judgeLineList[i.LineId].imageH = Number(i.Vert);
 				Renderer.chart.judgeLineList[i.LineId].imageW = Number(i.Horz);
 				Renderer.chart.judgeLineList[i.LineId].imageB = Number(i.IsDark);
@@ -1315,9 +1336,11 @@ function calcqwq(now) {
 			else if (i.realTime > timeChart) {
 				if (dy > -1e-3 * hlen2) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1;
 				else i.alpha = showPoint.checked ? 0.45 : 0;
+				//i.frameCount = 0;
 			} else {
-				if (i.type == 3) i.alpha = i.speed == 0 ? (showPoint.checked ? 0.45 : 0) : (i.status == 4 ? 0.45 : 1);
-				else i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0); //过线后0.16s消失
+				if (i.type == 3) i.alpha = i.speed == 0 ? (showPoint.checked ? 0.45 : 0) : (i.status % 4 == 2 ? 0.45 : 1);
+				else i.alpha = Math.max(1 - (timeChart - i.realTime) / (hyperMode.checked ? 0.12 : 0.16), 0); //过线后0.16s消失
+				i.frameCount = isNaN(i.frameCount) ? 0 : i.frameCount + 1;
 			}
 		}
 	}
@@ -1435,7 +1458,7 @@ function qwqdraw1(now) {
 		const imgW = lineScale * 48 * (qwqIn.second < 0.67 ? tween[3](qwqIn.second * 1.5) : 1);
 		const imgH = lineScale * 0.15;
 		if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween[2](6 - qwqIn.second * 2);
-		ctxos.drawImage(lineColor.checked ? res["JudgeLineAP"] : res["JudgeLine"], -imgW / 2, -imgH / 2, imgW, imgH);
+		ctxos.drawImage(lineColor.checked ? res["JudgeLineMP"] : res["JudgeLine"], -imgW / 2, -imgH / 2, imgW, imgH);
 	}
 	//绘制分数和combo以及暂停按钮
 	ctxos.globalAlpha = 1;
@@ -1480,7 +1503,6 @@ function qwqdraw1(now) {
 			ctxos.fillText(val, lineScale * (idx + 1) * 1.1, canvasos.height - lineScale * 0.1);
 		});
 	}
-	//
 	//判定线函数，undefined/0:默认,1:非,2:恒成立
 	function drawLine(bool) {
 		ctxos.globalAlpha = 1;
@@ -1518,7 +1540,7 @@ function qwqdraw2() {
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	const difficulty = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
 	const xhr = new XMLHttpRequest();
-	xhr.open("get", `src/LevelOver${difficulty < 0 ? 2 : difficulty}${qwq[2] == -1 ? "_v2" : ""}.ogg`, true);
+	xhr.open("get", `src/LevelOver${difficulty < 0 ? 2 : difficulty}${hyperMode.checked ? "_v2" : ""}.ogg`, true);
 	xhr.responseType = 'arraybuffer';
 	xhr.send();
 	xhr.onload = async () => {
@@ -1590,9 +1612,15 @@ function qwqdraw3(statData) {
 	if (statData[3]) {
 		ctxos.fillStyle = "#fe4365";
 		ctxos.fillText("AUTO PLAY", 1355, 590);
-	} else if (stat.lineStatus) {
-		ctxos.fillStyle = stat.lineStatus == 1 ? "#ffc500" : "#00bef1";
-		ctxos.fillText(stat.lineStatus == 1 ? "ALL  PERFECT" : "FULL  COMBO", 1355, 590);
+	} else if (stat.lineStatus == 1) {
+		ctxos.fillStyle = "#ffc500";
+		ctxos.fillText("ALL  PERFECT", 1355, 590);
+	} else if (stat.lineStatus == 2) {
+		ctxos.fillStyle = "#91ff8f";
+		ctxos.fillText("ALL  PERFECT", 1355, 590);
+	} else if (stat.lineStatus == 3) {
+		ctxos.fillStyle = "#00bef1";
+		ctxos.fillText("FULL  COMBO", 1355, 590);
 	}
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
@@ -1605,9 +1633,24 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
 	ctxos.fillText(stat.good, 1043, 645);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
-	ctxos.fillText(stat.bad, 1196, 645);
+	ctxos.fillText(stat.noteRank[6], 1196, 645);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
-	ctxos.fillText(stat.miss, 1349, 645);
+	ctxos.fillText(stat.noteRank[2], 1349, 645);
+	ctxos.font = "22px Mina";
+	const qwq4 = range((qwq[3] > 0 ? qwqEnd.second - qwq[3] : 0.2 - qwqEnd.second - qwq[3]) * 5.00);
+	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
+	ctxos.fillStyle = "#696";
+	ctxos.fill(new Path2D("M841,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z"));
+	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 1.07) * 2.50) * qwq4;
+	ctxos.fillStyle = "#669";
+	ctxos.fill(new Path2D("M993,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z"));
+	ctxos.fillStyle = "#fff";
+	ctxos.globalAlpha = range((qwqEnd.second - 0.97) * 2.50) * qwq4;
+	ctxos.fillText("Early: " + stat.noteRank[5], 891, 755);
+	ctxos.fillText("Late: " + stat.noteRank[1], 891, 788);
+	ctxos.globalAlpha = range((qwqEnd.second - 1.17) * 2.50) * qwq4;
+	ctxos.fillText("Early: " + stat.noteRank[7], 1043, 755);
+	ctxos.fillText("Late: " + stat.noteRank[3], 1043, 788);
 	ctxos.resetTransform();
 	ctxos.globalCompositeOperation = "destination-over";
 	ctxos.globalAlpha = 1;
