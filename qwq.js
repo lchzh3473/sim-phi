@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 14], 1611795955, 1640231350];
+const _i = ['Phigros模拟器', [1, 4, 13,"f1"], 1611795955, 1639811662];
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function() {
@@ -85,41 +85,6 @@ const selectchart = document.getElementById("select-chart");
 const selectscaleratio = document.getElementById("select-scale-ratio"); //数值越大note越小
 const selectaspectratio = document.getElementById("select-aspect-ratio");
 const selectglobalalpha = document.getElementById("select-global-alpha");
-const selectflip = document.getElementById("select-flip");
-const selectspeed = document.getElementById("select-speed");
-const scfg = function() {
-	let arr = [];
-	switch (selectflip.value) {
-		case "bl":
-			arr.push("FlipX");
-			break;
-		case "tr":
-			arr.push("FlipY");
-			break;
-		case "tl":
-			arr.push("FlipX&Y");
-			break;
-		default:
-	}
-	switch (selectspeed.value) {
-		case "0.594604":
-			arr.push("Slowest");
-			break;
-		case "0.793701":
-			arr.push("Slower");
-			break;
-		case "1.189207":
-			arr.push("Faster");
-			break;
-		case "1.334840":
-			arr.push("Fastest");
-			break;
-		default:
-	}
-	if (isPaused) arr.push("Paused");
-	if (arr.length == 0) return "";
-	return `(${arr.join("+")})`;
-}
 const inputName = document.getElementById("input-name");
 const inputLevel = document.getElementById("input-level");
 const inputDesigner = document.getElementById("input-designer");
@@ -240,11 +205,12 @@ function resizeCanvas() {
 	lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //判定线、文字缩放
 }
 //qwq[water,demo,democlick]
-const qwq = [true, false, 3, 0];
+const qwq = [true, false, 3, 0, 0];
 document.getElementById("demo").classList.add("hide");
 document.querySelector(".title").addEventListener("click", function() {
 	if (qwq[1]) qwq[0] = !qwq[0];
 	else if (!--qwq[2]) document.getElementById("demo").classList.remove("hide");
+	fucktemp2 && ++qwq[4] % 10 == 0 && statDelta.export();
 });
 document.getElementById("demo").addEventListener("click", function() {
 	document.getElementById("demo").classList.add("hide");
@@ -312,29 +278,8 @@ class Click {
 }
 class Judgement {
 	constructor(offsetX, offsetY, type) {
-		if (autoplay.checked) {
-			this.offsetX = Number(offsetX);
-			this.offsetY = Number(offsetY);
-		} else switch (selectflip.value) {
-			case "br":
-				this.offsetX = Number(offsetX);
-				this.offsetY = Number(offsetY);
-				break;
-			case "bl":
-				this.offsetX = canvasos.width - Number(offsetX);
-				this.offsetY = Number(offsetY);
-				break;
-			case "tr":
-				this.offsetX = Number(offsetX);
-				this.offsetY = canvas.height - Number(offsetY);
-				break;
-			case "tl":
-				this.offsetX = canvasos.width - Number(offsetX);
-				this.offsetY = canvas.height - Number(offsetY);
-				break;
-			default:
-				throw new Error("Flip Error");
-		}
+		this.offsetX = Number(offsetX);
+		this.offsetY = Number(offsetY);
 		this.type = Number(type) || 0; //1-Tap,2-Hold,3-Move
 		this.catched = false;
 	}
@@ -342,6 +287,22 @@ class Judgement {
 		return isNaN(this.offsetX + this.offsetY) ? true : Math.abs((this.offsetX - x) * cosr + (this.offsetY - y) * sinr) <= hw;
 	}
 }
+const statDelta = {
+	list: [],
+	reset() {
+		this.list.length = 0;
+	},
+	push(num) {
+		let n = Math.trunc(num * 1000) + 1 - 1;
+		this.list.push(n);
+		console.log(n);
+	},
+	export () {
+		const awa = {};
+		for (const i of statDelta.list) awa[i] = awa[i] ? awa[i] + 1 : 1
+		window.prompt("Copy the text here:", JSON.stringify(awa));
+	}
+};
 class Judgements extends Array {
 	addJudgement(notes, realTime) {
 		this.length = 0;
@@ -398,6 +359,7 @@ class Judgements extends Array {
 				//console.log("Miss", i.name);
 				i.status = 2;
 				stat.addCombo(2, i.type);
+				statDelta.push(NaN);
 				i.scored = true;
 			} else if (i.type == 1) {
 				for (let j = 0; j < this.length; j++) {
@@ -411,12 +373,10 @@ class Judgements extends Array {
 							i.status = 7; //console.log("Good(Early)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
 						} else if (deltaTime > 0.04) {
 							i.status = 5; //console.log("Perfect(Early)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
 						} else if (deltaTime > -0.04 || i.frameCount < 1) {
 							i.status = 4; //console.log("Perfect(Max)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
@@ -425,15 +385,14 @@ class Judgements extends Array {
 							i.status = 1; //console.log("Perfect(Late)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
 						} else {
 							i.status = 3; //console.log("Good(Late)", i.name);
 							if (document.getElementById("hitSong").checked) playSound(res["HitSong0"], false, true, 0);
 							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
 						}
 						if (i.status) {
 							stat.addCombo(i.status, 1);
+							statDelta.push(deltaTime);
 							i.scored = true;
 							this.splice(j, 1);
 							break;
@@ -445,6 +404,7 @@ class Judgements extends Array {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong1"], false, true, 0);
 					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 					stat.addCombo(4, 2);
+					statDelta.push(0);
 					i.scored = true;
 				} else if (!i.status) {
 					for (let j = 0; j < this.length; j++) {
@@ -467,6 +427,7 @@ class Judgements extends Array {
 					if (deltaTime + i.realHoldTime < 0.2) {
 						if (!i.status) {
 							stat.addCombo(i.status = i.status2, 3);
+							statDelta.push(i.status5);
 						}
 						if (deltaTime + i.realHoldTime < 0) i.scored = true;
 						continue;
@@ -480,12 +441,10 @@ class Judgements extends Array {
 							if (deltaTime > 0.08) {
 								i.status2 = 7; //console.log("Good(Early)", i.name);
 								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							} else if (deltaTime > 0.04) {
 								i.status2 = 5; //console.log("Perfect(Early)", i.name);
 								clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							} else if (deltaTime > -0.04 || i.frameCount < 1) {
 								i.status2 = 4; //console.log("Perfect(Max)", i.name);
@@ -494,12 +453,10 @@ class Judgements extends Array {
 							} else if (deltaTime > -0.08 || i.frameCount < 2) {
 								i.status2 = 1; //console.log("Perfect(Late)", i.name);
 								clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							} else {
 								i.status2 = 3; //console.log("Good(Late)", i.name);
 								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
 								i.status3 = Date.now();
 							}
 							this.splice(j, 1);
@@ -512,6 +469,7 @@ class Judgements extends Array {
 				if (!isPaused && i.status3 && i.status4) {
 					i.status = 2; //console.log("Miss", i.name);
 					stat.addCombo(2, 3);
+					statDelta.push(NaN);
 					i.scored = true;
 				}
 			} else if (i.type == 4) {
@@ -519,6 +477,7 @@ class Judgements extends Array {
 					if (document.getElementById("hitSong").checked) playSound(res["HitSong2"], false, true, 0);
 					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 					stat.addCombo(4, 4);
+					statDelta.push(0);
 					i.scored = true;
 				} else if (!i.status) {
 					for (let j = 0; j < this.length; j++) {
@@ -548,29 +507,10 @@ class ClickEvents extends Array {
 }
 const clickEvents0 = new ClickEvents(); //存放点击特效
 const clickEvents1 = new ClickEvents(); //存放点击特效
-const clickEvents2 = new ClickEvents(); //存放点击特效
 class ClickEvent0 {
 	constructor(offsetX, offsetY, n1, n2) {
-		switch (selectflip.value) {
-			case "br":
-				this.offsetX = Number(offsetX);
-				this.offsetY = Number(offsetY);
-				break;
-			case "bl":
-				this.offsetX = canvasos.width - Number(offsetX);
-				this.offsetY = Number(offsetY);
-				break;
-			case "tr":
-				this.offsetX = Number(offsetX);
-				this.offsetY = canvas.height - Number(offsetY);
-				break;
-			case "tl":
-				this.offsetX = canvasos.width - Number(offsetX);
-				this.offsetY = canvas.height - Number(offsetY);
-				break;
-			default:
-				throw new Error("Flip Error");
-		}
+		this.offsetX = Number(offsetX) || 0;
+		this.offsetY = Number(offsetY) || 0;
 		this.color = String(n1);
 		this.text = String(n2);
 		this.time = 0;
@@ -606,24 +546,6 @@ class ClickEvent1 {
 	}
 	static getClickGood(offsetX, offsetY) {
 		return new ClickEvent1(offsetX, offsetY, "rgba(180,225,255,0.9215686)", 3, "#b4e1ff");
-	}
-}
-class ClickEvent2 {
-	constructor(offsetX, offsetY, n1, n2) {
-		this.offsetX = Number(offsetX) || 0;
-		this.offsetY = Number(offsetY) || 0;
-		this.time = Date.now();
-		this.duration = 250;
-		this.color = String(n1);
-		this.text = String(n2);
-	}
-	static getClickEarly(offsetX, offsetY) {
-		//console.log("Tap", offsetX, offsetY);
-		return new ClickEvent2(offsetX, offsetY, "#03aaf9", "Early");
-	}
-	static getClickLate(offsetX, offsetY) {
-		//console.log("Hold", offsetX, offsetY);
-		return new ClickEvent2(offsetX, offsetY, "#ff4612", "Late");
 	}
 }
 //适配PC鼠标
@@ -745,12 +667,11 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.OggmentedAudioContext() : new AudioContext(); //兼容Safari
 const stopPlaying = [];
 const gain = actx.createGain();
-const playSound = (res, loop, isOut, offset, playbackrate) => {
+const playSound = (res, loop, isOut, offset) => {
 	const bufferSource = actx.createBufferSource();
 	bufferSource.buffer = res;
 	bufferSource.loop = loop; //循环播放
 	bufferSource.connect(gain);
-	bufferSource.playbackRate.value = Number(playbackrate || 1);
 	if (isOut) gain.connect(actx.destination);
 	bufferSource.start(0, offset);
 	return () => bufferSource.stop();
@@ -905,14 +826,8 @@ const stat = {
 		const arr = [];
 		for (const i in this.data) arr.push(i + this.data[i]);
 		localStorage.setItem("phi", arr.sort(() => Math.random() - 0.5).join(""));
-		if (isAuto) return [false, scoreBest, "", "AUTO PLAY", "#fe4365"];
-		if (selectspeed.value != "1") return [false, scoreBest, "", "SPEED CHANGED", "#65fe43"];
-		let brr = [s2 < l2, scoreBest, (s2 > l2 ? "- " : "+ ") + Math.abs(scoreBest - this.scoreStr)];
-		if (this.lineStatus == 1) brr.push("ALL  PERFECT", "#ffc500");
-		else if (this.lineStatus == 2) brr.push("ALL  PERFECT", "#91ff8f");
-		else if (this.lineStatus == 3) brr.push("FULL  COMBO", "#00bef1");
-		else brr.push("", "#fff");
-		return brr;
+		if (isAuto) return [false, scoreBest, "", true];
+		return [s2 < l2, scoreBest, (s2 > l2 ? "- " : "+ ") + Math.abs(scoreBest - this.scoreStr), false];
 	},
 	reset(numOfNotes, id) {
 		this.numOfNotes = Number(numOfNotes) || 0;
@@ -1114,7 +1029,6 @@ function prerenderChart(chart) {
 	//优化events
 	for (const LineId in chartNew.judgeLineList) {
 		const i = chartNew.judgeLineList[LineId];
-		i.bpm *= Number(selectspeed.value);
 		i.lineId = LineId;
 		i.offsetX = 0;
 		i.offsetY = 0;
@@ -1267,6 +1181,7 @@ btnPlay.addEventListener("click", async function() {
 		("lines,notes,taps,drags,flicks,holds,reverseholds,tapholds").split(",").map(i => Renderer[i] = []);
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
 		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5);
+		statDelta.reset();
 		for (const i of chartLineData) {
 			if (selectchart.value == i.Chart) {
 				Renderer.chart.judgeLineList[i.LineId].images[0] = bgs[i.Image];
@@ -1283,7 +1198,7 @@ btnPlay.addEventListener("click", async function() {
 		Renderer.bgMusic = bgms[selectbgm.value];
 		this.value = "停止";
 		resizeCanvas();
-		duration = Renderer.bgMusic.duration / Number(selectspeed.value);
+		duration = Renderer.bgMusic.duration;
 		isInEnd = false;
 		isOutStart = false;
 		isOutEnd = false;
@@ -1309,7 +1224,6 @@ btnPlay.addEventListener("click", async function() {
 		fucktemp2 = false;
 		clickEvents0.length = 0;
 		clickEvents1.length = 0;
-		clickEvents2.length = 0;
 		qwqIn.reset();
 		qwqOut.reset();
 		qwqEnd.reset();
@@ -1332,7 +1246,7 @@ btnPause.addEventListener("click", function() {
 		qwqIn.play();
 		if (showTransition.checked && isOutStart) qwqOut.play();
 		isPaused = false;
-		if (isInEnd && !isOutStart) playBgm(Renderer.bgMusic, timeBgm * Number(selectspeed.value));
+		if (isInEnd && !isOutStart) playBgm(Renderer.bgMusic, timeBgm);
 		this.value = "暂停";
 	}
 });
@@ -1345,7 +1259,7 @@ function playBgm(data, offset) {
 	isPaused = false;
 	if (!offset) offset = 0;
 	curTimestamp = Date.now();
-	stopPlaying.push(playSound(data, false, true, offset, Number(selectspeed.value)));
+	stopPlaying.push(playSound(data, false, true, offset));
 }
 let fucktemp = false;
 let fucktemp2 = false;
@@ -1387,7 +1301,7 @@ function calcqwq(now) {
 		isOutEnd = true;
 		qwqOut.play();
 	}
-	timeChart = Math.max(timeBgm - Renderer.chart.offset / Number(selectspeed.value) - (Number(inputOffset.value) / 1e3 || 0), 0);
+	timeChart = Math.max(timeBgm - Renderer.chart.offset - (Number(inputOffset.value) / 1e3 || 0), 0);
 	//遍历判定线events和Note
 	for (const line of Renderer.lines) {
 		for (const i of line.judgeLineDisappearEvents) {
@@ -1417,7 +1331,7 @@ function calcqwq(now) {
 		for (const i of line.speedEvents) {
 			if (timeChart < i.startRealTime) break;
 			if (timeChart > i.endRealTime) continue;
-			line.positionY = (timeChart - i.startRealTime) * i.value * Number(selectspeed.value) + i.floorPosition;
+			line.positionY = (timeChart - i.startRealTime) * i.value + i.floorPosition;
 		}
 		for (const i of line.notesAbove) {
 			i.cosr = line.cosr;
@@ -1439,7 +1353,7 @@ function calcqwq(now) {
 
 		function realgetY(i) {
 			if (i.type != 3) return (i.floorPosition - line.positionY) * i.speed;
-			if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed * Number(selectspeed.value);
+			if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed;
 			return i.floorPosition - line.positionY;
 		}
 
@@ -1448,7 +1362,7 @@ function calcqwq(now) {
 			i.offsetX = i.projectX + dy * i.sinr;
 			i.projectY = line.offsetY + dx * i.sinr;
 			i.offsetY = i.projectY - dy * i.cosr;
-			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed * Number(selectspeed.value);
+			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed;
 			if (i.badtime) i.alpha = 1 - range((Date.now() - i.badtime) / 500);
 			else if (i.realTime > timeChart) {
 				if (dy > -1e-3 * hlen2) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1;
@@ -1471,7 +1385,6 @@ function calcqwq(now) {
 	frameTimer.addTick(); //计算fps
 	clickEvents0.defilter(i => i.time++ > 0); //清除打击特效
 	clickEvents1.defilter(i => now >= i.time + i.duration); //清除打击特效
-	clickEvents2.defilter(i => now >= i.time + i.duration); //清除打击特效
 	for (const i in mouse) mouse[i] instanceof Click && mouse[i].animate();
 	for (const i in touch) touch[i] instanceof Click && touch[i].animate();
 }
@@ -1479,22 +1392,10 @@ function calcqwq(now) {
 function qwqdraw1(now) {
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	ctxos.globalCompositeOperation = "destination-over"; //由后往前绘制
-	if (document.getElementById("showCE2").checked)
-		for (const i of clickEvents2) { //绘制打击特效2
-			const tick = (now - i.time) / i.duration;
-			ctxos.setTransform(...imgFlip(1, 0, 0, 1, i.offsetX, i.offsetY)); //缩放
-			if (selectflip.value[0] == "t") ctxos.transform(-1, 0, 0, -1, 0, 0); //qwq
-			ctxos.font = `bold ${noteScale*(256+128* (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Mina`;
-			ctxos.textAlign = "center";
-			ctxos.textBaseline = "middle";
-			ctxos.fillStyle = i.color;
-			ctxos.globalAlpha = 1 - tick; //不透明度
-			ctxos.fillText(i.text, 0, -noteScale * 192);
-		}
 	for (const i of clickEvents1) { //绘制打击特效1
 		const tick = (now - i.time) / i.duration;
 		ctxos.globalAlpha = 1;
-		ctxos.setTransform(...imgFlip(noteScale * 6, 0, 0, noteScale * 6, i.offsetX, i.offsetY)); //缩放
+		ctxos.setTransform(noteScale * 6, 0, 0, noteScale * 6, i.offsetX, i.offsetY); //缩放
 		ctxos.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //停留约0.5秒
 		ctxos.fillStyle = i.color;
 		ctxos.globalAlpha = 1 - tick; //不透明度
@@ -1507,7 +1408,7 @@ function qwqdraw1(now) {
 	if (document.getElementById("feedback").checked) {
 		for (const i of clickEvents0) { //绘制打击特效0
 			ctxos.globalAlpha = 0.85;
-			ctxos.setTransform(...imgFlip(1, 0, 0, 1, i.offsetX, i.offsetY)); //缩放
+			ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
 			ctxos.fillStyle = i.color;
 			ctxos.beginPath();
 			ctxos.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
@@ -1522,7 +1423,7 @@ function qwqdraw1(now) {
 			ctxos.textBaseline = "bottom";
 			for (const i of Renderer.notes) {
 				if (!i.visible) continue;
-				ctxos.setTransform(...imgFlip(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY));
+				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
 				ctxos.fillStyle = "cyan";
 				ctxos.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
 				ctxos.fillText(i.name, 0, -lineScale * 0.1);
@@ -1531,7 +1432,7 @@ function qwqdraw1(now) {
 				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 			}
 			for (const i of Renderer.lines) {
-				ctxos.setTransform(...imgFlip(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY));
+				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
 				ctxos.fillStyle = "yellow";
 				ctxos.globalAlpha = (i.alpha + 0.5) / 1.5;
 				ctxos.fillText(i.lineId, 0, -lineScale * 0.1);
@@ -1624,7 +1525,7 @@ function qwqdraw1(now) {
 		ctxos.textBaseline = "middle";
 		ctxos.font = `${lineScale * 0.4}px Mina`;
 		ctxos.textAlign = "left";
-		ctxos.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
+		ctxos.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}${isPaused ? "(Paused)" : ""}`, lineScale * 0.05, lineScale * 0.5);
 		ctxos.textAlign = "right";
 		ctxos.fillText(frameTimer.fps, canvasos.width - lineScale * 0.05, lineScale * 0.5);
 		ctxos.textBaseline = "alphabetic";
@@ -1640,7 +1541,7 @@ function qwqdraw1(now) {
 		for (const i of Renderer.lines) {
 			if (bool ^ i.imageB && qwqOut.second < 0.67) {
 				ctxos.globalAlpha = i.alpha;
-				ctxos.setTransform(...imgFlip(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, wlen + (i.offsetX - wlen) * tw, i.offsetY)); //hiahiah
+				ctxos.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, wlen + (i.offsetX - wlen) * tw, i.offsetY); //hiahiah
 				const imgH = i.imageH > 0 ? lineScale * 18.75 * i.imageH : canvasos.height * -i.imageH; // hlen*0.008
 				const imgW = imgH * i.images[0].width / i.images[0].height * i.imageW; //* 38.4*25 * i.imageH* i.imageW; //wlen*3
 				ctxos.drawImage(i.images[lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
@@ -1739,8 +1640,19 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "left";
 	ctxos.fillText(stat.accStr, 352, 545);
 	ctxos.fillText(stat.maxcombo, 1528, 545);
-	ctxos.fillStyle = statData[4];
-	ctxos.fillText(statData[3], 1355, 590);
+	if (statData[3]) {
+		ctxos.fillStyle = "#fe4365";
+		ctxos.fillText("AUTO PLAY", 1355, 590);
+	} else if (stat.lineStatus == 1) {
+		ctxos.fillStyle = "#ffc500";
+		ctxos.fillText("ALL  PERFECT", 1355, 590);
+	} else if (stat.lineStatus == 2) {
+		ctxos.fillStyle = "#91ff8f";
+		ctxos.fillText("ALL  PERFECT", 1355, 590);
+	} else if (stat.lineStatus == 3) {
+		ctxos.fillStyle = "#00bef1";
+		ctxos.fillText("FULL  COMBO", 1355, 590);
+	}
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
 	ctxos.font = "86px Mina";
@@ -1790,9 +1702,9 @@ function drawNote(note, realTime, type) {
 	if (note.type != 3 && note.scored && !note.badtime) return;
 	if (note.type == 3 && note.realTime + note.realHoldTime < realTime) return; //qwq
 	ctxos.globalAlpha = note.alpha;
-	ctxos.setTransform(...imgFlip(noteScale * note.cosr, noteScale * note.sinr, -noteScale * note.sinr, noteScale * note.cosr, note.offsetX, note.offsetY));
+	ctxos.setTransform(noteScale * note.cosr, noteScale * note.sinr, -noteScale * note.sinr, noteScale * note.cosr, note.offsetX, note.offsetY);
 	if (type == 3) {
-		const baseLength = hlen2 / noteScale * note.speed * Number(selectspeed.value);
+		const baseLength = hlen2 / noteScale * note.speed;
 		const holdLength = baseLength * note.realHoldTime;
 		if (note.realTime > realTime) {
 			if (HL) {
@@ -2337,21 +2249,6 @@ function imgShader(img, color) {
 		imgData.data[i * 4 + 3] *= data[3] / 255;
 	}
 	return imgData;
-}
-//画面翻转
-function imgFlip(a, b, c, d, e, f) {
-	switch (selectflip.value) {
-		case "br":
-			return [a, b, c, d, e, f];
-		case "bl":
-			return [a, -b, -c, d, canvasos.width - e, f];
-		case "tr":
-			return [-a, b, c, -d, e, canvasos.height - f];
-		case "tl":
-			return [-a, -b, -c, -d, canvasos.width - e, canvasos.height - f];
-		default:
-			throw new Error("Flip Error");
-	}
 }
 
 function imgBlur(img) {

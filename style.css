@@ -120,6 +120,18 @@ body {
 	height: 0;
 }
 
+#view-msg:empty::after {
+	content: "信息将会显示在这里";
+	display: flow-root;
+	text-align: center;
+	padding: calc(6px + 1vmin);
+	font-size: calc(6px + 1vmin);
+	font-family: Consolas, Menlo, monospace;
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+}
+
 .msgbox {
 	display: flow-root;
 	background-color: #fffbe5;
