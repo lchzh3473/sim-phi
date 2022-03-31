@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 14], 1611795955, 1640231350];
+const _i = ['Phigros模拟器', [1, 4, 15], 1611795955, 1648689321];
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function() {
@@ -89,6 +89,7 @@ const selectflip = document.getElementById("select-flip");
 const selectspeed = document.getElementById("select-speed");
 const scfg = function() {
 	let arr = [];
+	if (qwq[5]) arr.push("Reversed");
 	switch (selectflip.value) {
 		case "bl":
 			arr.push("FlipX");
@@ -145,6 +146,7 @@ const canvasos = document.createElement("canvas"); //用于绘制游戏主界面
 const ctxos = canvasos.getContext("2d");
 const Renderer = { //存放谱面
 	chart: null,
+	chart2: null, //qwq
 	bgImage: null,
 	bgImageBlur: null,
 	bgMusic: null,
@@ -240,12 +242,13 @@ function resizeCanvas() {
 	lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //判定线、文字缩放
 }
 //qwq[water,demo,democlick]
-const qwq = [true, false, 3, 0];
+const qwq = [true, false, 3, 0, 0, 0];
 document.getElementById("demo").classList.add("hide");
-document.querySelector(".title").addEventListener("click", function() {
-	if (qwq[1]) qwq[0] = !qwq[0];
-	else if (!--qwq[2]) document.getElementById("demo").classList.remove("hide");
-});
+eval(atob("IWZ1bmN0aW9uKCl7Y29uc3QgdD1uZXcgRGF0ZTtpZigxIT10LmdldERhdGUoKXx8MyE9dC5nZXRNb250aCgpKXJldHVybjtjb25zdCBuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpO24udHlwZT0idGV4dC9qYXZhc2NyaXB0IixuLnNyYz0iLi9yLW1pbi5qcyIsZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoImhlYWQiKVswXS5hcHBlbmRDaGlsZChuKX0oKTs"));
+// document.querySelector(".title").addEventListener("click", function() {
+// 	if (qwq[1]) qwq[0] = !qwq[0];
+// 	else if (!--qwq[2]) document.getElementById("demo").classList.remove("hide");
+// });
 document.getElementById("demo").addEventListener("click", function() {
 	document.getElementById("demo").classList.add("hide");
 	uploads.classList.add("disabled");
@@ -834,6 +837,7 @@ async function qwqImage(img, color) {
 }
 //必要组件
 let stopDrawing;
+let energy = 0;
 const stat = {
 	noteRank: [0, 0, 0, 0, 0, 0, 0, 0],
 	combos: [0, 0, 0, 0, 0],
@@ -938,6 +942,8 @@ const stat = {
 		if (this.combo > this.maxcombo) this.maxcombo = this.combo;
 		this.combos[0]++;
 		this.combos[type]++;
+		if (qwq[4]) energy++;
+		if (this.lineStatus != 1) energy = 0;
 	}
 }
 //const stat = new Stat();
@@ -1178,71 +1184,6 @@ function prerenderChart(chart) {
 	for (const i of Renderer.notes) timeOfMulti[i.realTime.toFixed(6)] = timeOfMulti[i.realTime.toFixed(6)] ? 2 : 1;
 	for (const i of Renderer.notes) i.isMulti = (timeOfMulti[i.realTime.toFixed(6)] == 2);
 	return chartNew;
-	//规范判定线事件
-	function arrangeLineEvent(events) {
-		const oldEvents = JSON.parse(JSON.stringify(events)); //深拷贝
-		const newEvents = [{ //以1-1e6开头
-			startTime: 1 - 1e6,
-			endTime: 0,
-			start: oldEvents[0] ? oldEvents[0].start : 0,
-			end: oldEvents[0] ? oldEvents[0].end : 0,
-			start2: oldEvents[0] ? oldEvents[0].start2 : 0,
-			end2: oldEvents[0] ? oldEvents[0].end2 : 0
-		}];
-		oldEvents.push({ //以1e9结尾
-			startTime: 0,
-			endTime: 1e9,
-			start: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].start : 0,
-			end: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].end : 0,
-			start2: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].start2 : 0,
-			end2: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].end2 : 0
-		});
-		for (const i2 of oldEvents) { //保证时间连续性
-			const i1 = newEvents[newEvents.length - 1];
-			if (i1.endTime > i2.endTime);
-			else if (i1.endTime == i2.startTime) newEvents.push(i2);
-			else if (i1.endTime < i2.startTime) newEvents.push({
-				startTime: i1.endTime,
-				endTime: i2.startTime,
-				start: i1.end,
-				end: i1.end,
-				start2: i1.end2,
-				end2: i1.end2
-			}, i2);
-			else if (i1.endTime > i2.startTime) newEvents.push({
-				startTime: i1.endTime,
-				endTime: i2.endTime,
-				start: (i2.start * (i2.endTime - i1.endTime) + i2.end * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
-				end: i1.end,
-				start2: (i2.start2 * (i2.endTime - i1.endTime) + i2.end2 * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
-				end2: i1.end2
-			});
-		}
-		//合并相同变化率事件
-		const newEvents2 = [newEvents.shift()];
-		for (const i2 of newEvents) {
-			const i1 = newEvents2[newEvents2.length - 1];
-			const d1 = i1.endTime - i1.startTime;
-			const d2 = i2.endTime - i2.startTime;
-			if (i2.startTime == i2.endTime);
-			else if (i1.end == i2.start && i1.end2 == i2.start2 && (i1.end - i1.start) * d2 == (i2.end - i2.start) * d1 && (i1.end2 - i1.start2) * d2 == (i2.end2 - i2.start2) * d1) {
-				i1.endTime = i2.endTime;
-				i1.end = i2.end;
-				i1.end2 = i2.end2;
-			} else newEvents2.push(i2);
-		}
-		return JSON.parse(JSON.stringify(newEvents2));
-	}
-	//规范speedEvents
-	function arrangeSpeedEvent(events) {
-		const newEvents = [];
-		for (const i2 of events) {
-			const i1 = newEvents[newEvents.length - 1];
-			if (!i1 || i1.value != i2.value) newEvents.push(i2);
-			else i1.endTime = i2.endTime;
-		}
-		return JSON.parse(JSON.stringify(newEvents));
-	}
 	//添加realTime
 	function addRealTime(events, bpm) {
 		for (const i of events) {
@@ -1253,6 +1194,71 @@ function prerenderChart(chart) {
 		}
 		return events;
 	}
+} //规范判定线事件
+function arrangeLineEvent(events) {
+	const oldEvents = JSON.parse(JSON.stringify(events)); //深拷贝
+	const newEvents = [{ //以1-1e6开头
+		startTime: 1 - 1e6,
+		endTime: 0,
+		start: oldEvents[0] ? oldEvents[0].start : 0,
+		end: oldEvents[0] ? oldEvents[0].start : 0,
+		start2: oldEvents[0] ? oldEvents[0].start2 : 0,
+		end2: oldEvents[0] ? oldEvents[0].start2 : 0
+	}];
+	oldEvents.push({ //以1e9结尾
+		startTime: 0,
+		endTime: 1e9,
+		start: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].end : 0,
+		end: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].end : 0,
+		start2: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].end2 : 0,
+		end2: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].end2 : 0
+	});
+	for (const i2 of oldEvents) { //保证时间连续性
+		const i1 = newEvents[newEvents.length - 1];
+		if (i2.startTime > i2.endTime) continue;
+		if (i1.endTime > i2.endTime);
+		else if (i1.endTime == i2.startTime) newEvents.push(i2);
+		else if (i1.endTime < i2.startTime) newEvents.push({
+			startTime: i1.endTime,
+			endTime: i2.startTime,
+			start: i1.end,
+			end: i1.end,
+			start2: i1.end2,
+			end2: i1.end2
+		}, i2);
+		else if (i1.endTime > i2.startTime) newEvents.push({
+			startTime: i1.endTime,
+			endTime: i2.endTime,
+			start: (i2.start * (i2.endTime - i1.endTime) + i2.end * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
+			end: i1.end,
+			start2: (i2.start2 * (i2.endTime - i1.endTime) + i2.end2 * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
+			end2: i1.end2
+		});
+	}
+	//合并相同变化率事件
+	const newEvents2 = [newEvents.shift()];
+	for (const i2 of newEvents) {
+		const i1 = newEvents2[newEvents2.length - 1];
+		const d1 = i1.endTime - i1.startTime;
+		const d2 = i2.endTime - i2.startTime;
+		if (i2.startTime == i2.endTime);
+		else if (i1.end == i2.start && i1.end2 == i2.start2 && (i1.end - i1.start) * d2 == (i2.end - i2.start) * d1 && (i1.end2 - i1.start2) * d2 == (i2.end2 - i2.start2) * d1) {
+			i1.endTime = i2.endTime;
+			i1.end = i2.end;
+			i1.end2 = i2.end2;
+		} else newEvents2.push(i2);
+	}
+	return JSON.parse(JSON.stringify(newEvents2));
+}
+//规范speedEvents
+function arrangeSpeedEvent(events) {
+	const newEvents = [];
+	for (const i2 of events) {
+		const i1 = newEvents[newEvents.length - 1];
+		if (!i1 || i1.value != i2.value) newEvents.push(i2);
+		else i1.endTime = i2.endTime;
+	}
+	return JSON.parse(JSON.stringify(newEvents));
 }
 document.addEventListener("visibilitychange", () => document.visibilityState == "hidden" && btnPause.value == "暂停" && btnPause.click());
 document.addEventListener("pagehide", () => document.visibilityState == "hidden" && btnPause.value == "暂停" && btnPause.click()); //兼容Safari
@@ -1266,6 +1272,7 @@ btnPlay.addEventListener("click", async function() {
 		stopPlaying.push(playSound(res["mute"], true, false, 0)); //播放空音频(防止音画不同步)
 		("lines,notes,taps,drags,flicks,holds,reverseholds,tapholds").split(",").map(i => Renderer[i] = []);
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
+		Renderer.chart2 = JSON.parse(JSON.stringify(charts[selectchart.value])); //fuckqwq2
 		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5);
 		for (const i of chartLineData) {
 			if (selectchart.value == i.Chart) {
@@ -1451,7 +1458,7 @@ function calcqwq(now) {
 			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed * Number(selectspeed.value);
 			if (i.badtime) i.alpha = 1 - range((Date.now() - i.badtime) / 500);
 			else if (i.realTime > timeChart) {
-				if (dy > -1e-3 * hlen2) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : 1;
+				if (dy > -1e-3 * hlen2) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : qwq[5] ? Math.max(1 + (timeChart - i.realTime) / 1.5, 0) : 1; //过线前1.5s出现
 				else i.alpha = showPoint.checked ? 0.45 : 0;
 				//i.frameCount = 0;
 			} else {
@@ -1474,6 +1481,10 @@ function calcqwq(now) {
 	clickEvents2.defilter(i => now >= i.time + i.duration); //清除打击特效
 	for (const i in mouse) mouse[i] instanceof Click && mouse[i].animate();
 	for (const i in touch) touch[i] instanceof Click && touch[i].animate();
+	if (qwq[4] && stat.good + stat.bad) {
+		stat.reset();
+		specialClick.func[1]();
+	}
 }
 
 function qwqdraw1(now) {
@@ -1491,6 +1502,7 @@ function qwqdraw1(now) {
 			ctxos.globalAlpha = 1 - tick; //不透明度
 			ctxos.fillText(i.text, 0, -noteScale * 192);
 		}
+	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	for (const i of clickEvents1) { //绘制打击特效1
 		const tick = (now - i.time) / i.duration;
 		ctxos.globalAlpha = 1;
@@ -1504,6 +1516,7 @@ function qwqdraw1(now) {
 			ctxos.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
 		}
 	}
+	if (qwq[4]) ctxos.filter = "none";
 	if (document.getElementById("feedback").checked) {
 		for (const i of clickEvents0) { //绘制打击特效0
 			ctxos.globalAlpha = 0.85;
@@ -1547,12 +1560,16 @@ function qwqdraw1(now) {
 		for (const i of Renderer.reverseholds) drawNote(i, timeChart, 3);
 	}
 	//绘制背景
+	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
+	if (qwq[4]) ctxos.filter = "none";
 	ctxos.resetTransform();
 	ctxos.fillStyle = "#000"; //背景变暗
 	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
+	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0); //绘制判定线(背景后0)
+	if (qwq[4]) ctxos.filter = "none";
 	ctxos.globalAlpha = 1;
 	ctxos.resetTransform();
 	if (document.getElementById("imageBlur").checked) {
@@ -1564,7 +1581,7 @@ function qwqdraw1(now) {
 	ctxos.globalCompositeOperation = "source-over";
 	//绘制进度条
 	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
-	ctxos.drawImage(res["ProgressBar"], timeBgm / duration * 1920 - 1920, 0);
+	ctxos.drawImage(res["ProgressBar"], (qwq[5] ? duration - timeBgm : timeBgm) / duration * 1920 - 1920, 0);
 	//绘制文字
 	ctxos.resetTransform();
 	ctxos.fillStyle = "#fff";
@@ -1624,7 +1641,7 @@ function qwqdraw1(now) {
 		ctxos.textBaseline = "middle";
 		ctxos.font = `${lineScale * 0.4}px Mina`;
 		ctxos.textAlign = "left";
-		ctxos.fillText(`${time2Str(timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
+		ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
 		ctxos.textAlign = "right";
 		ctxos.fillText(frameTimer.fps, canvasos.width - lineScale * 0.05, lineScale * 0.5);
 		ctxos.textBaseline = "alphabetic";
@@ -1873,11 +1890,11 @@ function chartp23(pec, filename) {
 		}
 	}
 	class JudgeLine {
-		numOfNotes = 0;
-		numOfNotesAbove = 0;
-		numOfNotesBelow = 0;
-		bpm = 120;
 		constructor(bpm) {
+			this.numOfNotes = 0;
+			this.numOfNotesAbove = 0;
+			this.numOfNotesBelow = 0;
+			this.bpm = 120;
 			this.bpm = bpm;
 			("speedEvents,notesAbove,notesBelow,judgeLineDisappearEvents,judgeLineMoveEvents,judgeLineRotateEvents,judgeLineDisappearEventsPec,judgeLineMoveEventsPec,judgeLineRotateEventsPec").split(",").map(i => this[i] = []);
 		}
@@ -1891,7 +1908,8 @@ function chartp23(pec, filename) {
 					this.notesBelow.push(note);
 					break;
 				default:
-					throw "wrong note position"
+					this.notesBelow.push(note);
+					console.warn("Warning: Illeagal Note Side: " + pos);
 			}
 			if (!isFake) {
 				this.numOfNotes++;
@@ -2028,24 +2046,28 @@ function chartp23(pec, filename) {
 	for (const i of raw.n1) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(1, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		if (i[3] != 1 && i[3] != 2) message.sendWarning(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n1 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
 		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
 		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
+		if (i[4] != 1 && i[4] != 2) message.sendWarning(`检测到非法方向:${i[4]}(将被视为2)\n位于:"n2 ${i.slice(0, 5).join(" ")} # ${i[6]} & ${i[7]}"\n来自${filename}`);
 		if (i[5]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n2 ${i.slice(0, 6).join(" ")}"\n来自${filename}`);
 		if (i[7] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n2 ${i.slice(0, 5).join(" ")} # ${i[6]} & ${i[7]}"\n来自${filename}`);
 	}
 	for (const i of raw.n3) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		if (i[3] != 1 && i[3] != 2) message.sendWarning(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n3 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
 		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	for (const i of raw.n4) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(2, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
+		if (i[3] != 1 && i[3] != 2) message.sendWarning(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n4 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(" ")}"\n来自${filename}`);
 		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
