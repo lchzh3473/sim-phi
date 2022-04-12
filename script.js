@@ -245,10 +245,10 @@ function resizeCanvas() {
 const qwq = [true, false, 3, 0, 0, 0];
 document.getElementById("demo").classList.add("hide");
 eval(atob("IWZ1bmN0aW9uKCl7Y29uc3QgdD1uZXcgRGF0ZTtpZigxIT10LmdldERhdGUoKXx8MyE9dC5nZXRNb250aCgpKXJldHVybjtjb25zdCBuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpO24udHlwZT0idGV4dC9qYXZhc2NyaXB0IixuLnNyYz0iLi9yLW1pbi5qcyIsZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoImhlYWQiKVswXS5hcHBlbmRDaGlsZChuKX0oKTs"));
-// document.querySelector(".title").addEventListener("click", function() {
-// 	if (qwq[1]) qwq[0] = !qwq[0];
-// 	else if (!--qwq[2]) document.getElementById("demo").classList.remove("hide");
-// });
+document.querySelector(".title").addEventListener("click", function() {
+	if (qwq[1]) /*qwq[0] = !qwq[0]*/;
+	else if (!--qwq[2]) document.getElementById("demo").classList.remove("hide");
+});
 document.getElementById("demo").addEventListener("click", function() {
 	document.getElementById("demo").classList.add("hide");
 	uploads.classList.add("disabled");

@@ -9,9 +9,9 @@
 	<link rel="stylesheet" href="./style.css">
 	<script src="/lib/oggmented-bundle.js"></script>
 	<script src="//cdn.jsdelivr.net/gh/Kaiido/createImageBitmap@master/dist/createImageBitmap.js"></script>
-	<script src="//cdn.jsdelivr.net/gh/gildas-lormeau/zip.js@master/dist/zip.min.js"></script>
-	<script src="//cdn.jsdelivr.net/gh/flozz/StackBlur@master/dist/stackblur.min.js"></script>
-	<script src="//cdn.jsdelivr.net/gh/hapjs/md5-js@master/md5.min.js"></script>
+	<script src="//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"></script>
+	<script src="//cdn.jsdelivr.net/npm/stackblur-canvas"></script>
+	<script src="//cdn.jsdelivr.net/npm/md5-js"></script>
 	<script defer src="/utils/stat.js"></script>
 	<script defer src="./script.js?v1415"></script>
 	<script defer src="/utils/main.js"></script>
@@ -23,7 +23,7 @@
 		<p class="info"></p>
 		<p class="profile">将<a id="qwq">谱面等资源文件(点击查看说明)</a>打包成zip然后上传；<br>读取完成后调节相关参数，最后点击“播放”按钮。<br>播放时双击画面：左上角暂停；右上角重新开始；右下角全屏。</p>
 		<div id="uploads" class="upload">
-			<input type="button" id="demo" value="Demo">
+			<input type="button" id="demo" value="Demo" style="display:none">
 			<input type="file" accept="application/x-zip-compressed" id="upload">
 			<label for="upload">选择zip</label>
 			<input type="text" style="width:0;flex-grow:1;flex-shrink:1;pointer-events:none" id="filename">
