@@ -1,5 +1,12 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 15], 1611795955, 1648689321];
+const _i = ['Phigros模拟器', [1, 4, 16], 1611795955, 1651419173];
+const urls = {
+	zip: ["//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
+	browser: ["//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
+	bitmap: ["//cdn.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js", "//fastly.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js"],
+	blur: ["//cdn.jsdelivr.net/npm/stackblur-canvas", "//fastly.jsdelivr.net/npm/stackblur-canvas"],
+	md5: ["//cdn.jsdelivr.net/npm/md5-js", "//fastly.jsdelivr.net/npm/md5-js"],
+}
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function() {
@@ -40,17 +47,11 @@ const message = {
 	get num() {
 		return this.view.querySelectorAll(".msgbox").length;
 	},
-	sendMessage(msg) {
-		const num = this.num;
-		this.out.className = num ? "warning" : "accept";
-		this.out.innerText = msg + (num ? `（发现${num}个问题，点击查看）` : "");
-		this.lastMessage = msg;
-		this.isError = false;
-	},
-	sendWarning(msg) {
+	msgbox(msg, options = {}) {
 		const msgbox = document.createElement("div");
 		msgbox.innerText = msg;
 		msgbox.classList.add("msgbox");
+		Object.assign(msgbox.style, options);
 		const btn = document.createElement("a");
 		btn.innerText = "忽略";
 		btn.style.float = "right";
@@ -61,15 +62,30 @@ const message = {
 		}
 		msgbox.appendChild(btn);
 		this.view.appendChild(msgbox);
+	},
+	sendMessage(msg) {
+		const num = this.num;
+		this.out.className = num ? "warning" : "accept";
+		this.out.innerText = msg + (num ? `（发现${num}个问题，点击查看）` : "");
+		this.lastMessage = msg;
+		this.isError = false;
+	},
+	sendWarning(msg) {
+		this.msgbox(msg, { backgroundColor: "#fffbe5", color: "#5c3c00" })
 		if (this.isError) this.sendError(this.lastMessage);
 		else this.sendMessage(this.lastMessage);
 	},
 	sendError(msg) {
+		this.msgbox(msg, { backgroundColor: "#fee", color: "#e10000" });
 		const num = this.num;
 		this.out.className = "error";
-		this.out.innerText = msg + (num ? `（发现${num}个问题，点击查看）` : "");
+		this.out.innerText = msg; // + (num ? `（发现${num}个问题，点击查看）` : "");
 		this.lastMessage = msg;
 		this.isError = true;
+	},
+	throwError(msg) {
+		this.sendError(msg);
+		throw new Error(msg);
 	}
 }
 //
@@ -87,6 +103,16 @@ const selectaspectratio = document.getElementById("select-aspect-ratio");
 const selectglobalalpha = document.getElementById("select-global-alpha");
 const selectflip = document.getElementById("select-flip");
 const selectspeed = document.getElementById("select-speed");
+const config = {
+	speed: 1,
+	setSpeed(num) {
+		this.speed = 2 ** (num / 12);
+	}
+};
+selectspeed.addEventListener("change", evt => {
+	const dict = { Slowest: -9, Slower: -4, "": 0, Faster: 3, Fastest: 5 };
+	config.setSpeed(dict[evt.target.value]);
+});
 const scfg = function() {
 	let arr = [];
 	if (qwq[5]) arr.push("Reversed");
@@ -102,21 +128,7 @@ const scfg = function() {
 			break;
 		default:
 	}
-	switch (selectspeed.value) {
-		case "0.594604":
-			arr.push("Slowest");
-			break;
-		case "0.793701":
-			arr.push("Slower");
-			break;
-		case "1.189207":
-			arr.push("Faster");
-			break;
-		case "1.334840":
-			arr.push("Fastest");
-			break;
-		default:
-	}
+	if (selectspeed.value) arr.push(selectspeed.value);
 	if (isPaused) arr.push("Paused");
 	if (arr.length == 0) return "";
 	return `(${arr.join("+")})`;
@@ -188,11 +200,61 @@ const full = {
 		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled);
 	}
 };
-//兼容性检测
-if (typeof zip != "object") message.sendWarning("检测到zip组件未正常加载，将无法使用模拟器");
-if (typeof createImageBitmap != "function") message.sendWarning("检测到当前浏览器不支持ImageBitmap，将无法使用模拟器");
-if (!(window.AudioContext || window.webkitAudioContext)) message.sendWarning("检测到当前浏览器不支持AudioContext，将无法使用模拟器");
-if (!full.enabled) message.sendWarning("检测到当前浏览器不支持全屏，播放时双击右下角将无反应");
+async function checkSupport() {
+	window.addEventListener('error', e => message.sendError(e.message));
+	window.addEventListener('unhandledrejection', e => message.sendError(e.reason));
+	//兼容性检测
+	message.sendMessage("加载StackBlur组件...");
+	if (typeof StackBlur != "object") await loadJS(urls.blur).catch(() => message.throwError("StackBlur组件加载失败，请检查网络"));
+	message.sendMessage("加载md5组件...");
+	if (typeof md5 != "function") await loadJS(urls.md5).catch(() => message.throwError("md5组件加载失败，请检查网络"));
+	message.sendMessage("加载Browser组件...");
+	if (typeof Browser != "function") await loadJS(urls.browser).catch(() => message.throwError("Browser组件加载失败，请检查网络"));
+	message.sendMessage("加载zip组件...");
+	if (typeof zip != "object") await loadJS(urls.zip).catch(() => message.throwError("zip组件加载失败，请检查网络"));
+	message.sendMessage("检查浏览器兼容性...");
+	const info = new Browser;
+	if (info.browser == "XiaoMi") message.sendWarning("检测到小米浏览器，可能存在切后台声音消失的问题");
+	if (info.os == "iOS" && parseFloat(info.osVersion) < 14.5) message.sendWarning("检测到iOS版本小于14.5，可能无法正常使用模拟器");
+	if (info.os == "Mac OS" && parseFloat(info.osVersion) < 14.1) message.sendWarning("检测到MacOS版本小于14.1，可能无法正常使用模拟器");
+	if (info.os == "iOS" && parseFloat(info.osVersion) == 15.4) message.sendWarning("iOS15.4：我裂开来");
+	if (typeof createImageBitmap != "function") await loadJS(urls.bitmap).catch(() => message.throwError("当前浏览器不支持ImageBitmap"));
+	message.sendMessage("加载声音组件...");
+	const oggCompatible = !!(new Audio).canPlayType("audio/ogg");
+	if (!oggCompatible) await loadJS("/lib/oggmented-bundle.js").catch(() => message.throwError("oggmented兼容模块加载失败，请检查网络"));
+	if (!oggCompatible && typeof oggmented != "object") message.throwError("oggmented兼容模块运行失败，请检查浏览器版本");
+	const AudioContext = window.AudioContext || window.webkitAudioContext;
+	if (!AudioContext) message.throwError("当前浏览器不支持AudioContext");
+	const actx = oggCompatible ? new AudioContext() : new oggmented.OggmentedAudioContext(); //兼容Safari
+	const gain = actx.createGain();
+	const playSound = (res, loop, isOut, offset, playbackrate) => {
+		const bufferSource = actx.createBufferSource();
+		bufferSource.buffer = res;
+		bufferSource.loop = loop; //循环播放
+		bufferSource.connect(gain);
+		bufferSource.playbackRate.value = Number(playbackrate || 1);
+		if (isOut) gain.connect(actx.destination);
+		bufferSource.start(0, offset);
+		return () => bufferSource.stop();
+	}
+	Object.assign(window, { actx, stopPlaying, playSound });
+	message.sendMessage("检测全屏...");
+	if (!full.enabled) message.sendWarning("检测到当前浏览器不支持全屏，播放时双击右下角将无反应");
+
+	function loadJS(qwq) {
+		const a = (function*(arg) { yield* arg; })(qwq instanceof Array ? qwq : arguments);
+		const load = url => new Promise((resolve, reject) => {
+			if (!url) return reject();
+			const script = document.createElement('script');
+			script.onload = () => resolve(script);
+			script.onerror = () => load(a.next().value).catch(() => reject());
+			script.src = url;
+			script.crossOrigin = "anonymous";
+			document.head.appendChild(script);
+		});
+		return load(a.next().value);
+	}
+}
 //qwq
 selectbg.onchange = () => {
 	Renderer.bgImage = bgs[selectbg.value];
@@ -279,7 +341,7 @@ const specialClick = {
 		full.toggle(canvas);
 	}],
 	click(id) {
-		const now = Date.now();
+		const now = performance.now();
 		if (now - this.time[id] < 300) this.func[id]();
 		this.time[id] = now;
 	}
@@ -408,7 +470,7 @@ class Judgements extends Array {
 						if (deltaTime > (hyperMode.checked ? 0.12 : 0.16)) {
 							if (!this[j].catched) {
 								i.status = 6; //console.log("Bad", i.name);
-								i.badtime = Date.now();
+								i.badtime = performance.now();
 							}
 						} else if (deltaTime > 0.08) {
 							i.status = 7; //console.log("Good(Early)", i.name);
@@ -461,11 +523,11 @@ class Judgements extends Array {
 				}
 			} else if (i.type == 3) {
 				if (i.status3) {
-					if ((Date.now() - i.status3) * i.holdTime >= 1.6e4 * i.realHoldTime) { //间隔时间与bpm成反比，待实测
+					if ((performance.now() - i.status3) * i.holdTime >= 1.6e4 * i.realHoldTime) { //间隔时间与bpm成反比，待实测
 						if (i.status2 % 4 == 0) clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 						else if (i.status2 % 4 == 1) clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 						else if (i.status2 % 4 == 3) clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-						i.status3 = Date.now();
+						i.status3 = performance.now();
 					}
 					if (deltaTime + i.realHoldTime < 0.2) {
 						if (!i.status) {
@@ -484,26 +546,26 @@ class Judgements extends Array {
 								i.status2 = 7; //console.log("Good(Early)", i.name);
 								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 								clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
-								i.status3 = Date.now();
+								i.status3 = performance.now();
 							} else if (deltaTime > 0.04) {
 								i.status2 = 5; //console.log("Perfect(Early)", i.name);
 								clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 								clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
-								i.status3 = Date.now();
+								i.status3 = performance.now();
 							} else if (deltaTime > -0.04 || i.frameCount < 1) {
 								i.status2 = 4; //console.log("Perfect(Max)", i.name);
 								clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-								i.status3 = Date.now();
+								i.status3 = performance.now();
 							} else if (deltaTime > -0.08 || i.frameCount < 2) {
 								i.status2 = 1; //console.log("Perfect(Late)", i.name);
 								clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 								clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
-								i.status3 = Date.now();
+								i.status3 = performance.now();
 							} else {
 								i.status2 = 3; //console.log("Good(Late)", i.name);
 								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
 								clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
-								i.status3 = Date.now();
+								i.status3 = performance.now();
 							}
 							this.splice(j, 1);
 							i.status4 = false;
@@ -595,7 +657,7 @@ class ClickEvent1 {
 	constructor(offsetX, offsetY, n1, n2, n3) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
-		this.time = Date.now();
+		this.time = performance.now();
 		this.duration = 500;
 		this.images = res["Clicks"][n1]; //以后做缺少检测
 		this.color = String(n3);
@@ -615,7 +677,7 @@ class ClickEvent2 {
 	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
-		this.time = Date.now();
+		this.time = performance.now();
 		this.duration = 250;
 		this.color = String(n1);
 		this.text = String(n2);
@@ -743,27 +805,16 @@ function getOffsetTop(element) {
 	}
 	return a;
 }
-//声音组件
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.OggmentedAudioContext() : new AudioContext(); //兼容Safari
+//原来放声音组件的地方qwq
 const stopPlaying = [];
-const gain = actx.createGain();
-const playSound = (res, loop, isOut, offset, playbackrate) => {
-	const bufferSource = actx.createBufferSource();
-	bufferSource.buffer = res;
-	bufferSource.loop = loop; //循环播放
-	bufferSource.connect(gain);
-	bufferSource.playbackRate.value = Number(playbackrate || 1);
-	if (isOut) gain.connect(actx.destination);
-	bufferSource.start(0, offset);
-	return () => bufferSource.stop();
-}
 const res = {}; //存放资源
 resizeCanvas();
 uploads.classList.add("disabled");
 select.classList.add("disabled");
 //初始化
-window.onload = function() {
+window.onload = async function() {
+	message.sendMessage("正在初始化...");
+	await checkSupport();
 	//加载资源
 	(async function() {
 		let loadedNum = 0;
@@ -897,7 +948,7 @@ const stat = {
 		const l3 = (Number(inputLevel.value.match(/\d+$/))).toString(36).slice(-1);
 		return l1 + l2 + l3;
 	},
-	getData(isAuto) {
+	getData(isAuto, speed = "") {
 		const s1 = this.data[this.id].slice(0, 3);
 		const s2 = this.data[this.id].slice(3, 7);
 		const l1 = Math.round(this.accNum * 1e4 + 566).toString(22).slice(-3);
@@ -908,25 +959,38 @@ const stat = {
 		if (!isAuto) this.data[this.id] = (s1 > l1 ? s1 : l1) + (s2 > l2 ? s2 : l2) + l3;
 		const arr = [];
 		for (const i in this.data) arr.push(i + this.data[i]);
-		localStorage.setItem("phi", arr.sort(() => Math.random() - 0.5).join(""));
-		if (isAuto) return [false, scoreBest, "", "AUTO PLAY", "#fe4365"];
-		if (selectspeed.value != "1") return [false, scoreBest, "", "SPEED CHANGED", "#65fe43"];
-		let brr = [s2 < l2, scoreBest, (s2 > l2 ? "- " : "+ ") + Math.abs(scoreBest - this.scoreStr)];
-		if (this.lineStatus == 1) brr.push("ALL  PERFECT", "#ffc500");
-		else if (this.lineStatus == 2) brr.push("ALL  PERFECT", "#91ff8f");
-		else if (this.lineStatus == 3) brr.push("FULL  COMBO", "#00bef1");
-		else brr.push("", "#fff");
-		return brr;
+		localStorage.setItem(`phi-${speed}`, arr.sort(() => Math.random() - 0.5).join(""));
+		const pbj = {
+			newBestColor: s2 < l2 ? "#18ffbf" : "#fff",
+			newBestStr: s2 < l2 ? "NEW BEST" : "BEST",
+			scoreBest: scoreBest,
+			scoreDelta: (s2 > l2 ? "- " : "+ ") + Math.abs(scoreBest - this.scoreStr),
+			textAboveColor: "#65fe43",
+			textAboveStr: `  ( Speed ${config.speed.toFixed(2)}x )`,
+			textBelowColor: "#fe4365",
+			textBelowStr: "AUTO PLAY",
+		}
+		if (config.speed == 1) Object.assign(pbj, { textAboveStr: "" });
+		if (isAuto) return Object.assign(pbj, { newBestColor: "#fff", newBestStr: "BEST", scoreDelta: "" });
+		if (this.lineStatus == 1) return Object.assign(pbj, { textBelowStr: "ALL  PERFECT", textBelowColor: "#ffc500" });
+		if (this.lineStatus == 2) return Object.assign(pbj, { textBelowStr: "ALL  PERFECT", textBelowColor: "#91ff8f" })
+		if (this.lineStatus == 3) return Object.assign(pbj, { textBelowStr: "FULL  COMBO", textBelowColor: "#00bef1" });
+		return Object.assign(pbj, { textBelowStr: "" });
 	},
-	reset(numOfNotes, id) {
+	reset(numOfNotes, id, speed = "") {
+		const key = `phi-${speed}`;
 		this.numOfNotes = Number(numOfNotes) || 0;
 		this.combo = 0;
 		this.maxcombo = 0;
 		this.noteRank = [0, 0, 0, 0, 0, 0, 0, 0]; //4:PM,5:PE,1:PL,7:GE,3:GL,6:BE,2:BL
 		this.combos = [0, 0, 0, 0, 0]; //不同种类note实时连击次数
 		this.data = {};
-		if (localStorage.getItem("phi") == null) localStorage.setItem("phi", ""); //初始化存储
-		const str = localStorage.getItem("phi");
+		if (speed == "" && localStorage.getItem("phi")) {
+			localStorage.setItem(key, localStorage.getItem("phi"));
+			localStorage.removeItem("phi");
+		}
+		if (localStorage.getItem(key) == null) localStorage.setItem(key, ""); //初始化存储
+		const str = localStorage.getItem(key);
 		for (let i = 0; i < parseInt(str.length / 40); i++) {
 			const data = str.slice(i * 40, i * 40 + 40);
 			this.data[data.slice(0, 32)] = data.slice(-8);
@@ -962,12 +1026,12 @@ upload.onchange = function() {
 const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
 const frameTimer = { //计算fps
 	tick: 0,
-	time: Date.now(),
+	time: performance.now(),
 	fps: "",
 	addTick(fr = 10) {
 		if (++this.tick >= fr) {
 			this.tick = 0;
-			this.fps = (1e3 * fr / (-this.time + (this.time = Date.now()))).toFixed(0);
+			this.fps = (1e3 * fr / (-this.time + (this.time = performance.now()))).toFixed(0);
 		}
 		return this.fps;
 	}
@@ -978,7 +1042,7 @@ class Timer {
 	}
 	play() {
 		if (!this.isPaused) throw new Error("Time has been playing");
-		this.t1 = Date.now();
+		this.t1 = performance.now();
 		this.isPaused = false;
 	}
 	pause() {
@@ -996,7 +1060,7 @@ class Timer {
 	}
 	get time() {
 		if (this.isPaused) return this.t0;
-		return this.t0 + Date.now() - this.t1;
+		return this.t0 + performance.now() - this.t1;
 	}
 	get second() {
 		return this.time / 1e3;
@@ -1120,7 +1184,7 @@ function prerenderChart(chart) {
 	//优化events
 	for (const LineId in chartNew.judgeLineList) {
 		const i = chartNew.judgeLineList[LineId];
-		i.bpm *= Number(selectspeed.value);
+		i.bpm *= config.speed;
 		i.lineId = LineId;
 		i.offsetX = 0;
 		i.offsetY = 0;
@@ -1158,7 +1222,7 @@ function prerenderChart(chart) {
 		note.lineId = lineId;
 		note.noteId = noteId;
 		note.isAbove = isAbove;
-		note.name = `${lineId}${isAbove ? "+" : "-"}${noteId}`;
+		note.name = `${lineId}${isAbove ? "+" : "-"}${noteId}${" tdhf".split("")[note.type]}`;
 		Renderer.notes.push(note);
 		if (note.type == 1) Renderer.taps.push(note);
 		else if (note.type == 2) Renderer.drags.push(note);
@@ -1273,7 +1337,7 @@ btnPlay.addEventListener("click", async function() {
 		("lines,notes,taps,drags,flicks,holds,reverseholds,tapholds").split(",").map(i => Renderer[i] = []);
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
 		Renderer.chart2 = JSON.parse(JSON.stringify(charts[selectchart.value])); //fuckqwq2
-		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5);
+		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5, selectspeed.value);
 		for (const i of chartLineData) {
 			if (selectchart.value == i.Chart) {
 				Renderer.chart.judgeLineList[i.LineId].images[0] = bgs[i.Image];
@@ -1290,7 +1354,7 @@ btnPlay.addEventListener("click", async function() {
 		Renderer.bgMusic = bgms[selectbgm.value];
 		this.value = "停止";
 		resizeCanvas();
-		duration = Renderer.bgMusic.duration / Number(selectspeed.value);
+		duration = Renderer.bgMusic.duration / config.speed;
 		isInEnd = false;
 		isOutStart = false;
 		isOutEnd = false;
@@ -1339,7 +1403,7 @@ btnPause.addEventListener("click", function() {
 		qwqIn.play();
 		if (showTransition.checked && isOutStart) qwqOut.play();
 		isPaused = false;
-		if (isInEnd && !isOutStart) playBgm(Renderer.bgMusic, timeBgm * Number(selectspeed.value));
+		if (isInEnd && !isOutStart) playBgm(Renderer.bgMusic, timeBgm * config.speed);
 		this.value = "暂停";
 	}
 });
@@ -1351,14 +1415,14 @@ inputOffset.addEventListener("input", function() {
 function playBgm(data, offset) {
 	isPaused = false;
 	if (!offset) offset = 0;
-	curTimestamp = Date.now();
-	stopPlaying.push(playSound(data, false, true, offset, Number(selectspeed.value)));
+	curTimestamp = performance.now();
+	stopPlaying.push(playSound(data, false, true, offset, config.speed));
 }
 let fucktemp = false;
 let fucktemp2 = false;
 //作图
 function loop() {
-	const now = Date.now();
+	const now = performance.now();
 	//计算时间
 	if (qwqOut.second < 0.67) {
 		calcqwq(now);
@@ -1394,7 +1458,7 @@ function calcqwq(now) {
 		isOutEnd = true;
 		qwqOut.play();
 	}
-	timeChart = Math.max(timeBgm - Renderer.chart.offset / Number(selectspeed.value) - (Number(inputOffset.value) / 1e3 || 0), 0);
+	timeChart = Math.max(timeBgm - Renderer.chart.offset / config.speed - (Number(inputOffset.value) / 1e3 || 0), 0);
 	//遍历判定线events和Note
 	for (const line of Renderer.lines) {
 		for (const i of line.judgeLineDisappearEvents) {
@@ -1424,7 +1488,7 @@ function calcqwq(now) {
 		for (const i of line.speedEvents) {
 			if (timeChart < i.startRealTime) break;
 			if (timeChart > i.endRealTime) continue;
-			line.positionY = (timeChart - i.startRealTime) * i.value * Number(selectspeed.value) + i.floorPosition;
+			line.positionY = (timeChart - i.startRealTime) * i.value * config.speed + i.floorPosition;
 		}
 		for (const i of line.notesAbove) {
 			i.cosr = line.cosr;
@@ -1439,14 +1503,14 @@ function calcqwq(now) {
 
 		function getY(i) {
 			if (!i.badtime) return realgetY(i);
-			if (Date.now() - i.badtime > 500) delete i.badtime;
+			if (performance.now() - i.badtime > 500) delete i.badtime;
 			if (!i.badY) i.badY = realgetY(i);
 			return i.badY;
 		}
 
 		function realgetY(i) {
 			if (i.type != 3) return (i.floorPosition - line.positionY) * i.speed;
-			if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed * Number(selectspeed.value);
+			if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed * config.speed;
 			return i.floorPosition - line.positionY;
 		}
 
@@ -1455,8 +1519,8 @@ function calcqwq(now) {
 			i.offsetX = i.projectX + dy * i.sinr;
 			i.projectY = line.offsetY + dx * i.sinr;
 			i.offsetY = i.projectY - dy * i.cosr;
-			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed * Number(selectspeed.value);
-			if (i.badtime) i.alpha = 1 - range((Date.now() - i.badtime) / 500);
+			i.visible = Math.abs(i.offsetX - wlen) + Math.abs(i.offsetY - hlen) < wlen * 1.23625 + hlen + hlen2 * i.realHoldTime * i.speed * config.speed;
+			if (i.badtime) i.alpha = 1 - range((performance.now() - i.badtime) / 500);
 			else if (i.realTime > timeChart) {
 				if (dy > -1e-3 * hlen2) i.alpha = (i.type == 3 && i.speed == 0) ? (showPoint.checked ? 0.45 : 0) : qwq[5] ? Math.max(1 + (timeChart - i.realTime) / 1.5, 0) : 1; //过线前1.5s出现
 				else i.alpha = showPoint.checked ? 0.45 : 0;
@@ -1593,11 +1657,18 @@ function qwqdraw1(now) {
 		//歌名
 		ctxos.textBaseline = "alphabetic";
 		ctxos.font = `${lineScale * 1.1}px Mina`;
+		const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
+		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Mina`;
 		ctxos.fillText(inputName.value || inputName.placeholder, wlen, hlen * 0.75);
 		//曲绘和谱师
 		ctxos.textBaseline = "top";
 		ctxos.font = `${lineScale * 0.55}px Mina`;
+		const dxi = ctxos.measureText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`).width;
+		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxi*(canvasos.width-lineScale*1.5)}px Mina`;
 		ctxos.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, wlen, hlen * 1.25 + lineScale * 0.15);
+		ctxos.font = `${lineScale * 0.55}px Mina`;
+		const dxc = ctxos.measureText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`).width;
+		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxc*(canvasos.width-lineScale*1.5)}px Mina`;
 		ctxos.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, wlen, hlen * 1.25 + lineScale * 1.0);
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
@@ -1629,9 +1700,14 @@ function qwqdraw1(now) {
 	ctxos.textBaseline = "alphabetic";
 	ctxos.textAlign = "right";
 	ctxos.font = `${lineScale * 0.63}px Mina`;
+	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
+	if (dxlvl > wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(wlen - lineScale )}px Mina`;
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
 	ctxos.drawImage(res["SongsNameBar"], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctxos.textAlign = "left";
+	ctxos.font = `${lineScale * 0.63}px Mina`;
+	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
+	if (dxsnm > wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxsnm*(wlen - lineScale )}px Mina`;
 	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvasos.height - lineScale * 0.66);
 	ctxos.resetTransform();
 	if (qwq[0]) {
@@ -1697,7 +1773,7 @@ function qwqdraw2() {
 			stopPlaying.push(playSound(bgm, true, true, 0));
 			qwqEnd.reset();
 			qwqEnd.play();
-			fucktemp2 = stat.getData(autoplay.checked);
+			fucktemp2 = stat.getData(autoplay.checked, selectspeed.value);
 		}, 1000);
 		stopPlaying.push(() => clearTimeout(timeout));
 	}
@@ -1733,9 +1809,14 @@ function qwqdraw3(statData) {
 	ctxos.textBaseline = "middle";
 	ctxos.textAlign = "left";
 	ctxos.font = "80px Mina";
+	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
+	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Mina`;
 	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145);
 	ctxos.font = "30px Mina";
+	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
+	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Mina`;
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 317, 208);
+	ctxos.font = "30px Mina";
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
 	const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
@@ -1744,20 +1825,22 @@ function qwqdraw3(statData) {
 	ctxos.drawImage(res["Ranks"][stat.rankStatus], 661 - qwq3 / 2, 545 - qwq3 / 2, qwq3, qwq3);
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
-	ctxos.fillStyle = statData[0] ? "#18ffbf" : "#fff";
-	ctxos.fillText(statData[0] ? "NEW BEST" : "BEST", 898, 428);
+	ctxos.fillStyle = statData.newBestColor;
+	ctxos.fillText(statData.newBestStr, 898, 428);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
-	ctxos.fillText(statData[1], 1180, 428);
+	ctxos.fillText(statData.scoreBest, 1180, 428);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = "right";
-	ctxos.fillText(statData[2], 1414, 428);
+	ctxos.fillText(statData.scoreDelta, 1414, 428);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.textAlign = "left";
 	ctxos.fillText(stat.accStr, 352, 545);
 	ctxos.fillText(stat.maxcombo, 1528, 545);
-	ctxos.fillStyle = statData[4];
-	ctxos.fillText(statData[3], 1355, 590);
+	ctxos.fillStyle = statData.textAboveColor;
+	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
+	ctxos.fillStyle = statData.textBelowColor;
+	ctxos.fillText(statData.textBelowStr, 1355, 590);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
 	ctxos.font = "86px Mina";
@@ -1809,7 +1892,7 @@ function drawNote(note, realTime, type) {
 	ctxos.globalAlpha = note.alpha;
 	ctxos.setTransform(...imgFlip(noteScale * note.cosr, noteScale * note.sinr, -noteScale * note.sinr, noteScale * note.cosr, note.offsetX, note.offsetY));
 	if (type == 3) {
-		const baseLength = hlen2 / noteScale * note.speed * Number(selectspeed.value);
+		const baseLength = hlen2 / noteScale * note.speed * config.speed;
 		const holdLength = baseLength * note.realHoldTime;
 		if (note.realTime > realTime) {
 			if (HL) {

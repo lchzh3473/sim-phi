@@ -134,7 +134,6 @@ body {
 
 .msgbox {
 	display: flow-root;
-	background-color: #fffbe5;
 	margin: calc(6px + 1vmin) 0;
 	border: 1px solid gray;
 	border-radius: calc(6px + 1vmin);
