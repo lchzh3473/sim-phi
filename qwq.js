@@ -1286,7 +1286,7 @@ function loop() {
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = "right";
 	ctx.textBaseline = "middle";
-	ctx.fillText(`Phigros Simulator v${_i[1].join('.')} - Code by lch\x7ah3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
+	ctx.fillText(`Phigros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
 	stopDrawing = requestAnimationFrame(loop); //回调更新动画
 }
 
