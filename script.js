@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 16], 1611795955, 1651419173];
+const _i = ['Phigros模拟器', [1, 4, 17], 1611795955, 1652747710];
 const urls = {
 	zip: ["//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -217,7 +217,8 @@ async function checkSupport() {
 	if (info.browser == "XiaoMi") message.sendWarning("检测到小米浏览器，可能存在切后台声音消失的问题");
 	if (info.os == "iOS" && parseFloat(info.osVersion) < 14.5) message.sendWarning("检测到iOS版本小于14.5，可能无法正常使用模拟器");
 	if (info.os == "Mac OS" && parseFloat(info.osVersion) < 14.1) message.sendWarning("检测到MacOS版本小于14.1，可能无法正常使用模拟器");
-	if (info.os == "iOS" && parseFloat(info.osVersion) == 15.4) message.sendWarning("iOS15.4：我裂开来");
+	// if (info.os == "iOS" && parseFloat(info.osVersion) >= 15.4) message.sendWarning(`${info.os}${info.osVersion}：qwq`);
+	if (info.os == "iOS" || info.os == "Mac OS") window["isApple"] = true;
 	if (typeof createImageBitmap != "function") await loadJS(urls.bitmap).catch(() => message.throwError("当前浏览器不支持ImageBitmap"));
 	message.sendMessage("加载声音组件...");
 	const oggCompatible = !!(new Audio).canPlayType("audio/ogg");
@@ -238,7 +239,7 @@ async function checkSupport() {
 		return () => bufferSource.stop();
 	}
 	Object.assign(window, { actx, stopPlaying, playSound });
-	message.sendMessage("检测全屏...");
+	message.sendMessage("检测是否支持全屏...");
 	if (!full.enabled) message.sendWarning("检测到当前浏览器不支持全屏，播放时双击右下角将无反应");
 
 	function loadJS(qwq) {
@@ -247,7 +248,7 @@ async function checkSupport() {
 			if (!url) return reject();
 			const script = document.createElement('script');
 			script.onload = () => resolve(script);
-			script.onerror = () => load(a.next().value).catch(() => reject());
+			script.onerror = () => load(a.next().value).then(script => resolve(script)).catch(e => reject(e));
 			script.src = url;
 			script.crossOrigin = "anonymous";
 			document.head.appendChild(script);
@@ -816,7 +817,7 @@ window.onload = async function() {
 	message.sendMessage("正在初始化...");
 	await checkSupport();
 	//加载资源
-	(async function() {
+	await (async function() {
 		let loadedNum = 0;
 		await Promise.all((obj => {
 			const arr = [];
@@ -852,7 +853,7 @@ window.onload = async function() {
 			HitSong2: "src/HitSong2.ogg"
 		}).map(([name, src], _i, arr) => {
 			const xhr = new XMLHttpRequest();
-			xhr.open("get", src, true);
+			xhr.open("get", `${src}${window["isApple"] ? `?v=${Date.now()}` : ""}`, true); //针对苹果设备强制刷新
 			xhr.responseType = 'arraybuffer';
 			xhr.send();
 			return new Promise(resolve => {
@@ -877,6 +878,12 @@ window.onload = async function() {
 		message.sendMessage("等待上传文件...");
 		upload.parentElement.classList.remove("disabled");
 	})();
+	const qwq = () => {
+		const b = document.createElement("canvas").getContext("2d");
+		b.drawImage(res["JudgeLine"], 0, 0);
+		return b.getImageData(0, 0, 1, 1).data[0];
+	}
+	if (!qwq()) message.throwError("检测到图片加载异常，请关闭所有应用程序然后重试");
 }
 async function qwqImage(img, color) {
 	const clickqwq = imgShader(img, color);
@@ -1443,7 +1450,7 @@ function loop() {
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = "right";
 	ctx.textBaseline = "middle";
-	ctx.fillText(`Phigros Simulator v${_i[1].join('.')} - Code by lch\x7ah3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
+	ctx.fillText(`Phigros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
 	stopDrawing = requestAnimationFrame(loop); //回调更新动画
 }
 
