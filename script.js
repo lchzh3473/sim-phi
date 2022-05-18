@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros模拟器', [1, 4, 17], 1611795955, 1651457632];
+const _i = ['Phigros模拟器', [1, 4, 17], 1611795955, 1652747710];
 const urls = {
 	zip: ["//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -217,7 +217,8 @@ async function checkSupport() {
 	if (info.browser == "XiaoMi") message.sendWarning("检测到小米浏览器，可能存在切后台声音消失的问题");
 	if (info.os == "iOS" && parseFloat(info.osVersion) < 14.5) message.sendWarning("检测到iOS版本小于14.5，可能无法正常使用模拟器");
 	if (info.os == "Mac OS" && parseFloat(info.osVersion) < 14.1) message.sendWarning("检测到MacOS版本小于14.1，可能无法正常使用模拟器");
-	if (info.os == "iOS" && parseFloat(info.osVersion) >= 15.4) window["iOS15.4+"] = true; //message.sendWarning(`${info.os}${info.osVersion}：qwq`);
+	// if (info.os == "iOS" && parseFloat(info.osVersion) >= 15.4) message.sendWarning(`${info.os}${info.osVersion}：qwq`);
+	if (info.os == "iOS" || info.os == "Mac OS") window["isApple"] = true;
 	if (typeof createImageBitmap != "function") await loadJS(urls.bitmap).catch(() => message.throwError("当前浏览器不支持ImageBitmap"));
 	message.sendMessage("加载声音组件...");
 	const oggCompatible = !!(new Audio).canPlayType("audio/ogg");
@@ -247,7 +248,7 @@ async function checkSupport() {
 			if (!url) return reject();
 			const script = document.createElement('script');
 			script.onload = () => resolve(script);
-			script.onerror = () => load(a.next().value).catch(() => reject());
+			script.onerror = () => load(a.next().value).then(script => resolve(script)).catch(e => reject(e));
 			script.src = url;
 			script.crossOrigin = "anonymous";
 			document.head.appendChild(script);
@@ -852,7 +853,7 @@ window.onload = async function() {
 			HitSong2: "src/HitSong2.ogg"
 		}).map(([name, src], _i, arr) => {
 			const xhr = new XMLHttpRequest();
-			xhr.open("get", `${src}${window["iOS15.4+"] ? `?v=${Date.now()}` : ""}`, true); //针对iOS15.4+强制刷新
+			xhr.open("get", `${src}${window["isApple"] ? `?v=${Date.now()}` : ""}`, true); //针对苹果设备强制刷新
 			xhr.responseType = 'arraybuffer';
 			xhr.send();
 			return new Promise(resolve => {
@@ -1444,7 +1445,7 @@ function loop() {
 	ctx.globalAlpha = 1;
 	ctx.drawImage(canvasos, (canvas.width - canvasos.width) / 2, 0);
 	//Copyright
-	ctx.font = `${lineScale * 0.4}px Mina`;
+	ctx.font = `${lineScale * 0.4}px Saira`;
 	ctx.fillStyle = "#ccc";
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = "right";
@@ -1565,7 +1566,7 @@ function qwqdraw1(now) {
 			const tick = (now - i.time) / i.duration;
 			ctxos.setTransform(...imgFlip(1, 0, 0, 1, i.offsetX, i.offsetY)); //缩放
 			if (selectflip.value[0] == "t") ctxos.transform(-1, 0, 0, -1, 0, 0); //qwq
-			ctxos.font = `bold ${noteScale*(256+128* (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Mina`;
+			ctxos.font = `bold ${noteScale*(256+128* (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Saira`;
 			ctxos.textAlign = "center";
 			ctxos.textBaseline = "middle";
 			ctxos.fillStyle = i.color;
@@ -1600,7 +1601,7 @@ function qwqdraw1(now) {
 	}
 	if (qwqIn.second >= 3 && qwqOut.second == 0) {
 		if (showPoint.checked) { //绘制定位点
-			ctxos.font = `${lineScale}px Mina`;
+			ctxos.font = `${lineScale}px Saira`;
 			ctxos.textAlign = "center";
 			ctxos.textBaseline = "bottom";
 			for (const i of Renderer.notes) {
@@ -1662,19 +1663,19 @@ function qwqdraw1(now) {
 		ctxos.textAlign = "center";
 		//歌名
 		ctxos.textBaseline = "alphabetic";
-		ctxos.font = `${lineScale * 1.1}px Mina`;
+		ctxos.font = `${lineScale * 1.1}px Saira`;
 		const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Mina`;
+		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Saira`;
 		ctxos.fillText(inputName.value || inputName.placeholder, wlen, hlen * 0.75);
 		//曲绘和谱师
 		ctxos.textBaseline = "top";
-		ctxos.font = `${lineScale * 0.55}px Mina`;
+		ctxos.font = `${lineScale * 0.55}px Saira`;
 		const dxi = ctxos.measureText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`).width;
-		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxi*(canvasos.width-lineScale*1.5)}px Mina`;
+		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxi*(canvasos.width-lineScale*1.5)}px Saira`;
 		ctxos.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, wlen, hlen * 1.25 + lineScale * 0.15);
-		ctxos.font = `${lineScale * 0.55}px Mina`;
+		ctxos.font = `${lineScale * 0.55}px Saira`;
 		const dxc = ctxos.measureText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`).width;
-		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxc*(canvasos.width-lineScale*1.5)}px Mina`;
+		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxc*(canvasos.width-lineScale*1.5)}px Saira`;
 		ctxos.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, wlen, hlen * 1.25 + lineScale * 1.0);
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
@@ -1688,32 +1689,32 @@ function qwqdraw1(now) {
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = "alphabetic";
-	ctxos.font = `${lineScale * 0.95}px Mina`;
+	ctxos.font = `${lineScale * 0.95}px Saira`;
 	ctxos.textAlign = "right";
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
 	if (!qwq[0]) ctxos.drawImage(res["Pause"], lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
 	if (stat.combo > 2) {
 		ctxos.textAlign = "center";
-		ctxos.font = `${lineScale * 1.32}px Mina`;
+		ctxos.font = `${lineScale * 1.32}px Saira`;
 		ctxos.fillText(stat.combo, wlen, lineScale * 1.375);
 		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
-		ctxos.font = `${lineScale * 0.66}px Mina`;
-		ctxos.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 2.05);
+		ctxos.font = `${lineScale * 0.35}px Saira`;
+		ctxos.fillText(autoplay.checked ? "AUTOPLAY" : "COMBO", wlen, lineScale * 1.9);
 	}
 	//绘制歌名和等级
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = "alphabetic";
 	ctxos.textAlign = "right";
-	ctxos.font = `${lineScale * 0.63}px Mina`;
+	ctxos.font = `${lineScale * 0.63}px Saira`;
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
-	if (dxlvl > wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(wlen - lineScale )}px Mina`;
+	if (dxlvl > wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(wlen - lineScale )}px Saira`;
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
 	ctxos.drawImage(res["SongsNameBar"], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctxos.textAlign = "left";
-	ctxos.font = `${lineScale * 0.63}px Mina`;
+	ctxos.font = `${lineScale * 0.63}px Saira`;
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-	if (dxsnm > wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxsnm*(wlen - lineScale )}px Mina`;
+	if (dxsnm > wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxsnm*(wlen - lineScale )}px Saira`;
 	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvasos.height - lineScale * 0.66);
 	ctxos.resetTransform();
 	if (qwq[0]) {
@@ -1721,7 +1722,7 @@ function qwqdraw1(now) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
 		else ctxos.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
 		ctxos.textBaseline = "middle";
-		ctxos.font = `${lineScale * 0.4}px Mina`;
+		ctxos.font = `${lineScale * 0.4}px Saira`;
 		ctxos.textAlign = "left";
 		ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
 		ctxos.textAlign = "right";
@@ -1814,15 +1815,15 @@ function qwqdraw3(statData) {
 	ctxos.fillStyle = "#fff";
 	ctxos.textBaseline = "middle";
 	ctxos.textAlign = "left";
-	ctxos.font = "80px Mina";
+	ctxos.font = "80px Saira";
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Mina`;
+	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Saira`;
 	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145);
-	ctxos.font = "30px Mina";
+	ctxos.font = "30px Saira";
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
-	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Mina`;
+	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Saira`;
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 317, 208);
-	ctxos.font = "30px Mina";
+	ctxos.font = "30px Saira";
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
 	const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
@@ -1849,10 +1850,10 @@ function qwqdraw3(statData) {
 	ctxos.fillText(statData.textBelowStr, 1355, 590);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
-	ctxos.font = "86px Mina";
+	ctxos.font = "86px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
 	ctxos.fillText(stat.scoreStr, 1075, 554);
-	ctxos.font = "26px Mina";
+	ctxos.font = "26px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillText(stat.perfect, 891, 645);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
@@ -1861,7 +1862,7 @@ function qwqdraw3(statData) {
 	ctxos.fillText(stat.noteRank[6], 1196, 645);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
 	ctxos.fillText(stat.noteRank[2], 1349, 645);
-	ctxos.font = "22px Mina";
+	ctxos.font = "22px Saira";
 	const qwq4 = range((qwq[3] > 0 ? qwqEnd.second - qwq[3] : 0.2 - qwqEnd.second - qwq[3]) * 5.00);
 	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
 	ctxos.fillStyle = "#696";

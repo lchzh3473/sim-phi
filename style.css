@@ -1,4 +1,4 @@
-@import url("//fonts.loli.net/css?family=Mina");
+@import url("//fonts.loli.net/css?family=Saira");
 
 ::-webkit-scrollbar {
 	display: none;
@@ -27,7 +27,7 @@ body {
 
 #mask {
 	color: gray;
-	font-family: Mina, Consolas, Menlo, monospace;
+	font-family: Saira, Consolas, Menlo, monospace;
 	font-size: 4vmin;
 	position: absolute;
 	width: 70vmin;
