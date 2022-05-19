@@ -2257,7 +2257,7 @@ function imgBlur(img) {
 	canvas.height = img.height;
 	const ctx = canvas.getContext("2d");
 	ctx.drawImage(img, 0, 0);
-	return StackBlur.imageDataRGB(ctx.getImageData(0, 0, img.width, img.height), 0, 0, img.width, img.height, Math.ceil(Math.min(img.width, img.height) * 0.0125));
+	return StackBlur.imageDataRGB(ctx.getImageData(0, 0, img.width, img.height), 0, 0, img.width, img.height, Math.ceil(Math.min(img.width, img.height) * 0.0875));
 }
 //十六进制color转rgba数组
 function hex2rgba(color) {
