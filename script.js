@@ -1437,7 +1437,7 @@ function loop() {
 	} else if (!fucktemp) qwqdraw2();
 	if (fucktemp2) qwqdraw3(fucktemp2);
 	ctx.globalAlpha = 1;
-	if (document.getElementById("imageBlur").checked) ctx.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvas, 1.1));
+	if (document.getElementById("imageBlur").checked) ctx.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvas, 2));
 	else ctx.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvas, 1.1));
 	ctx.fillStyle = "#000";
 	ctx.globalAlpha = 0.4;
