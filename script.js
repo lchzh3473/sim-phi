@@ -243,7 +243,7 @@ async function checkSupport() {
 	if (!full.enabled) message.sendWarning("检测到当前浏览器不支持全屏，播放时双击右下角将无反应");
 
 	function loadJS(qwq) {
-		const a = (function*(arg) { yield* arg; })(qwq instanceof Array ? qwq : arguments);
+		const a = (function*(arg) { yield* arg; })(qwq instanceof Array ? qwq.reverse() : arguments);
 		const load = url => new Promise((resolve, reject) => {
 			if (!url) return reject();
 			const script = document.createElement('script');
@@ -1102,25 +1102,27 @@ const loadFile = function(file) {
 			}
 			console.log(zipData);
 			let loadedNum = 0;
-			const zipRaw = await Promise.all(zipData.map(i => new Promise(async resolve => {
+			const zipRaw = await Promise.all(zipData.map(async i => {
 				if (i.filename == "line.csv") {
 					const data = await i.getData(new zip.TextWriter());
 					const chartLine = csv2array(data, true);
 					chartLineData.push(...chartLine);
 					loading(++loadedNum);
-					resolve(chartLine);
-				} else if (i.filename == "info.csv") {
+					return chartLine;
+				}
+				if (i.filename == "info.csv") {
 					const data_2 = await i.getData(new zip.TextWriter());
 					const chartInfo = csv2array(data_2, true);
 					chartInfoData.push(...chartInfo);
 					loading(++loadedNum);
-					resolve(chartInfo);
-				} else i.getData(new zip.Uint8ArrayWriter()).then(async data => {
+					return chartInfo;
+				}
+				return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
 					const audioData = await actx.decodeAudioData(data.buffer);
 					bgms[i.filename] = audioData;
 					selectbgm.appendChild(createOption(i.filename, i.filename));
 					loading(++loadedNum);
-					resolve(audioData);
+					return audioData;
 				}).catch(async () => {
 					const data = await i.getData(new zip.BlobWriter());
 					const imageData = await createImageBitmap(data);
@@ -1128,7 +1130,7 @@ const loadFile = function(file) {
 					bgsBlur[i.filename] = await createImageBitmap(imgBlur(imageData));
 					selectbg.appendChild(createOption(i.filename, i.filename));
 					loading(++loadedNum);
-					resolve(imageData);
+					return imageData;
 				}).catch(async () => {
 					const data = await i.getData(new zip.TextWriter());
 					console.log(JSON.parse(data)); //test
@@ -1137,7 +1139,7 @@ const loadFile = function(file) {
 					charts[i.filename]["md5"] = md5(data);
 					selectchart.appendChild(createOption(i.filename, i.filename));
 					loading(++loadedNum);
-					resolve(jsonData);
+					return jsonData;
 				}).catch(async () => {
 					const data = await i.getData(new zip.TextWriter());
 					const jsonData = await chart123(chartp23(data, i.filename));
@@ -1145,14 +1147,14 @@ const loadFile = function(file) {
 					charts[i.filename]["md5"] = md5(data);
 					selectchart.appendChild(createOption(i.filename, i.filename));
 					loading(++loadedNum);
-					resolve(jsonData);
+					return jsonData;
 				}).catch(error => {
 					console.log(error);
 					loading(++loadedNum);
 					message.sendWarning(`不支持的文件：${i.filename}`);
-					resolve(undefined);
+					return undefined;
 				});
-			})));
+			}));
 
 			function createOption(innerhtml, value) {
 				const option = document.createElement("option");
