@@ -221,7 +221,7 @@ async function checkSupport() {
 	if (info.os == "iOS" || info.os == "Mac OS") window["isApple"] = true;
 	if (typeof createImageBitmap != "function") await loadJS(urls.bitmap).catch(() => message.throwError("当前浏览器不支持ImageBitmap"));
 	message.sendMessage("加载声音组件...");
-	const Compatible = !!(new Audio).canPlayType("audio/ogg");
+	const oggCompatible = !!(new Audio).canPlayType("audio/ogg");
 	if (!oggCompatible) await loadJS("./lib/oggmented-bundle.js").catch(() => message.throwError("oggmented兼容模块加载失败，请检查网络"));
 	if (!oggCompatible && typeof oggmented != "object") message.throwError("oggmented兼容模块运行失败，请检查浏览器版本");
 	const AudioContext = window.AudioContext || window.webkitAudioContext;
