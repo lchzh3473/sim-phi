@@ -853,6 +853,7 @@ window.onload = async function() {
 			HitSong2: "src/HitSong2.ogg"
 		}).map(([name, src], _i, arr) => {
 			const xhr = new XMLHttpRequest();
+			xhr.open("get", `${src}${window["isApple"] ? `?v=${Date.now()}` : ""}`, true);
 			xhr.responseType = 'arraybuffer';
 			xhr.send();
 			return new Promise(resolve => {
