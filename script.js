@@ -1444,13 +1444,6 @@ function loop() {
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.globalAlpha = 1;
 	ctx.drawImage(canvasos, (canvas.width - canvasos.width) / 2, 0);
-	//Copyright
-	ctx.font = `${lineScale * 0.2}px Saira`;
-	ctx.fillStyle = "#ccc";
-	ctx.globalAlpha = 0.8;
-	ctx.textAlign = "right";
-	ctx.textBaseline = "middle";
-	ctx.fillText(`Phigros Simulator v${_i[1].join('.')} - NewUI by ken1nweng - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
 	stopDrawing = requestAnimationFrame(loop); //回调更新动画
 }
 
@@ -1709,7 +1702,7 @@ function qwqdraw1(now) {
 	ctxos.font = `${lineScale * 0.63}px Saira`;
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
 	if (dxlvl > wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(wlen - lineScale )}px Saira`;
-	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
+	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.5, canvasos.height - lineScale * 0.66);
 	ctxos.drawImage(res["SongsNameBar"], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctxos.textAlign = "left";
 	ctxos.font = `${lineScale * 0.63}px Saira`;
@@ -1722,9 +1715,7 @@ function qwqdraw1(now) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
 		else ctxos.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
 		ctxos.textBaseline = "middle";
-		ctxos.font = `${lineScale * 0.4}px Saira`;
-		ctxos.textAlign = "left";
-		ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
+		ctxos.font = `${lineScale * 0.25}px Saira`;
 		ctxos.textAlign = "right";
 		ctxos.fillText(frameTimer.fps, canvasos.width - lineScale * 0.05, lineScale * 0.5);
 		ctxos.textBaseline = "alphabetic";
