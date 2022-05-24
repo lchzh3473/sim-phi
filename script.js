@@ -1685,7 +1685,7 @@ function qwqdraw1(now) {
 	ctxos.font = `${lineScale * 0.95}px Saira`;
 	ctxos.textAlign = "right";
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
-	if (!qwq[0]) ctxos.drawImage(res["Pause"], lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
+	ctxos.drawImage(res["Pause"], lineScale * 0.6, lineScale * 0.7, lineScale * 0.63, lineScale * 0.7);
 	if (stat.combo > 2) {
 		ctxos.textAlign = "center";
 		ctxos.font = `${lineScale * 1.32}px Saira`;
