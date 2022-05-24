@@ -1641,8 +1641,8 @@ function qwqdraw3(statData) {
 	ctxos.fillText(stat.accStr, 352, 545);
 	ctxos.fillText(stat.maxcombo, 1528, 545);
 	if (statData[3]) {
-		ctxos.fillStyle = "#fe4365";
-		ctxos.fillText("AUTO PLAY", 1355, 590);
+		ctxos.fillStyle = "#ffc500";
+		ctxos.fillText("ALL  PERFECT", 1355, 590);
 	} else if (stat.lineStatus == 1) {
 		ctxos.fillStyle = "#ffc500";
 		ctxos.fillText("ALL  PERFECT", 1355, 590);
