@@ -1,4 +1,6 @@
 /* mina-regular */
+@import url("//fonts.loli.net/css?family=Mina");
+
 @font-face {
 	font-family: 'Mina';
 	font-style: normal;
@@ -17,8 +19,6 @@
 		/* Legacy iOS */
 		url('//lib.baomitu.com/fonts/mina/mina-regular.svg#Mina') format('svg');
 }
-
-@import url("//fonts.loli.net/css?family=Mina");
 
 ::-webkit-scrollbar {
 	display: none;
