@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros Simpled EUI', [1, 5, 5, 7, 0], 1611795955, 1652747710];
+const _i = ['Phigros Simpled EUI', [1, 5, 5, 7, 1], 1611795955, 1652747710];
 const urls = {
 	zip: ["//unpkg.com/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -1825,13 +1825,13 @@ function qwqdraw3(statData) {
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
-	ctxos.fillText(statData.newBestStr, 900*1.1, 500+70);
+	ctxos.fillText(statData.newBestStr, 950*1.1, 500+65);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
-	ctxos.fillText(statData.scoreBest, 1280*1.1, 500+70);
+	ctxos.fillText(statData.scoreBest, 1024*1.1, 500+65);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = "right";
-	ctxos.fillText(statData.scoreDelta, 1280*1.1, 500+80);
+	ctxos.fillText(statData.scoreDelta, 1280*1.1, 500+65);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.fillText(stat.accStr, 1528*1.05, 545*1.2);
         ctxos.textAlign = "left";
@@ -1839,7 +1839,7 @@ function qwqdraw3(statData) {
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
 	ctxos.fillStyle = statData.textBelowColor;
-	ctxos.fillText(statData.textBelowStr, 1355*0.65, 590*1.35);
+	ctxos.fillText(statData.textBelowStr, 950*1.1, 500-25);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
 	ctxos.font = "75px Saira";
@@ -1847,13 +1847,13 @@ function qwqdraw3(statData) {
 	ctxos.fillText(stat.scoreStr, 810*1.45, 554-50);
 	ctxos.font = "26px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
-	ctxos.fillText(stat.perfect, 750+200, 645*1.25-25);
+	ctxos.fillText(stat.perfect, 750+200-15, 645*1.25-25);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
-	ctxos.fillText(stat.good, 750+400, 645*1.25-25);
+	ctxos.fillText(stat.good, 750+400-7.5, 645*1.25-25);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
-	ctxos.fillText(stat.noteRank[6], 750+600, 645*1.25-25);
+	ctxos.fillText(stat.noteRank[6], 750+600-5, 645*1.25-25);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
-	ctxos.fillText(stat.noteRank[2], 750+800, 645*1.25-25);
+	ctxos.fillText(stat.noteRank[2], 750+800+7.5, 645*1.25-25);
 	ctxos.font = "22px Saira";
 	const qwq4 = range((qwq[3] > 0 ? qwqEnd.second - qwq[3] : 0.2 - qwqEnd.second - qwq[3]) * 5.00);
 	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
