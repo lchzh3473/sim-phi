@@ -1796,7 +1796,7 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = "destination-over";
 	const qwq0 = (canvasos.width - canvasos.height / k) / (16 - 9 / k);
 	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
-	ctxos.drawImage(res["LevelOver4"], 183, 42, 1184, 228);
+	ctxos.drawImage(res["LevelOver4"], 183, 300, 1184, 228);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
 	ctxos.drawImage(res["LevelOver1"], 810, 150);
 	ctxos.globalCompositeOperation = "source-over";
@@ -1809,11 +1809,11 @@ function qwqdraw3(statData) {
 	ctxos.font = "80px Saira";
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
 	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Saira`;
-	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145);
+	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145*3);
 	ctxos.font = "30px Saira";
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
 	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Saira`;
-	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 317, 208);
+	ctxos.fillText(inputLevel.value || inputLevel.placeholder, (700 * tween[8](range(qwqEnd.second * 1.25)) - 317)*5, 145*3);
 	ctxos.font = "30px Saira";
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
