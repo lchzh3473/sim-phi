@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros Simpled EUI', [1, 5, 5, 9], 1611795955, 1652747710];
+const _i = ['Phigros Simpled EUI', [1, 5, 5, 10], 1611795955, 1652747710];
 const urls = {
 	zip: ["//unpkg.com/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -975,13 +975,13 @@ const stat = {
 			textAboveColor: "#65fe43",
 			textAboveStr: `  ( Speed ${config.speed.toFixed(2)}x )`,
 			textBelowColor: "#fe4365",
-			textBelowStr: "AUTO PLAY",
+			textBelowStr: "AUTOPLAY",
 		}
 		if (config.speed == 1) Object.assign(pbj, { textAboveStr: "" });
 		if (isAuto) return Object.assign(pbj, { newBestColor: "#fff", newBestStr: "BEST", scoreDelta: "" });
-		if (this.lineStatus == 1) return Object.assign(pbj, { textBelowStr: "ALL  PERFECT", textBelowColor: "#ffc500" });
-		if (this.lineStatus == 2) return Object.assign(pbj, { textBelowStr: "ALL  PERFECT", textBelowColor: "#91ff8f" })
-		if (this.lineStatus == 3) return Object.assign(pbj, { textBelowStr: "FULL  COMBO", textBelowColor: "#00bef1" });
+		if (this.lineStatus == 1) return Object.assign(pbj, { textBelowStr: "Absoultely Perfect", textBelowColor: "#ffc500" });
+		if (this.lineStatus == 2) return Object.assign(pbj, { textBelowStr: "Absoultely Perfect", textBelowColor: "#91ff8f" })
+		if (this.lineStatus == 3) return Object.assign(pbj, { textBelowStr: "Far Critical", textBelowColor: "#00bef1" });
 		return Object.assign(pbj, { textBelowStr: "" });
 	},
 	reset(numOfNotes, id, speed = "") {
@@ -1691,8 +1691,8 @@ function qwqdraw1(now) {
 		ctxos.font = `${lineScale * 1.32}px Saira`;
 		ctxos.fillText(stat.combo, wlen, lineScale * 1.375);
 		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
-		ctxos.font = `${lineScale * 0.35}px Saira`;
-		ctxos.fillText(autoplay.checked ? "AUTOPLAY" : "COMBO", wlen, lineScale * 1.9);
+		ctxos.font = `${lineScale * 0.70}px Saira`;
+		ctxos.fillText(autoplay.checked ? "AUTOPLAY" : "COMBOS", wlen, lineScale * 1.9);
 	}
 	//绘制歌名和等级
 	ctxos.globalAlpha = 1;
@@ -1836,10 +1836,9 @@ function qwqdraw3(statData) {
 	ctxos.font = "30px Saira";
 	ctxos.fillText(statData.scoreDelta, 1174.5+250, 500+50);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
-	ctxos.font = "35px Saira";
+	ctxos.font = "40px Saira";
 	ctxos.fillText(stat.accStr, 1528*1.05, 545*1.2);
-        ctxos.textAlign = "left";
-	ctxos.font = "35px Saira";
+	ctxos.font = "40px Saira";
 	ctxos.fillText(stat.maxcombo, 1528*0.64+5, 545*1.2);
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
