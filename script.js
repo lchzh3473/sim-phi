@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros Simpled EUI', [1, 5, 5, 1], 1611795955, 1652747710];
+const _i = ['Phigros Simpled EUI', [1, 5, 5, 2B], 1611795955, 1652747710];
 const urls = {
 	zip: ["//unpkg.com/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -1797,12 +1797,12 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = "destination-over";
 	const qwq0 = (canvasos.width - canvasos.height / k) / (16 - 9 / k);
 	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
-	ctxos.drawImage(res["LevelOver4"], 183, 300, 1184, 228);
+	ctxos.drawImage(res["LevelOver4"], 145, 145*6, 1184, 228);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
 	ctxos.drawImage(res["LevelOver1"], 810, 150*2.15);
 	ctxos.globalCompositeOperation = "source-over";
 	ctxos.globalAlpha = 1;
-	ctxos.drawImage(res["LevelOver5"], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 145*3, 20, 80);
+	//ctxos.drawImage(res["LevelOver5"], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 145*3, 20, 80);
 	//歌名和等级
 	ctxos.fillStyle = "#fff";
 	ctxos.textBaseline = "middle";
@@ -1810,11 +1810,11 @@ function qwqdraw3(statData) {
 	ctxos.font = "80px Saira";
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
 	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Saira`;
-	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145*3);
+	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320 - 114, 145*6.25);
 	ctxos.font = "30px Saira";
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
 	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Saira`;
-	ctxos.fillText(inputLevel.value || inputLevel.placeholder, (700 * tween[8](range(qwqEnd.second * 1.25)) - 317)*2, 145*3);
+	ctxos.fillText(inputLevel.value || inputLevel.placeholder, (700 * tween[8](range(qwqEnd.second * 1.25)) - 317)*2 - 114, 145*6.25);
 	ctxos.font = "30px Saira";
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
@@ -1822,7 +1822,7 @@ function qwqdraw3(statData) {
 	const qwq3 = range((qwqEnd.second - 1.87) * 2.14) * 275;
 	//ctxos.drawImage(res["LevelOver3"], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
 	//ctxos.drawImage(res["Ranks"][stat.rankStatus], 661*4 - qwq3 / 2, 545*2 - qwq3 / 2, qwq3, qwq3);
-	ctxos.drawImage(res["Ranks"][stat.rankStatus], 919*1.65, 100*3.5);
+	ctxos.drawImage(res["Ranks"][stat.rankStatus], 919*1.45, 100*3.35);
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
@@ -1834,18 +1834,18 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "right";
 	ctxos.fillText(statData.scoreDelta, 1145, 275);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
-	ctxos.fillText(stat.accStr, 1528*0.95, 545*1.2);
+	ctxos.fillText(stat.accStr, 1528*1.35, 545*1.2);
         ctxos.textAlign = "left";
-	ctxos.fillText(stat.maxcombo, 1528*0.65, 545*1.2);
+	ctxos.fillText(stat.maxcombo, 1528*0.64, 545*1.2);
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
 	ctxos.fillStyle = statData.textBelowColor;
 	ctxos.fillText(statData.textBelowStr, 1355*0.65, 590*1.35);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
-	ctxos.font = "82px Saira";
+	ctxos.font = "80px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
-	ctxos.fillText(stat.scoreStr, 810*1.5, 554-81);
+	ctxos.fillText(stat.scoreStr, 810*1.25, 554-75);
 	ctxos.font = "26px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillText(stat.perfect, 891, 645*2);
