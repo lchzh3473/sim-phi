@@ -1798,10 +1798,10 @@ function qwqdraw3(statData) {
 	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
 	ctxos.drawImage(res["LevelOver4"], 183, 300, 1184, 228);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
-	ctxos.drawImage(res["LevelOver1"], 810, 150);
+	ctxos.drawImage(res["LevelOver1"], 810, 150*2);
 	ctxos.globalCompositeOperation = "source-over";
 	ctxos.globalAlpha = 1;
-	ctxos.drawImage(res["LevelOver5"], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
+	ctxos.drawImage(res["LevelOver5"], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 145*3, 20, 80);
 	//歌名和等级
 	ctxos.fillStyle = "#fff";
 	ctxos.textBaseline = "middle";
@@ -1813,7 +1813,7 @@ function qwqdraw3(statData) {
 	ctxos.font = "30px Saira";
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
 	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Saira`;
-	ctxos.fillText(inputLevel.value || inputLevel.placeholder, (700 * tween[8](range(qwqEnd.second * 1.25)) - 317)*5, 145*3);
+	ctxos.fillText(inputLevel.value || inputLevel.placeholder, (700 * tween[8](range(qwqEnd.second * 1.25)) - 317)*3, 145*3);
 	ctxos.font = "30px Saira";
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
@@ -1821,7 +1821,7 @@ function qwqdraw3(statData) {
 	const qwq3 = 410 - range((qwqEnd.second - 1.87) * 2.14) * 164;
 	//ctxos.drawImage(res["LevelOver3"], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
 	//ctxos.drawImage(res["Ranks"][stat.rankStatus], 661*4 - qwq3 / 2, 545*2 - qwq3 / 2, qwq3, qwq3);
-	ctxos.drawImage(res["Ranks"][stat.rankStatus], 810, 500, qwq3, qwq3);
+	ctxos.drawImage(res["Ranks"][stat.rankStatus], 919, 250, qwq3, qwq3);
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
@@ -1831,7 +1831,7 @@ function qwqdraw3(statData) {
 	ctxos.fillText(statData.scoreBest, 1180, 428);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = "right";
-	ctxos.fillText(statData.scoreDelta, 1414, 428);
+	ctxos.fillText(statData.scoreDelta, 1919, 275);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.textAlign = "left";
 	ctxos.fillText(stat.accStr, 352, 545);
