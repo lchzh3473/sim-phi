@@ -1819,10 +1819,10 @@ function qwqdraw3(statData) {
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
 	const qwq2 = range((qwqEnd.second - 1.87) * 3.75) * 100;
-	const qwq3 = range((qwqEnd.second - 1.87) * 2.14) * 164+72;
+	const qwq3 = range((qwqEnd.second - 1.87) * 2.14) * 164;
 	//ctxos.drawImage(res["LevelOver3"], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
 	//ctxos.drawImage(res["Ranks"][stat.rankStatus], 661*4 - qwq3 / 2, 545*2 - qwq3 / 2, qwq3, qwq3);
-	ctxos.drawImage(res["Ranks"][stat.rankStatus], 919*1.325, 100*3.325, qwq3, qwq3);
+	ctxos.drawImage(res["Ranks"][stat.rankStatus], 919*1.5, 100*3.5+25, qwq3, qwq3);
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
@@ -1834,9 +1834,9 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "right";
 	ctxos.fillText(statData.scoreDelta, 1145, 275);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
-	ctxos.fillText(stat.accStr, 352*3.425, 545*1.35);
+	ctxos.fillText(stat.accStr, 1528*0.95, 545*1.05-25);
         ctxos.textAlign = "left";
-	ctxos.fillText(stat.maxcombo, 1528*0.65, 545*1.125);
+	ctxos.fillText(stat.maxcombo, 1528*0.65, 545*1.05-25);
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
 	ctxos.fillStyle = statData.textBelowColor;
@@ -1845,7 +1845,7 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "center";
 	ctxos.font = "86px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
-	ctxos.fillText(stat.scoreStr, 810*1.75, (554-114)*1.125);
+	ctxos.fillText(stat.scoreStr, 810*1.35, (554-114)*2.25);
 	ctxos.font = "26px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillText(stat.perfect, 891, 645*2);
