@@ -1609,7 +1609,7 @@ function qwqdraw3(statData) {
 	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
 	ctxos.drawImage(res["LevelOver4"], 183, 42, 1184, 228);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
-	ctxos.drawImage(res["LevelOver1"], 183, 0, 1357, 792);
+	//ctxos.drawImage(res["LevelOver1"], 183, 0, 1357, 792);
 	ctxos.globalCompositeOperation = "source-over";
 	ctxos.globalAlpha = 1;
 	ctxos.drawImage(res["LevelOver5"], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
