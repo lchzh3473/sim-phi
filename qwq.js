@@ -1,6 +1,5 @@
-// JavaScript source code
 "use strict";
-const _i = ['PhigrosÄ£ÄâÆ÷', [1, 4, 13,"f1"], 1611795955, 1639811662];
+const _i = ['Phigrosæ¨¡æ‹Ÿå™¨', [1, 4, 13,"f1"], 1611795955, 1639811662];
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of document.getElementById("view-nav").children) {
 	i.addEventListener("click", function() {
@@ -44,7 +43,7 @@ const message = {
 	sendMessage(msg) {
 		const num = this.num;
 		this.out.className = num ? "warning" : "accept";
-		this.out.innerText = msg + (num ? `£¨·¢ÏÖ${num}¸öÎÊÌâ£¬µã»÷²é¿´£©` : "");
+		this.out.innerText = msg + (num ? `ï¼ˆå‘ç°${num}ä¸ªé—®é¢˜ï¼Œç‚¹å‡»æŸ¥çœ‹ï¼‰` : "");
 		this.lastMessage = msg;
 		this.isError = false;
 	},
@@ -53,7 +52,7 @@ const message = {
 		msgbox.innerText = msg;
 		msgbox.classList.add("msgbox");
 		const btn = document.createElement("a");
-		btn.innerText = "ºöÂÔ";
+		btn.innerText = "å¿½ç•¥";
 		btn.style.float = "right";
 		btn.onclick = () => {
 			msgbox.remove();
@@ -68,7 +67,7 @@ const message = {
 	sendError(msg) {
 		const num = this.num;
 		this.out.className = "error";
-		this.out.innerText = msg + (num ? `£¨·¢ÏÖ${num}¸öÎÊÌâ£¬µã»÷²é¿´£©` : "");
+		this.out.innerText = msg + (num ? `ï¼ˆå‘ç°${num}ä¸ªé—®é¢˜ï¼Œç‚¹å‡»æŸ¥çœ‹ï¼‰` : "");
 		this.lastMessage = msg;
 		this.isError = true;
 	}
@@ -83,7 +82,7 @@ const btnPlay = document.getElementById("btn-play");
 const btnPause = document.getElementById("btn-pause");
 const selectbgm = document.getElementById("select-bgm");
 const selectchart = document.getElementById("select-chart");
-const selectscaleratio = document.getElementById("select-scale-ratio"); //ÊıÖµÔ½´ónoteÔ½Ğ¡
+const selectscaleratio = document.getElementById("select-scale-ratio"); //æ•°å€¼è¶Šå¤§noteè¶Šå°
 const selectaspectratio = document.getElementById("select-aspect-ratio");
 const selectglobalalpha = document.getElementById("select-global-alpha");
 const inputName = document.getElementById("input-name");
@@ -102,14 +101,14 @@ const bgms = {};
 const charts = {};
 const chartLineData = []; //line.csv
 const chartInfoData = []; //info.csv
-const AspectRatio = 16 / 9; //¿í¸ß±ÈÉÏÏŞ
-const Deg = Math.PI / 180; //½Ç¶È×ª»¡¶È
-let wlen, hlen, wlen2, hlen2, noteScale, lineScale; //±³¾°Í¼Ïà¹Ø
+const AspectRatio = 16 / 9; //å®½é«˜æ¯”ä¸Šé™
+const Deg = Math.PI / 180; //è§’åº¦è½¬å¼§åº¦
+let wlen, hlen, wlen2, hlen2, noteScale, lineScale; //èƒŒæ™¯å›¾ç›¸å…³
 const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d"); //ÓÎÏ·½çÃæ(alpha:false»á³öÏÖ¼æÈİÎÊÌâ)
-const canvasos = document.createElement("canvas"); //ÓÃÓÚ»æÖÆÓÎÏ·Ö÷½çÃæ
+const ctx = canvas.getContext("2d"); //æ¸¸æˆç•Œé¢(alpha:falseä¼šå‡ºç°å…¼å®¹é—®é¢˜)
+const canvasos = document.createElement("canvas"); //ç”¨äºç»˜åˆ¶æ¸¸æˆä¸»ç•Œé¢
 const ctxos = canvasos.getContext("2d");
-const Renderer = { //´æ·ÅÆ×Ãæ
+const Renderer = { //å­˜æ”¾è°±é¢
 	chart: null,
 	bgImage: null,
 	bgImageBlur: null,
@@ -123,7 +122,7 @@ const Renderer = { //´æ·ÅÆ×Ãæ
 	reverseholds: [],
 	tapholds: []
 };
-//È«ÆÁÏà¹Ø
+//å…¨å±ç›¸å…³
 const full = {
 	toggle(elem) {
 		if (!this.enabled) return false;
@@ -152,18 +151,18 @@ const full = {
 		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled);
 	}
 };
-//¼æÈİĞÔ¼ì²â
-if (typeof zip != "object") message.sendWarning("¼ì²âµ½zip×é¼şÎ´Õı³£¼ÓÔØ£¬½«ÎŞ·¨Ê¹ÓÃÄ£ÄâÆ÷");
-if (typeof createImageBitmap != "function") message.sendWarning("¼ì²âµ½µ±Ç°ä¯ÀÀÆ÷²»Ö§³ÖImageBitmap£¬½«ÎŞ·¨Ê¹ÓÃÄ£ÄâÆ÷");
-if (!(window.AudioContext || window.webkitAudioContext)) message.sendWarning("¼ì²âµ½µ±Ç°ä¯ÀÀÆ÷²»Ö§³ÖAudioContext£¬½«ÎŞ·¨Ê¹ÓÃÄ£ÄâÆ÷");
-if (!full.enabled) message.sendWarning("¼ì²âµ½µ±Ç°ä¯ÀÀÆ÷²»Ö§³ÖÈ«ÆÁ£¬²¥·ÅÊ±Ë«»÷ÓÒÏÂ½Ç½«ÎŞ·´Ó¦");
+//å…¼å®¹æ€§æ£€æµ‹
+if (typeof zip != "object") message.sendWarning("æ£€æµ‹åˆ°zipç»„ä»¶æœªæ­£å¸¸åŠ è½½ï¼Œå°†æ— æ³•ä½¿ç”¨æ¨¡æ‹Ÿå™¨");
+if (typeof createImageBitmap != "function") message.sendWarning("æ£€æµ‹åˆ°å½“å‰æµè§ˆå™¨ä¸æ”¯æŒImageBitmapï¼Œå°†æ— æ³•ä½¿ç”¨æ¨¡æ‹Ÿå™¨");
+if (!(window.AudioContext || window.webkitAudioContext)) message.sendWarning("æ£€æµ‹åˆ°å½“å‰æµè§ˆå™¨ä¸æ”¯æŒAudioContextï¼Œå°†æ— æ³•ä½¿ç”¨æ¨¡æ‹Ÿå™¨");
+if (!full.enabled) message.sendWarning("æ£€æµ‹åˆ°å½“å‰æµè§ˆå™¨ä¸æ”¯æŒå…¨å±ï¼Œæ’­æ”¾æ—¶åŒå‡»å³ä¸‹è§’å°†æ— ååº”");
 //qwq
 selectbg.onchange = () => {
 	Renderer.bgImage = bgs[selectbg.value];
 	Renderer.bgImageBlur = bgsBlur[selectbg.value];
 	resizeCanvas();
 }
-//×Ô¶¯ÌîĞ´¸èÇúĞÅÏ¢
+//è‡ªåŠ¨å¡«å†™æ­Œæ›²ä¿¡æ¯
 selectchart.addEventListener("change", adjustInfo);
 
 function adjustInfo() {
@@ -185,7 +184,7 @@ window.addEventListener("resize", resizeCanvas);
 document.addEventListener("fullscreenchange", resizeCanvas);
 selectscaleratio.addEventListener("change", resizeCanvas);
 selectaspectratio.addEventListener("change", resizeCanvas);
-//ÊÊÓ¦»­Ãæ³ß´ç
+//é€‚åº”ç”»é¢å°ºå¯¸
 function resizeCanvas() {
 	const width = document.documentElement.clientWidth;
 	const height = document.documentElement.clientHeight;
@@ -201,9 +200,9 @@ function resizeCanvas() {
 	wlen = canvasos.width / 2;
 	hlen = canvasos.height / 2;
 	wlen2 = canvasos.width / 18;
-	hlen2 = canvasos.height * 0.6; //¿ØÖÆnoteÁ÷ËÙ
-	noteScale = canvasos.width / (selectscaleratio.value || 8e3); //note¡¢ÌØĞ§Ëõ·Å
-	lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //ÅĞ¶¨Ïß¡¢ÎÄ×ÖËõ·Å
+	hlen2 = canvasos.height * 0.6; //æ§åˆ¶noteæµé€Ÿ
+	noteScale = canvasos.width / (selectscaleratio.value || 8e3); //noteã€ç‰¹æ•ˆç¼©æ”¾
+	lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //åˆ¤å®šçº¿ã€æ–‡å­—ç¼©æ”¾
 }
 //qwq[water,demo,democlick]
 const qwq = [true, false, 3, 0, 0];
@@ -217,21 +216,21 @@ document.getElementById("demo").addEventListener("click", function() {
 	document.getElementById("demo").classList.add("hide");
 	uploads.classList.add("disabled");
 	const xhr = new XMLHttpRequest();
-	xhr.open("get", "./src/demo.png", true); //±ÜÃâgiteeµÄ404
+	xhr.open("get", "./src/demo.png", true); //é¿å…giteeçš„404
 	xhr.responseType = 'blob';
 	xhr.send();
-	xhr.onprogress = progress => { //ÏÔÊ¾¼ÓÔØÎÄ¼ş½ø¶È
-		message.sendMessage(`¼ÓÔØÎÄ¼ş£º${Math.floor(progress.loaded / 5079057 * 100)}%`);
+	xhr.onprogress = progress => { //æ˜¾ç¤ºåŠ è½½æ–‡ä»¶è¿›åº¦
+		message.sendMessage(`åŠ è½½æ–‡ä»¶ï¼š${Math.floor(progress.loaded / 5079057 * 100)}%`);
 	};
 	xhr.onload = () => {
 		document.getElementById("filename").value = "demo.zip";
 		loadFile(xhr.response);
 	};
 });
-const mouse = {}; //´æ·ÅÊó±êÊÂ¼ş(ÓÃÓÚ¼ì²â£¬ÏÂÍ¬)
-const touch = {}; //´æ·Å´¥ÃşÊÂ¼ş
-const keyboard = {}; //´æ·Å¼üÅÌÊÂ¼ş
-const taps = []; //¶îÍâ´¦Àítap(ÊÔÍ¼ĞŞ¸´³ÔÒôbug)
+const mouse = {}; //å­˜æ”¾é¼ æ ‡äº‹ä»¶(ç”¨äºæ£€æµ‹ï¼Œä¸‹åŒ)
+const touch = {}; //å­˜æ”¾è§¦æ‘¸äº‹ä»¶
+const keyboard = {}; //å­˜æ”¾é”®ç›˜äº‹ä»¶
+const taps = []; //é¢å¤–å¤„ç†tap(è¯•å›¾ä¿®å¤åƒéŸ³bug)
 const specialClick = {
 	time: [0, 0, 0, 0],
 	func: [() => {
@@ -419,7 +418,7 @@ class Judgements extends Array {
 				}
 			} else if (i.type == 3) {
 				if (i.status3) {
-					if ((Date.now() - i.status3) * i.holdTime >= 1.6e4 * i.realHoldTime) { //¼ä¸ôÊ±¼äÓëbpm³É·´±È£¬´ıÊµ²â
+					if ((Date.now() - i.status3) * i.holdTime >= 1.6e4 * i.realHoldTime) { //é—´éš”æ—¶é—´ä¸bpmæˆåæ¯”ï¼Œå¾…å®æµ‹
 						if (i.status2 % 4 == 0) clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 						else if (i.status2 % 4 == 1) clickEvents1.push(hyperMode.checked ? ClickEvent1.getClickGreat(i.projectX, i.projectY) : ClickEvent1.getClickPerfect(i.projectX, i.projectY));
 						else if (i.status2 % 4 == 3) clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
@@ -506,8 +505,8 @@ class ClickEvents extends Array {
 		return this;
 	}
 }
-const clickEvents0 = new ClickEvents(); //´æ·Åµã»÷ÌØĞ§
-const clickEvents1 = new ClickEvents(); //´æ·Åµã»÷ÌØĞ§
+const clickEvents0 = new ClickEvents(); //å­˜æ”¾ç‚¹å‡»ç‰¹æ•ˆ
+const clickEvents1 = new ClickEvents(); //å­˜æ”¾ç‚¹å‡»ç‰¹æ•ˆ
 class ClickEvent0 {
 	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX) || 0;
@@ -535,7 +534,7 @@ class ClickEvent1 {
 		this.offsetY = Number(offsetY) || 0;
 		this.time = Date.now();
 		this.duration = 500;
-		this.images = res["Clicks"][n1]; //ÒÔºó×öÈ±ÉÙ¼ì²â
+		this.images = res["Clicks"][n1]; //ä»¥ååšç¼ºå°‘æ£€æµ‹
 		this.color = String(n3);
 		this.rand = Array(Number(n2) || 0).fill().map(() => [Math.random() * 80 + 185, Math.random() * 2 * Math.PI]);
 	}
@@ -549,7 +548,7 @@ class ClickEvent1 {
 		return new ClickEvent1(offsetX, offsetY, "rgba(180,225,255,0.9215686)", 3, "#b4e1ff");
 	}
 }
-//ÊÊÅäPCÊó±ê
+//é€‚é…PCé¼ æ ‡
 const isMouseDown = {};
 canvas.addEventListener("mousedown", function(evt) {
 	evt.preventDefault();
@@ -584,10 +583,10 @@ canvas.addEventListener("mouseout", function(evt) {
 		}
 	}
 });
-//ÊÊÅä¼üÅÌ(ß÷ß÷ß÷?)
+//é€‚é…é”®ç›˜(å–µå–µå–µ?)
 window.addEventListener("keydown", function(evt) {
 	if (document.activeElement.classList.value == "input") return;
-	if (btnPlay.value != "Í£Ö¹") return;
+	if (btnPlay.value != "åœæ­¢") return;
 	evt.preventDefault();
 	if (evt.key == "Shift") btnPause.click();
 	else if (keyboard[evt.code] instanceof Click);
@@ -595,22 +594,22 @@ window.addEventListener("keydown", function(evt) {
 }, false);
 window.addEventListener("keyup", function(evt) {
 	if (document.activeElement.classList.value == "input") return;
-	if (btnPlay.value != "Í£Ö¹") return;
+	if (btnPlay.value != "åœæ­¢") return;
 	evt.preventDefault();
 	if (evt.key == "Shift");
 	else if (keyboard[evt.code] instanceof Click) delete keyboard[evt.code];
 }, false);
 window.addEventListener("blur", () => {
-	for (const i in keyboard) delete keyboard[i]; //Ê§È¥½¹µãÇå³ı¼üÅÌÊÂ¼ş
+	for (const i in keyboard) delete keyboard[i]; //å¤±å»ç„¦ç‚¹æ¸…é™¤é”®ç›˜äº‹ä»¶
 });
-//ÊÊÅäÒÆ¶¯Éè±¸
+//é€‚é…ç§»åŠ¨è®¾å¤‡
 const passive = {
 	passive: false
-}; //²»¼ÓÕâÍæÒâ»á³öÏÖwarning
+}; //ä¸åŠ è¿™ç©æ„ä¼šå‡ºç°warning
 canvas.addEventListener("touchstart", function(evt) {
 	evt.preventDefault();
 	for (const i of evt.changedTouches) {
-		const idx = i.identifier; //ÒÆ¶¯¶Ë´æÔÚ¶àÑºbug(¿ÉÄÜÒÑ¾­½â¾öÁË£¿)
+		const idx = i.identifier; //ç§»åŠ¨ç«¯å­˜åœ¨å¤šæŠ¼bug(å¯èƒ½å·²ç»è§£å†³äº†ï¼Ÿ)
 		const dx = (i.pageX - getOffsetLeft(this)) / this.offsetWidth * this.width - (this.width - canvasos.width) / 2;
 		const dy = (i.pageY - getOffsetTop(this)) / this.offsetHeight * this.height;
 		touch[idx] = Click.activate(dx, dy);
@@ -639,7 +638,7 @@ canvas.addEventListener("touchcancel", function(evt) {
 		delete touch[idx];
 	}
 });
-//ÓÅ»¯´¥Ãş¶¨Î»£¬ÒÔºóÕûºÏ½øclass
+//ä¼˜åŒ–è§¦æ‘¸å®šä½ï¼Œä»¥åæ•´åˆè¿›class
 function getOffsetLeft(element) {
 	if (!(element instanceof HTMLElement)) return NaN;
 	if (full.check(element)) return document.documentElement.scrollLeft;
@@ -663,27 +662,27 @@ function getOffsetTop(element) {
 	}
 	return a;
 }
-//ÉùÒô×é¼ş
+//å£°éŸ³ç»„ä»¶
 const AudioContext = window.AudioContext || window.webkitAudioContext;
-const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.OggmentedAudioContext() : new AudioContext(); //¼æÈİSafari
+const actx = (new Audio()).canPlayType("audio/ogg") == "" ? new oggmented.OggmentedAudioContext() : new AudioContext(); //å…¼å®¹Safari
 const stopPlaying = [];
 const gain = actx.createGain();
 const playSound = (res, loop, isOut, offset) => {
 	const bufferSource = actx.createBufferSource();
 	bufferSource.buffer = res;
-	bufferSource.loop = loop; //Ñ­»·²¥·Å
+	bufferSource.loop = loop; //å¾ªç¯æ’­æ”¾
 	bufferSource.connect(gain);
 	if (isOut) gain.connect(actx.destination);
 	bufferSource.start(0, offset);
 	return () => bufferSource.stop();
 }
-const res = {}; //´æ·Å×ÊÔ´
+const res = {}; //å­˜æ”¾èµ„æº
 resizeCanvas();
 uploads.classList.add("disabled");
 select.classList.add("disabled");
-//³õÊ¼»¯
+//åˆå§‹åŒ–
 window.onload = function() {
-	//¼ÓÔØ×ÊÔ´
+	//åŠ è½½èµ„æº
 	(async function() {
 		let loadedNum = 0;
 		await Promise.all((obj => {
@@ -727,7 +726,7 @@ window.onload = function() {
 				xhr.onload = async () => {
 					if (/\.(mp3|wav|ogg)$/i.test(src)) res[name] = await actx.decodeAudioData(xhr.response);
 					else if (/\.(png|jpeg|jpg)$/i.test(src)) res[name] = await createImageBitmap(new Blob([xhr.response]));
-					message.sendMessage(`¼ÓÔØ×ÊÔ´£º${Math.floor(++loadedNum / arr.length * 100)}%`);
+					message.sendMessage(`åŠ è½½èµ„æºï¼š${Math.floor(++loadedNum / arr.length * 100)}%`);
 					resolve();
 				};
 			});
@@ -742,7 +741,7 @@ window.onload = function() {
 		res["Clicks"]["rgba(255,236,160,0.8823529)"] = await qwqImage(res["clickRaw"], "rgba(255,236,160,0.8823529)"); //#fce491
 		res["Clicks"]["rgba(168,255,177,0.9016907)"] = await qwqImage(res["clickRaw"], "rgba(168,255,177,0.9016907)"); //#97f79d
 		res["Clicks"]["rgba(180,225,255,0.9215686)"] = await qwqImage(res["clickRaw"], "rgba(180,225,255,0.9215686)"); //#9ed5f3
-		message.sendMessage("µÈ´ıÉÏ´«ÎÄ¼ş...");
+		message.sendMessage("ç­‰å¾…ä¸Šä¼ æ–‡ä»¶...");
 		upload.parentElement.classList.remove("disabled");
 	})();
 }
@@ -754,7 +753,7 @@ async function qwqImage(img, color) {
 	for (let i = 0; i < parseInt(max / min); i++) arr[i] = await createImageBitmap(clickqwq, 0, i * min, min, min);
 	return arr;
 }
-//±ØÒª×é¼ş
+//å¿…è¦ç»„ä»¶
 let stopDrawing;
 const stat = {
 	noteRank: [0, 0, 0, 0, 0, 0, 0, 0],
@@ -835,9 +834,9 @@ const stat = {
 		this.combo = 0;
 		this.maxcombo = 0;
 		this.noteRank = [0, 0, 0, 0, 0, 0, 0, 0]; //4:PM,5:PE,1:PL,7:GE,3:GL,6:BE,2:BL
-		this.combos = [0, 0, 0, 0, 0]; //²»Í¬ÖÖÀànoteÊµÊ±Á¬»÷´ÎÊı
+		this.combos = [0, 0, 0, 0, 0]; //ä¸åŒç§ç±»noteå®æ—¶è¿å‡»æ¬¡æ•°
 		this.data = {};
-		if (localStorage.getItem("phi") == null) localStorage.setItem("phi", ""); //³õÊ¼»¯´æ´¢
+		if (localStorage.getItem("phi") == null) localStorage.setItem("phi", ""); //åˆå§‹åŒ–å­˜å‚¨
 		const str = localStorage.getItem("phi");
 		for (let i = 0; i < parseInt(str.length / 40); i++) {
 			const data = str.slice(i * 40, i * 40 + 40);
@@ -858,19 +857,19 @@ const stat = {
 }
 //const stat = new Stat();
 const comboColor = ["#fff", "#0ac3ff", "#f0ed69", "#a0e9fd", "#fe4365"];
-//¶ÁÈ¡ÎÄ¼ş
+//è¯»å–æ–‡ä»¶
 upload.onchange = function() {
 	const file = this.files[0];
 	document.getElementById("filename").value = file ? file.name : "";
 	if (!file) {
-		message.sendError("Î´Ñ¡ÔñÈÎºÎÎÄ¼ş");
+		message.sendError("æœªé€‰æ‹©ä»»ä½•æ–‡ä»¶");
 		return;
 	}
 	uploads.classList.add("disabled");
 	loadFile(file);
 }
 const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
-const frameTimer = { //¼ÆËãfps
+const frameTimer = { //è®¡ç®—fps
 	tick: 0,
 	time: Date.now(),
 	fps: "",
@@ -917,27 +916,27 @@ let curTimestamp = 0;
 let timeBgm = 0;
 let timeChart = 0;
 let duration = 0;
-let isInEnd = false; //¿ªÍ·¹ı¶É¶¯»­
-let isOutStart = false; //½áÎ²¹ı¶É¶¯»­
-let isOutEnd = false; //ÁÙÊ±±äÁ¿
-let isPaused = true; //ÔİÍ£
-//¼ÓÔØÎÄ¼ş
+let isInEnd = false; //å¼€å¤´è¿‡æ¸¡åŠ¨ç”»
+let isOutStart = false; //ç»“å°¾è¿‡æ¸¡åŠ¨ç”»
+let isOutEnd = false; //ä¸´æ—¶å˜é‡
+let isPaused = true; //æš‚åœ
+//åŠ è½½æ–‡ä»¶
 const loadFile = function(file) {
 	qwq[1] = true;
 	document.getElementById("demo").classList.add("hide");
 	const reader = new FileReader();
 	reader.readAsArrayBuffer(file);
-	reader.onprogress = progress => { //ÏÔÊ¾¼ÓÔØÎÄ¼ş½ø¶È
+	reader.onprogress = progress => { //æ˜¾ç¤ºåŠ è½½æ–‡ä»¶è¿›åº¦
 		const size = file.size;
-		message.sendMessage(`¼ÓÔØÎÄ¼ş£º${Math.floor(progress.loaded / size * 100)}%`);
+		message.sendMessage(`åŠ è½½æ–‡ä»¶ï¼š${Math.floor(progress.loaded / size * 100)}%`);
 	};
 	reader.onload = async function() {
-		//¼ÓÔØzip//gildas-lormeau.github.io/zip.js)
+		//åŠ è½½zip//gildas-lormeau.github.io/zip.js)
 		const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(this.result)));
 		reader.getEntries().then(async zipDataRaw => {
 			const zipData = [];
 			for (const i of zipDataRaw) {
-				if (i.filename.replace(/.*\//, "")) zipData.push(i); //¹ıÂËÎÄ¼ş¼Ğ
+				if (i.filename.replace(/.*\//, "")) zipData.push(i); //è¿‡æ»¤æ–‡ä»¶å¤¹
 			}
 			console.log(zipData);
 			let loadedNum = 0;
@@ -988,7 +987,7 @@ const loadFile = function(file) {
 				}).catch(error => {
 					console.log(error);
 					loading(++loadedNum);
-					message.sendWarning(`²»Ö§³ÖµÄÎÄ¼ş£º${i.filename}`);
+					message.sendWarning(`ä¸æ”¯æŒçš„æ–‡ä»¶ï¼š${i.filename}`);
 					resolve(undefined);
 				});
 			})));
@@ -1003,12 +1002,12 @@ const loadFile = function(file) {
 			}
 
 			function loading(num) {
-				message.sendMessage(`¶ÁÈ¡ÎÄ¼ş£º${Math.floor(num / zipData.length * 100)}%`);
+				message.sendMessage(`è¯»å–æ–‡ä»¶ï¼š${Math.floor(num / zipData.length * 100)}%`);
 				if (num == zipData.length) {
 					if (selectchart.children.length == 0) {
-						message.sendError("¶ÁÈ¡³ö´í£ºÎ´·¢ÏÖÆ×ÃæÎÄ¼ş"); //test
+						message.sendError("è¯»å–å‡ºé”™ï¼šæœªå‘ç°è°±é¢æ–‡ä»¶"); //test
 					} else if (selectbgm.children.length == 0) {
-						message.sendError("¶ÁÈ¡³ö´í£ºÎ´·¢ÏÖÒôÀÖÎÄ¼ş"); //test
+						message.sendError("è¯»å–å‡ºé”™ï¼šæœªå‘ç°éŸ³ä¹æ–‡ä»¶"); //test
 					} else {
 						select.classList.remove("disabled");
 						btnPause.classList.add("disabled");
@@ -1018,16 +1017,16 @@ const loadFile = function(file) {
 			}
 			console.log(zipRaw);
 		}, () => {
-			message.sendError("¶ÁÈ¡³ö´í£º²»ÊÇzipÎÄ¼ş"); //test
+			message.sendError("è¯»å–å‡ºé”™ï¼šä¸æ˜¯zipæ–‡ä»¶"); //test
 		});
 		reader.close();
 	}
 }
-//noteÔ¤´¦Àí
+//noteé¢„å¤„ç†
 function prerenderChart(chart) {
 	const chartOld = JSON.parse(JSON.stringify(chart));
 	const chartNew = chartOld;
-	//ÓÅ»¯events
+	//ä¼˜åŒ–events
 	for (const LineId in chartNew.judgeLineList) {
 		const i = chartNew.judgeLineList[LineId];
 		i.lineId = LineId;
@@ -1035,7 +1034,7 @@ function prerenderChart(chart) {
 		i.offsetY = 0;
 		i.alpha = 0;
 		i.rotation = 0;
-		i.positionY = 0; //ÁÙÊ±¹ı¶ÉÓÃ
+		i.positionY = 0; //ä¸´æ—¶è¿‡æ¸¡ç”¨
 		i.images = [res["JudgeLine"], res["JudgeLineMP"], res["JudgeLineAP"], res["JudgeLineFC"]];
 		i.imageH = 0.008;
 		i.imageW = 1.042;
@@ -1056,7 +1055,7 @@ function prerenderChart(chart) {
 	Renderer.flicks.sort(sortNote);
 	Renderer.reverseholds.sort(sortNote).reverse();
 	Renderer.tapholds.sort(sortNote);
-	//ÏòRendererÌí¼ÓNote
+	//å‘Rendereræ·»åŠ Note
 	function addNote(note, base32, lineId, noteId, isAbove) {
 		note.offsetX = 0;
 		note.offsetY = 0;
@@ -1076,7 +1075,7 @@ function prerenderChart(chart) {
 		if (note.type == 3) Renderer.reverseholds.push(note);
 		if (note.type == 1 || note.type == 3) Renderer.tapholds.push(note);
 	}
-	//ºÏ²¢²»Í¬·½Ïònote
+	//åˆå¹¶ä¸åŒæ–¹å‘note
 	for (const i of chartNew.judgeLineList) {
 		i.notes = [];
 		for (const j of i.notesAbove) {
@@ -1088,15 +1087,15 @@ function prerenderChart(chart) {
 			i.notes.push(j);
 		}
 	}
-	//Ë«ÑºÌáÊ¾
+	//åŒæŠ¼æç¤º
 	const timeOfMulti = {};
 	for (const i of Renderer.notes) timeOfMulti[i.realTime.toFixed(6)] = timeOfMulti[i.realTime.toFixed(6)] ? 2 : 1;
 	for (const i of Renderer.notes) i.isMulti = (timeOfMulti[i.realTime.toFixed(6)] == 2);
 	return chartNew;
-	//¹æ·¶ÅĞ¶¨ÏßÊÂ¼ş
+	//è§„èŒƒåˆ¤å®šçº¿äº‹ä»¶
 	function arrangeLineEvent(events) {
-		const oldEvents = JSON.parse(JSON.stringify(events)); //Éî¿½±´
-		const newEvents = [{ //ÒÔ1-1e6¿ªÍ·
+		const oldEvents = JSON.parse(JSON.stringify(events)); //æ·±æ‹·è´
+		const newEvents = [{ //ä»¥1-1e6å¼€å¤´
 			startTime: 1 - 1e6,
 			endTime: 0,
 			start: oldEvents[0] ? oldEvents[0].start : 0,
@@ -1104,7 +1103,7 @@ function prerenderChart(chart) {
 			start2: oldEvents[0] ? oldEvents[0].start2 : 0,
 			end2: oldEvents[0] ? oldEvents[0].end2 : 0
 		}];
-		oldEvents.push({ //ÒÔ1e9½áÎ²
+		oldEvents.push({ //ä»¥1e9ç»“å°¾
 			startTime: 0,
 			endTime: 1e9,
 			start: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].start : 0,
@@ -1112,7 +1111,7 @@ function prerenderChart(chart) {
 			start2: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].start2 : 0,
 			end2: oldEvents[oldEvents.length - 1] ? oldEvents[oldEvents.length - 1].end2 : 0
 		});
-		for (const i2 of oldEvents) { //±£Ö¤Ê±¼äÁ¬ĞøĞÔ
+		for (const i2 of oldEvents) { //ä¿è¯æ—¶é—´è¿ç»­æ€§
 			const i1 = newEvents[newEvents.length - 1];
 			if (i1.endTime > i2.endTime);
 			else if (i1.endTime == i2.startTime) newEvents.push(i2);
@@ -1133,7 +1132,7 @@ function prerenderChart(chart) {
 				end2: i1.end2
 			});
 		}
-		//ºÏ²¢ÏàÍ¬±ä»¯ÂÊÊÂ¼ş
+		//åˆå¹¶ç›¸åŒå˜åŒ–ç‡äº‹ä»¶
 		const newEvents2 = [newEvents.shift()];
 		for (const i2 of newEvents) {
 			const i1 = newEvents2[newEvents2.length - 1];
@@ -1148,7 +1147,7 @@ function prerenderChart(chart) {
 		}
 		return JSON.parse(JSON.stringify(newEvents2));
 	}
-	//¹æ·¶speedEvents
+	//è§„èŒƒspeedEvents
 	function arrangeSpeedEvent(events) {
 		const newEvents = [];
 		for (const i2 of events) {
@@ -1158,7 +1157,7 @@ function prerenderChart(chart) {
 		}
 		return JSON.parse(JSON.stringify(newEvents));
 	}
-	//Ìí¼ÓrealTime
+	//æ·»åŠ realTime
 	function addRealTime(events, bpm) {
 		for (const i of events) {
 			i.startRealTime = i.startTime / bpm * 1.875;
@@ -1169,16 +1168,16 @@ function prerenderChart(chart) {
 		return events;
 	}
 }
-document.addEventListener("visibilitychange", () => document.visibilityState == "hidden" && btnPause.value == "ÔİÍ£" && btnPause.click());
-document.addEventListener("pagehide", () => document.visibilityState == "hidden" && btnPause.value == "ÔİÍ£" && btnPause.click()); //¼æÈİSafari
+document.addEventListener("visibilitychange", () => document.visibilityState == "hidden" && btnPause.value == "æš‚åœ" && btnPause.click());
+document.addEventListener("pagehide", () => document.visibilityState == "hidden" && btnPause.value == "æš‚åœ" && btnPause.click()); //å…¼å®¹Safari
 const qwqIn = new Timer();
 const qwqOut = new Timer();
 const qwqEnd = new Timer();
 //play
 btnPlay.addEventListener("click", async function() {
-	btnPause.value = "ÔİÍ£";
-	if (this.value == "²¥·Å") {
-		stopPlaying.push(playSound(res["mute"], true, false, 0)); //²¥·Å¿ÕÒôÆµ(·ÀÖ¹Òô»­²»Í¬²½)
+	btnPause.value = "æš‚åœ";
+	if (this.value == "æ’­æ”¾") {
+		stopPlaying.push(playSound(res["mute"], true, false, 0)); //æ’­æ”¾ç©ºéŸ³é¢‘(é˜²æ­¢éŸ³ç”»ä¸åŒæ­¥)
 		("lines,notes,taps,drags,flicks,holds,reverseholds,tapholds").split(",").map(i => Renderer[i] = []);
 		Renderer.chart = prerenderChart(charts[selectchart.value]); //fuckqwq
 		stat.reset(Renderer.chart.numOfNotes, Renderer.chart.md5);
@@ -1197,7 +1196,7 @@ btnPlay.addEventListener("click", async function() {
 		Renderer.bgImage = bgs[selectbg.value] || res["NoImage"];
 		Renderer.bgImageBlur = bgsBlur[selectbg.value] || res["NoImage"];
 		Renderer.bgMusic = bgms[selectbgm.value];
-		this.value = "Í£Ö¹";
+		this.value = "åœæ­¢";
 		resizeCanvas();
 		duration = Renderer.bgMusic.duration;
 		isInEnd = false;
@@ -1220,7 +1219,7 @@ btnPlay.addEventListener("click", async function() {
 		mask.classList.remove("fade");
 		for (const i of document.querySelectorAll(".disabled-when-playing")) i.classList.remove("disabled");
 		btnPause.classList.add("disabled");
-		//Çå³ıÔ­ÓĞÊı¾İ
+		//æ¸…é™¤åŸæœ‰æ•°æ®
 		fucktemp = false;
 		fucktemp2 = false;
 		clickEvents0.length = 0;
@@ -1231,16 +1230,16 @@ btnPlay.addEventListener("click", async function() {
 		curTime = 0;
 		curTimestamp = 0;
 		duration = 0;
-		this.value = "²¥·Å";
+		this.value = "æ’­æ”¾";
 	}
 });
 btnPause.addEventListener("click", function() {
-	if (this.classList.contains("disabled") || btnPlay.value == "²¥·Å") return;
-	if (this.value == "ÔİÍ£") {
+	if (this.classList.contains("disabled") || btnPlay.value == "æ’­æ”¾") return;
+	if (this.value == "æš‚åœ") {
 		qwqIn.pause();
 		if (showTransition.checked && isOutStart) qwqOut.pause();
 		isPaused = true;
-		this.value = "¼ÌĞø";
+		this.value = "ç»§ç»­";
 		curTime = timeBgm;
 		while (stopPlaying.length) stopPlaying.shift()();
 	} else {
@@ -1248,14 +1247,14 @@ btnPause.addEventListener("click", function() {
 		if (showTransition.checked && isOutStart) qwqOut.play();
 		isPaused = false;
 		if (isInEnd && !isOutStart) playBgm(Renderer.bgMusic, timeBgm);
-		this.value = "ÔİÍ£";
+		this.value = "æš‚åœ";
 	}
 });
 inputOffset.addEventListener("input", function() {
 	if (this.value < -400) this.value = -400;
 	if (this.value > 600) this.value = 600;
 });
-//²¥·Åbgm
+//æ’­æ”¾bgm
 function playBgm(data, offset) {
 	isPaused = false;
 	if (!offset) offset = 0;
@@ -1264,10 +1263,10 @@ function playBgm(data, offset) {
 }
 let fucktemp = false;
 let fucktemp2 = false;
-//×÷Í¼
+//ä½œå›¾
 function loop() {
 	const now = Date.now();
-	//¼ÆËãÊ±¼ä
+	//è®¡ç®—æ—¶é—´
 	if (qwqOut.second < 0.67) {
 		calcqwq(now);
 		qwqdraw1(now);
@@ -1288,7 +1287,7 @@ function loop() {
 	ctx.textAlign = "right";
 	ctx.textBaseline = "middle";
 	ctx.fillText(`Phigros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
-	stopDrawing = requestAnimationFrame(loop); //»Øµ÷¸üĞÂ¶¯»­
+	stopDrawing = requestAnimationFrame(loop); //å›è°ƒæ›´æ–°åŠ¨ç”»
 }
 
 function calcqwq(now) {
@@ -1303,7 +1302,7 @@ function calcqwq(now) {
 		qwqOut.play();
 	}
 	timeChart = Math.max(timeBgm - Renderer.chart.offset - (Number(inputOffset.value) / 1e3 || 0), 0);
-	//±éÀúÅĞ¶¨ÏßeventsºÍNote
+	//éå†åˆ¤å®šçº¿eventså’ŒNote
 	for (const line of Renderer.lines) {
 		for (const i of line.judgeLineDisappearEvents) {
 			if (timeChart < i.startRealTime) break;
@@ -1371,7 +1370,7 @@ function calcqwq(now) {
 				//i.frameCount = 0;
 			} else {
 				if (i.type == 3) i.alpha = i.speed == 0 ? (showPoint.checked ? 0.45 : 0) : (i.status % 4 == 2 ? 0.45 : 1);
-				else i.alpha = Math.max(1 - (timeChart - i.realTime) / (hyperMode.checked ? 0.12 : 0.16), 0); //¹ıÏßºó0.16sÏûÊ§
+				else i.alpha = Math.max(1 - (timeChart - i.realTime) / (hyperMode.checked ? 0.12 : 0.16), 0); //è¿‡çº¿å0.16sæ¶ˆå¤±
 				i.frameCount = isNaN(i.frameCount) ? 0 : i.frameCount + 1;
 			}
 		}
@@ -1380,36 +1379,36 @@ function calcqwq(now) {
 		judgements.addJudgement(Renderer.notes, timeChart);
 		judgements.judgeNote(Renderer.drags, timeChart, canvasos.width * 0.117775);
 		judgements.judgeNote(Renderer.flicks, timeChart, canvasos.width * 0.117775);
-		judgements.judgeNote(Renderer.tapholds, timeChart, canvasos.width * 0.117775); //²¥·Å´ò»÷ÒôĞ§ºÍÅĞ¶¨
+		judgements.judgeNote(Renderer.tapholds, timeChart, canvasos.width * 0.117775); //æ’­æ”¾æ‰“å‡»éŸ³æ•ˆå’Œåˆ¤å®š
 	}
 	taps.length = 0; //qwq
-	frameTimer.addTick(); //¼ÆËãfps
-	clickEvents0.defilter(i => i.time++ > 0); //Çå³ı´ò»÷ÌØĞ§
-	clickEvents1.defilter(i => now >= i.time + i.duration); //Çå³ı´ò»÷ÌØĞ§
+	frameTimer.addTick(); //è®¡ç®—fps
+	clickEvents0.defilter(i => i.time++ > 0); //æ¸…é™¤æ‰“å‡»ç‰¹æ•ˆ
+	clickEvents1.defilter(i => now >= i.time + i.duration); //æ¸…é™¤æ‰“å‡»ç‰¹æ•ˆ
 	for (const i in mouse) mouse[i] instanceof Click && mouse[i].animate();
 	for (const i in touch) touch[i] instanceof Click && touch[i].animate();
 }
 
 function qwqdraw1(now) {
-	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //ÖØÖÃ»­Ãæ
-	ctxos.globalCompositeOperation = "destination-over"; //ÓÉºóÍùÇ°»æÖÆ
-	for (const i of clickEvents1) { //»æÖÆ´ò»÷ÌØĞ§1
+	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //é‡ç½®ç”»é¢
+	ctxos.globalCompositeOperation = "destination-over"; //ç”±åå¾€å‰ç»˜åˆ¶
+	for (const i of clickEvents1) { //ç»˜åˆ¶æ‰“å‡»ç‰¹æ•ˆ1
 		const tick = (now - i.time) / i.duration;
 		ctxos.globalAlpha = 1;
-		ctxos.setTransform(noteScale * 6, 0, 0, noteScale * 6, i.offsetX, i.offsetY); //Ëõ·Å
-		ctxos.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //Í£ÁôÔ¼0.5Ãë
+		ctxos.setTransform(noteScale * 6, 0, 0, noteScale * 6, i.offsetX, i.offsetY); //ç¼©æ”¾
+		ctxos.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //åœç•™çº¦0.5ç§’
 		ctxos.fillStyle = i.color;
-		ctxos.globalAlpha = 1 - tick; //²»Í¸Ã÷¶È
-		const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //·½¿é´óĞ¡
+		ctxos.globalAlpha = 1 - tick; //ä¸é€æ˜åº¦
+		const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //æ–¹å—å¤§å°
 		for (const j of i.rand) {
-			const ds = j[0] * (9 * tick / (8 * tick + 1)); //´ò»÷µã¾àÀë
+			const ds = j[0] * (9 * tick / (8 * tick + 1)); //æ‰“å‡»ç‚¹è·ç¦»
 			ctxos.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
 		}
 	}
 	if (document.getElementById("feedback").checked) {
-		for (const i of clickEvents0) { //»æÖÆ´ò»÷ÌØĞ§0
+		for (const i of clickEvents0) { //ç»˜åˆ¶æ‰“å‡»ç‰¹æ•ˆ0
 			ctxos.globalAlpha = 0.85;
-			ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //Ëõ·Å
+			ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //ç¼©æ”¾
 			ctxos.fillStyle = i.color;
 			ctxos.beginPath();
 			ctxos.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
@@ -1418,7 +1417,7 @@ function qwqdraw1(now) {
 		}
 	}
 	if (qwqIn.second >= 3 && qwqOut.second == 0) {
-		if (showPoint.checked) { //»æÖÆ¶¨Î»µã
+		if (showPoint.checked) { //ç»˜åˆ¶å®šä½ç‚¹
 			ctxos.font = `${lineScale}px Mina`;
 			ctxos.textAlign = "center";
 			ctxos.textBaseline = "bottom";
@@ -1442,19 +1441,19 @@ function qwqdraw1(now) {
 				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 			}
 		}
-		//»æÖÆnote
+		//ç»˜åˆ¶note
 		for (const i of Renderer.flicks) drawNote(i, timeChart, 4);
 		for (const i of Renderer.taps) drawNote(i, timeChart, 1);
 		for (const i of Renderer.drags) drawNote(i, timeChart, 2);
 		for (const i of Renderer.reverseholds) drawNote(i, timeChart, 3);
 	}
-	//»æÖÆ±³¾°
-	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1); //»æÖÆÅĞ¶¨Ïß(±³¾°Ç°1)
+	//ç»˜åˆ¶èƒŒæ™¯
+	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1); //ç»˜åˆ¶åˆ¤å®šçº¿(èƒŒæ™¯å‰1)
 	ctxos.resetTransform();
-	ctxos.fillStyle = "#000"; //±³¾°±ä°µ
-	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //±³¾°²»Í¸Ã÷¶È
+	ctxos.fillStyle = "#000"; //èƒŒæ™¯å˜æš—
+	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //èƒŒæ™¯ä¸é€æ˜åº¦
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
-	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0); //»æÖÆÅĞ¶¨Ïß(±³¾°ºó0)
+	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0); //ç»˜åˆ¶åˆ¤å®šçº¿(èƒŒæ™¯å0)
 	ctxos.globalAlpha = 1;
 	ctxos.resetTransform();
 	if (document.getElementById("imageBlur").checked) {
@@ -1464,27 +1463,27 @@ function qwqdraw1(now) {
 	}
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalCompositeOperation = "source-over";
-	//»æÖÆ½ø¶ÈÌõ
+	//ç»˜åˆ¶è¿›åº¦æ¡
 	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctxos.drawImage(res["ProgressBar"], timeBgm / duration * 1920 - 1920, 0);
-	//»æÖÆÎÄ×Ö
+	//ç»˜åˆ¶æ–‡å­—
 	ctxos.resetTransform();
 	ctxos.fillStyle = "#fff";
-	//¿ªÍ·¹ı¶É¶¯»­
+	//å¼€å¤´è¿‡æ¸¡åŠ¨ç”»
 	if (qwqIn.second < 3) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
 		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween[2](6 - qwqIn.second * 2);
 		ctxos.textAlign = "center";
-		//¸èÃû
+		//æ­Œå
 		ctxos.textBaseline = "alphabetic";
 		ctxos.font = `${lineScale * 1.1}px Mina`;
 		ctxos.fillText(inputName.value || inputName.placeholder, wlen, hlen * 0.75);
-		//Çú»æºÍÆ×Ê¦
+		//æ›²ç»˜å’Œè°±å¸ˆ
 		ctxos.textBaseline = "top";
 		ctxos.font = `${lineScale * 0.55}px Mina`;
 		ctxos.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, wlen, hlen * 1.25 + lineScale * 0.15);
 		ctxos.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, wlen, hlen * 1.25 + lineScale * 1.0);
-		//ÅĞ¶¨Ïß(×°ÊÎÓÃ)
+		//åˆ¤å®šçº¿(è£…é¥°ç”¨)
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(1, 0, 0, 1, wlen, hlen);
 		const imgW = lineScale * 48 * (qwqIn.second < 0.67 ? tween[3](qwqIn.second * 1.5) : 1);
@@ -1492,7 +1491,7 @@ function qwqdraw1(now) {
 		if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween[2](6 - qwqIn.second * 2);
 		ctxos.drawImage(lineColor.checked ? res["JudgeLineMP"] : res["JudgeLine"], -imgW / 2, -imgH / 2, imgW, imgH);
 	}
-	//»æÖÆ·ÖÊıºÍcomboÒÔ¼°ÔİÍ£°´Å¥
+	//ç»˜åˆ¶åˆ†æ•°å’Œcomboä»¥åŠæš‚åœæŒ‰é’®
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = "alphabetic";
@@ -1508,7 +1507,7 @@ function qwqdraw1(now) {
 		ctxos.font = `${lineScale * 0.66}px Mina`;
 		ctxos.fillText(autoplay.checked ? "Autoplay" : "combo", wlen, lineScale * 2.05);
 	}
-	//»æÖÆ¸èÃûºÍµÈ¼¶
+	//ç»˜åˆ¶æ­Œåå’Œç­‰çº§
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = "alphabetic";
@@ -1520,7 +1519,7 @@ function qwqdraw1(now) {
 	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvasos.height - lineScale * 0.66);
 	ctxos.resetTransform();
 	if (qwq[0]) {
-		//»æÖÆÊ±¼äºÍÖ¡ÂÊÒÔ¼°note´ò»÷Êı
+		//ç»˜åˆ¶æ—¶é—´å’Œå¸§ç‡ä»¥åŠnoteæ‰“å‡»æ•°
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
 		else ctxos.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
 		ctxos.textBaseline = "middle";
@@ -1535,7 +1534,7 @@ function qwqdraw1(now) {
 			ctxos.fillText(val, lineScale * (idx + 1) * 1.1, canvasos.height - lineScale * 0.1);
 		});
 	}
-	//ÅĞ¶¨Ïßº¯Êı£¬undefined/0:Ä¬ÈÏ,1:·Ç,2:ºã³ÉÁ¢
+	//åˆ¤å®šçº¿å‡½æ•°ï¼Œundefined/0:é»˜è®¤,1:é,2:æ’æˆç«‹
 	function drawLine(bool) {
 		ctxos.globalAlpha = 1;
 		const tw = 1 - tween[2](qwqOut.second * 1.5);
@@ -1567,8 +1566,8 @@ function qwqdraw2() {
 		ctxos.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvasos, 1));
 		ctx.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvas, 1));
 	}
-	ctxos.fillStyle = "#000"; //±³¾°±ä°µ
-	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //±³¾°²»Í¸Ã÷¶È
+	ctxos.fillStyle = "#000"; //èƒŒæ™¯å˜æš—
+	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //èƒŒæ™¯ä¸é€æ˜åº¦
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	const difficulty = ["ez", "hd", "in", "at"].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
 	const xhr = new XMLHttpRequest();
@@ -1595,12 +1594,12 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = 1;
 	if (document.getElementById("imageBlur").checked) ctxos.drawImage(Renderer.bgImageBlur, ...adjustSize(Renderer.bgImageBlur, canvasos, 1));
 	else ctxos.drawImage(Renderer.bgImage, ...adjustSize(Renderer.bgImage, canvasos, 1));
-	ctxos.fillStyle = "#000"; //±³¾°±ä°µ
-	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //±³¾°²»Í¸Ã÷¶È
+	ctxos.fillStyle = "#000"; //èƒŒæ™¯å˜æš—
+	ctxos.globalAlpha = selectglobalalpha.value == "" ? 0.6 : selectglobalalpha.value; //èƒŒæ™¯ä¸é€æ˜åº¦
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalCompositeOperation = "destination-out";
 	ctxos.globalAlpha = 1;
-	const k = 3.7320508075688776; //tan75¡ã
+	const k = 3.7320508075688776; //tan75Â°
 	ctxos.setTransform(canvasos.width - canvasos.height / k, 0, -canvasos.height / k, canvasos.height, canvasos.height / k, 0);
 	ctxos.fillRect(0, 0, 1, tween[8](range((qwqEnd.second - 0.13) * 0.94)));
 	ctxos.resetTransform();
@@ -1609,11 +1608,11 @@ function qwqdraw3(statData) {
 	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, wlen - qwq0 * 8, hlen - qwq0 * 4.5); //?
 	ctxos.drawImage(res["LevelOver4"], 183, 42, 1184, 228);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
-	//ctxos.drawImage(res["LevelOver1"], 183, 0, 1357, 792);
+	ctxos.drawImage(res["LevelOver1"], 102, 378);
 	ctxos.globalCompositeOperation = "source-over";
 	ctxos.globalAlpha = 1;
 	ctxos.drawImage(res["LevelOver5"], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
-	//¸èÃûºÍµÈ¼¶
+	//æ­Œåå’Œç­‰çº§
 	ctxos.fillStyle = "#fff";
 	ctxos.textBaseline = "middle";
 	ctxos.textAlign = "left";
@@ -1621,13 +1620,13 @@ function qwqdraw3(statData) {
 	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145);
 	ctxos.font = "30px Mina";
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 317, 208);
-	//RankÍ¼±ê
+	//Rankå›¾æ ‡
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
 	const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
 	const qwq3 = 410 - range((qwqEnd.second - 1.87) * 2.14) * 164;
-	//ctxos.drawImage(res["LevelOver3"], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
-	ctxos.drawImage(res["Ranks"][stat.rankStatus], (661 - qwq3 / 2)*3, (545 - qwq3 / 2)*1.25, qwq3, qwq3);
-	//¸÷ÖÖÊı¾İ
+	ctxos.drawImage(res["LevelOver3"], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
+	ctxos.drawImage(res["Ranks"][stat.rankStatus], 661 - qwq3 / 2, 545 - qwq3 / 2, qwq3, qwq3);
+	//å„ç§æ•°æ®
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData[0] ? "#18ffbf" : "#fff";
 	ctxos.fillText(statData[0] ? "NEW BEST" : "BEST", 898, 428);
@@ -1641,7 +1640,7 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "left";
 	ctxos.fillText(stat.accStr, 352, 545);
 	ctxos.fillText(stat.maxcombo, 1528, 545);
-	/*if (statData[3]) {
+	if (statData[3]) {
 		ctxos.fillStyle = "#ffc500";
 		ctxos.fillText("ALL  PERFECT", 1355, 590);
 	} else if (stat.lineStatus == 1) {
@@ -1653,7 +1652,7 @@ function qwqdraw3(statData) {
 	} else if (stat.lineStatus == 3) {
 		ctxos.fillStyle = "#00bef1";
 		ctxos.fillText("FULL  COMBO", 1355, 590);
-	}*/
+	}
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
 	ctxos.font = "86px Mina";
@@ -1696,7 +1695,7 @@ function range(num) {
 	if (num > 1) return 1;
 	return num;
 }
-//»æÖÆNote
+//ç»˜åˆ¶Note
 function drawNote(note, realTime, type) {
 	const HL = note.isMulti && document.getElementById("highLight").checked;
 	if (!note.visible) return;
@@ -1735,8 +1734,8 @@ function drawNote(note, realTime, type) {
 }
 //test
 function chart123(chart) {
-	const newChart = JSON.parse(JSON.stringify(chart)); //Éî¿½±´
-	switch (newChart.formatVersion) { //¼Ó»¨À¨ºÅÒÔ±ÜÃâbeautifyËõ½øbug
+	const newChart = JSON.parse(JSON.stringify(chart)); //æ·±æ‹·è´
+	switch (newChart.formatVersion) { //åŠ èŠ±æ‹¬å·ä»¥é¿å…beautifyç¼©è¿›bug
 		case 1: {
 			newChart.formatVersion = 3;
 			for (const i of newChart.judgeLineList) {
@@ -1873,7 +1872,7 @@ function chartp23(pec, filename) {
 			this.time = time;
 			this.positionX = x;
 			this.holdTime = type == 3 ? holdTime : 0;
-			this.speed = isNaN(speed) ? 1 : speed; //Ä¬ÈÏÖµ²»Îª0²»ÄÜ¸Ä³ÉNumber(speed)||1
+			this.speed = isNaN(speed) ? 1 : speed; //é»˜è®¤å€¼ä¸ä¸º0ä¸èƒ½æ”¹æˆNumber(speed)||1
 			//this.floorPosition = time % 1e9 / 104 * 1.2;
 		}
 	}
@@ -1883,9 +1882,9 @@ function chartp23(pec, filename) {
 	const raw = {};
 	("bp,n1,n2,n3,n4,cv,cp,cd,ca,cm,cr,cf").split(",").map(i => raw[i] = []);
 	const rawarr = [];
-	let fuckarr = [1, 1]; //nÖ¸ÁîµÄ#ºÍ&
+	let fuckarr = [1, 1]; //næŒ‡ä»¤çš„#å’Œ&
 	let rawstr = "";
-	if (!isNaN(rawChart[0])) qwqChart.offset = (rawChart.shift() / 1e3 - 0.175); //v18x¹Ì¶¨ÑÓ³Ù
+	if (!isNaN(rawChart[0])) qwqChart.offset = (rawChart.shift() / 1e3 - 0.175); //v18xå›ºå®šå»¶è¿Ÿ
 	for (let i = 0; i < rawChart.length; i++) {
 		let p = rawChart[i];
 		if (!isNaN(p)) rawarr.push(p);
@@ -1894,15 +1893,15 @@ function chartp23(pec, filename) {
 		else if (raw[p]) pushCommand(p);
 		else throw `Unknown Command: ${p}`;
 	}
-	pushCommand(""); //²¹³ä×îºóÒ»¸öÔªËØ(bug)
-	//´¦Àíbpm±äËÙ
+	pushCommand(""); //è¡¥å……æœ€åä¸€ä¸ªå…ƒç´ (bug)
+	//å¤„ç†bpmå˜é€Ÿ
 	if (!raw.bp[0]) raw.bp.push([0, 120]);
 	const baseBpm = raw.bp[0][1];
 	if (raw.bp[0][0]) raw.bp.unshift([0, baseBpm]);
-	const bpmEvents = []; //´æ·Åbpm±äËÙÊÂ¼ş
+	const bpmEvents = []; //å­˜æ”¾bpmå˜é€Ÿäº‹ä»¶
 	let fuckBpm = 0;
 	raw.bp.sort((a, b) => a[0] - b[0]).forEach((i, idx, arr) => {
-		if (arr[idx + 1] && arr[idx + 1][0] <= 0) return; //¹ıÂË¸ºÊı
+		if (arr[idx + 1] && arr[idx + 1][0] <= 0) return; //è¿‡æ»¤è´Ÿæ•°
 		const start = i[0] < 0 ? 0 : i[0];
 		const end = arr[idx + 1] ? arr[idx + 1][0] : 1e9;
 		const bpm = i[1];
@@ -1926,7 +1925,7 @@ function chartp23(pec, filename) {
 		rawarr.length = 0;
 		rawstr = next;
 	}
-	//½«pecÊ±¼ä×ª»»ÎªpgrÊ±¼ä
+	//å°†pecæ—¶é—´è½¬æ¢ä¸ºpgræ—¶é—´
 	function calcTime(timePec) {
 		let timePhi = 0;
 		for (const i of bpmEvents) {
@@ -1936,53 +1935,53 @@ function chartp23(pec, filename) {
 		}
 		return timePhi;
 	}
-	//´¦ÀínoteºÍÅĞ¶¨ÏßÊÂ¼ş
+	//å¤„ç†noteå’Œåˆ¤å®šçº¿äº‹ä»¶
 	let linesPec = [];
 	for (const i of raw.n1) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(1, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`¼ì²âµ½FakeNote(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n1 ${i.slice(0, 5).join(" ")}"\nÀ´×Ô${filename}`);
-		if (i[6] != 1) message.sendWarning(`¼ì²âµ½Òì³£Note(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\nÀ´×Ô${filename}`);
+		if (i[4]) message.sendWarning(`æ£€æµ‹åˆ°FakeNote(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n1 ${i.slice(0, 5).join(" ")}"\næ¥è‡ª${filename}`);
+		if (i[6] != 1) message.sendWarning(`æ£€æµ‹åˆ°å¼‚å¸¸Note(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n1 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\næ¥è‡ª${filename}`);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] * 9 / 1024, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
-		if (i[5]) message.sendWarning(`¼ì²âµ½FakeNote(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n2 ${i.slice(0, 6).join(" ")}"\nÀ´×Ô${filename}`);
-		if (i[7] != 1) message.sendWarning(`¼ì²âµ½Òì³£Note(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n2 ${i.slice(0, 5).join(" ")} # ${i[6]} & ${i[7]}"\nÀ´×Ô${filename}`);
+		if (i[5]) message.sendWarning(`æ£€æµ‹åˆ°FakeNote(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n2 ${i.slice(0, 6).join(" ")}"\næ¥è‡ª${filename}`);
+		if (i[7] != 1) message.sendWarning(`æ£€æµ‹åˆ°å¼‚å¸¸Note(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n2 ${i.slice(0, 5).join(" ")} # ${i[6]} & ${i[7]}"\næ¥è‡ª${filename}`);
 	}
 	for (const i of raw.n3) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`¼ì²âµ½FakeNote(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n3 ${i.slice(0, 5).join(" ")}"\nÀ´×Ô${filename}`);
-		if (i[6] != 1) message.sendWarning(`¼ì²âµ½Òì³£Note(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n3 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\nÀ´×Ô${filename}`);
+		if (i[4]) message.sendWarning(`æ£€æµ‹åˆ°FakeNote(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n3 ${i.slice(0, 5).join(" ")}"\næ¥è‡ª${filename}`);
+		if (i[6] != 1) message.sendWarning(`æ£€æµ‹åˆ°å¼‚å¸¸Note(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n3 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\næ¥è‡ª${filename}`);
 	}
 	for (const i of raw.n4) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(2, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] * 9 / 1024, 0, i[5]), i[3], i[4]);
-		if (i[4]) message.sendWarning(`¼ì²âµ½FakeNote(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n4 ${i.slice(0, 5).join(" ")}"\nÀ´×Ô${filename}`);
-		if (i[6] != 1) message.sendWarning(`¼ì²âµ½Òì³£Note(¿ÉÄÜÎŞ·¨Õı³£ÏÔÊ¾)\nÎ»ÓÚ:"n4 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\nÀ´×Ô${filename}`);
+		if (i[4]) message.sendWarning(`æ£€æµ‹åˆ°FakeNote(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n4 ${i.slice(0, 5).join(" ")}"\næ¥è‡ª${filename}`);
+		if (i[6] != 1) message.sendWarning(`æ£€æµ‹åˆ°å¼‚å¸¸Note(å¯èƒ½æ— æ³•æ­£å¸¸æ˜¾ç¤º)\nä½äº:"n4 ${i.slice(0, 5).join(" ")} # ${i[5]} & ${i[6]}"\næ¥è‡ª${filename}`);
 	}
-	//±äËÙ
+	//å˜é€Ÿ
 	for (const i of raw.cv) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(0, calcTime(i[1]), null, i[2] / 7.0); //6.0??
 	}
-	//²»Í¸Ã÷¶È
+	//ä¸é€æ˜åº¦
 	for (const i of raw.ca) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[1]), i[2] > 0 ? i[2] / 255 : 0); //Ôİ²»Ö§³ÖalphaÖµÀ©Õ¹
-		if (i[2] < 0) message.sendWarning(`¼ì²âµ½¸ºÊıAlpha:${i[2]}(½«±»ÊÓÎª0)\nÎ»ÓÚ:"ca ${i.join(" ")}"\nÀ´×Ô${filename}`);
+		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[1]), i[2] > 0 ? i[2] / 255 : 0); //æš‚ä¸æ”¯æŒalphaå€¼æ‰©å±•
+		if (i[2] < 0) message.sendWarning(`æ£€æµ‹åˆ°è´Ÿæ•°Alpha:${i[2]}(å°†è¢«è§†ä¸º0)\nä½äº:"ca ${i.join(" ")}"\næ¥è‡ª${filename}`);
 	}
 	for (const i of raw.cf) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		if (i[1] > i[2]) {
-			message.sendWarning(`¼ì²âµ½¿ªÊ¼Ê±¼ä´óÓÚ½áÊøÊ±¼ä(½«½ûÓÃ´ËÊÂ¼ş)\nÎ»ÓÚ:"cf ${i.join(" ")}"\nÀ´×Ô${filename}`);
+			message.sendWarning(`æ£€æµ‹åˆ°å¼€å§‹æ—¶é—´å¤§äºç»“æŸæ—¶é—´(å°†ç¦ç”¨æ­¤äº‹ä»¶)\nä½äº:"cf ${i.join(" ")}"\næ¥è‡ª${filename}`);
 			continue;
 		}
 		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[2]), i[3] > 0 ? i[3] / 255 : 0);
-		if (i[3] < 0) message.sendWarning(`¼ì²âµ½¸ºÊıAlpha:${i[3]}(½«±»ÊÓÎª0)\nÎ»ÓÚ:"cf ${i.join(" ")}"\nÀ´×Ô${filename}`);
+		if (i[3] < 0) message.sendWarning(`æ£€æµ‹åˆ°è´Ÿæ•°Alpha:${i[3]}(å°†è¢«è§†ä¸º0)\nä½äº:"cf ${i.join(" ")}"\næ¥è‡ª${filename}`);
 	}
-	//ÒÆ¶¯
+	//ç§»åŠ¨
 	for (const i of raw.cp) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(-2, calcTime(i[1]), calcTime(i[1]), i[2] / 2048, i[3] / 1400, 1);
@@ -1990,13 +1989,13 @@ function chartp23(pec, filename) {
 	for (const i of raw.cm) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		if (i[1] > i[2]) {
-			message.sendWarning(`¼ì²âµ½¿ªÊ¼Ê±¼ä´óÓÚ½áÊøÊ±¼ä(½«½ûÓÃ´ËÊÂ¼ş)\nÎ»ÓÚ:"cm ${i.join(" ")}"\nÀ´×Ô${filename}`);
+			message.sendWarning(`æ£€æµ‹åˆ°å¼€å§‹æ—¶é—´å¤§äºç»“æŸæ—¶é—´(å°†ç¦ç”¨æ­¤äº‹ä»¶)\nä½äº:"cm ${i.join(" ")}"\næ¥è‡ª${filename}`);
 			continue;
 		}
 		linesPec[i[0]].pushEvent(-2, calcTime(i[1]), calcTime(i[2]), i[3] / 2048, i[4] / 1400, i[5]);
-		if (i[5] && !tween[i[5]] && i[5] != 1) message.sendWarning(`Î´ÖªµÄ»º¶¯ÀàĞÍ:${i[5]}(½«±»ÊÓÎª1)\nÎ»ÓÚ:"cm ${i.join(" ")}"\nÀ´×Ô${filename}`);
+		if (i[5] && !tween[i[5]] && i[5] != 1) message.sendWarning(`æœªçŸ¥çš„ç¼“åŠ¨ç±»å‹:${i[5]}(å°†è¢«è§†ä¸º1)\nä½äº:"cm ${i.join(" ")}"\næ¥è‡ª${filename}`);
 	}
-	//Ğı×ª
+	//æ—‹è½¬
 	for (const i of raw.cd) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushEvent(-3, calcTime(i[1]), calcTime(i[1]), -i[2], 1); //??
@@ -2004,26 +2003,26 @@ function chartp23(pec, filename) {
 	for (const i of raw.cr) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		if (i[1] > i[2]) {
-			message.sendWarning(`¼ì²âµ½¿ªÊ¼Ê±¼ä´óÓÚ½áÊøÊ±¼ä(½«½ûÓÃ´ËÊÂ¼ş)\nÎ»ÓÚ:"cr ${i.join(" ")}"\nÀ´×Ô${filename}`);
+			message.sendWarning(`æ£€æµ‹åˆ°å¼€å§‹æ—¶é—´å¤§äºç»“æŸæ—¶é—´(å°†ç¦ç”¨æ­¤äº‹ä»¶)\nä½äº:"cr ${i.join(" ")}"\næ¥è‡ª${filename}`);
 			continue;
 		}
 		linesPec[i[0]].pushEvent(-3, calcTime(i[1]), calcTime(i[2]), -i[3], i[4]);
-		if (i[4] && !tween[i[4]] && i[4] != 1) message.sendWarning(`Î´ÖªµÄ»º¶¯ÀàĞÍ:${i[4]}(½«±»ÊÓÎª1)\nÎ»ÓÚ:"cr ${i.join(" ")}"\nÀ´×Ô${filename}`);
+		if (i[4] && !tween[i[4]] && i[4] != 1) message.sendWarning(`æœªçŸ¥çš„ç¼“åŠ¨ç±»å‹:${i[4]}(å°†è¢«è§†ä¸º1)\nä½äº:"cr ${i.join(" ")}"\næ¥è‡ª${filename}`);
 	}
 	for (const i of linesPec) {
 		if (i) {
-			i.notesAbove.sort((a, b) => a.time - b.time); //ÒÔºóÒÆµ½123º¯Êı
-			i.notesBelow.sort((a, b) => a.time - b.time); //ÒÔºóÒÆµ½123º¯Êı
+			i.notesAbove.sort((a, b) => a.time - b.time); //ä»¥åç§»åˆ°123å‡½æ•°
+			i.notesBelow.sort((a, b) => a.time - b.time); //ä»¥åç§»åˆ°123å‡½æ•°
 			let s = i.speedEvents;
 			let ldp = i.judgeLineDisappearEventsPec;
 			let lmp = i.judgeLineMoveEventsPec;
 			let lrp = i.judgeLineRotateEventsPec;
-			const srt = (a, b) => (a.startTime - b.startTime) + (a.endTime - b.endTime); //²»µ¥¶ÀÅĞ¶ÏÒÔ±ÜÃâÎó²î
-			s.sort(srt); //ÒÔºóÒÆµ½123º¯Êı
-			ldp.sort(srt); //ÒÔºóÒÆµ½123º¯Êı
-			lmp.sort(srt); //ÒÔºóÒÆµ½123º¯Êı
-			lrp.sort(srt); //ÒÔºóÒÆµ½123º¯Êı
-			//cvºÍfloorPositionÒ»²¢´¦Àí
+			const srt = (a, b) => (a.startTime - b.startTime) + (a.endTime - b.endTime); //ä¸å•ç‹¬åˆ¤æ–­ä»¥é¿å…è¯¯å·®
+			s.sort(srt); //ä»¥åç§»åˆ°123å‡½æ•°
+			ldp.sort(srt); //ä»¥åç§»åˆ°123å‡½æ•°
+			lmp.sort(srt); //ä»¥åç§»åˆ°123å‡½æ•°
+			lrp.sort(srt); //ä»¥åç§»åˆ°123å‡½æ•°
+			//cvå’ŒfloorPositionä¸€å¹¶å¤„ç†
 			let y = 0;
 			for (let j = 0; j < s.length; j++) {
 				s[j].endTime = j < s.length - 1 ? s[j + 1].startTime : 1e9;
@@ -2059,7 +2058,7 @@ function chartp23(pec, filename) {
 				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
 				if (j.type == 3) j.speed *= qwqwq2;
 			}
-			//ÕûºÏmotionType
+			//æ•´åˆmotionType
 			let ldpTime = 0;
 			let ldpValue = 0;
 			for (const j of ldp) {
@@ -2148,7 +2147,7 @@ const tween = [null, null,
 	pos => (pos *= 2) < 1 ? tween[26](pos) / 2 : tween[27](pos - 1) / 2 + .5, //28
 	pos => pos < 0.5 ? 2 ** (20 * pos - 11) * Math.sin((160 * pos + 1) * Math.PI / 18) : 1 - 2 ** (9 - 20 * pos) * Math.sin((160 * pos + 1) * Math.PI / 18) //29
 ];
-//µ¼³öjson
+//å¯¼å‡ºjson
 function chartify(json) {
 	let newChart = {};
 	newChart.formatVersion = 3;
@@ -2228,13 +2227,13 @@ function chartify(json) {
 	}
 	return newChart;
 }
-//µ÷½Ú»­Ãæ³ß´çºÍÈ«ÆÁÏà¹Ø
+//è°ƒèŠ‚ç”»é¢å°ºå¯¸å’Œå…¨å±ç›¸å…³
 function adjustSize(source, dest, scale) {
 	const [sw, sh, dw, dh] = [source.width, source.height, dest.width, dest.height];
 	if (dw * sh > dh * sw) return [dw * (1 - scale) / 2, (dh - dw * sh / sw * scale) / 2, dw * scale, dw * sh / sw * scale];
 	return [(dw - dh * sw / sh * scale) / 2, dh * (1 - scale) / 2, dh * sw / sh * scale, dh * scale];
 }
-//¸øÍ¼Æ¬ÉÏÉ«
+//ç»™å›¾ç‰‡ä¸Šè‰²
 function imgShader(img, color) {
 	const canvas = document.createElement("canvas");
 	canvas.width = img.width;
@@ -2260,18 +2259,18 @@ function imgBlur(img) {
 	ctx.drawImage(img, 0, 0);
 	return StackBlur.imageDataRGB(ctx.getImageData(0, 0, img.width, img.height), 0, 0, img.width, img.height, Math.ceil(Math.min(img.width, img.height) * 0.0875));
 }
-//Ê®Áù½øÖÆcolor×ªrgbaÊı×é
+//åå…­è¿›åˆ¶colorè½¬rgbaæ•°ç»„
 function hex2rgba(color) {
 	const ctx = document.createElement("canvas").getContext("2d");
 	ctx.fillStyle = color;
 	ctx.fillRect(0, 0, 1, 1);
 	return ctx.getImageData(0, 0, 1, 1).data;
 }
-//rgbaÊı×é(0-1)×ªÊ®Áù½øÖÆ
+//rgbaæ•°ç»„(0-1)è½¬åå…­è¿›åˆ¶
 function rgba2hex(...rgba) {
 	return "#" + rgba.map(i => ("00" + Math.round(Number(i) * 255 || 0).toString(16)).slice(-2)).join("");
 }
-//¶ÁÈ¡csv
+//è¯»å–csv
 function csv2array(data, isObject) {
 	const strarr = data.replace(/\r/g, "").split("\n");
 	const col = [];
