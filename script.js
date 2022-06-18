@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros Simpled EUI', [1, 5, 4], 1611795955, 1652747710];
+const _i = ['Phigros Simpled EUI', [1, 5, 5, 1], 1611795955, 1652747710];
 const urls = {
 	zip: ["//unpkg.com/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
