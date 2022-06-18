@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros Simpled EUI', [1, 5, 0, A], 1611795955, 1652747710];
+const _i = ['Phigros Simpled EUI', [1, 5, 1], 1611795955, 1652747710];
 const urls = {
 	zip: ["//unpkg.com/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -1834,10 +1834,9 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "right";
 	ctxos.fillText(statData.scoreDelta, 1145, 275);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
-	ctxos.textAlign = "right";
 	ctxos.fillText(stat.accStr, 352*2.75, 545*1.35);
         ctxos.textAlign = "left";
-	ctxos.fillText(stat.maxcombo, 1528, 545);
+	ctxos.fillText(stat.maxcombo, 1528*0.65, 545*1.35);
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
 	ctxos.fillStyle = statData.textBelowColor;
