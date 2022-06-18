@@ -1825,13 +1825,13 @@ function qwqdraw3(statData) {
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
-	ctxos.fillText(statData.newBestStr, 898*1.25, 428);
+	ctxos.fillText(statData.newBestStr, 900*1.1, 500);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
-	ctxos.fillText(statData.scoreBest, 1180*1.25, 428);
+	ctxos.fillText(statData.scoreBest, 1280*1.1, 500);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = "right";
-	ctxos.fillText(statData.scoreDelta, 1145*1.25, 428);
+	ctxos.fillText(statData.scoreDelta, 1145*1.25, 500);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.fillText(stat.accStr, 1528*1.05, 545*1.2);
         ctxos.textAlign = "left";
@@ -1844,16 +1844,16 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "center";
 	ctxos.font = "80px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
-	ctxos.fillText(stat.scoreStr, 810*1.45, 554-75);
+	ctxos.fillText(stat.scoreStr, 810*1.45, 554-50);
 	ctxos.font = "26px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
-	ctxos.fillText(stat.perfect, 891*1.15, 645*1.4);
+	ctxos.fillText(stat.perfect, 750*1.15, 645*1.2);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
-	ctxos.fillText(stat.good, 1043*1.15, 645*1.4);
+	ctxos.fillText(stat.good, 1000*1.15, 645*1.2);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
-	ctxos.fillText(stat.noteRank[6], 1196*1.15, 645*1.4);
+	ctxos.fillText(stat.noteRank[6], 1150*1.15, 645*1.2);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
-	ctxos.fillText(stat.noteRank[2], 1349*1.15, 645*1.4);
+	ctxos.fillText(stat.noteRank[2], 1350*1.15, 645*1.2);
 	ctxos.font = "22px Saira";
 	const qwq4 = range((qwq[3] > 0 ? qwqEnd.second - qwq[3] : 0.2 - qwqEnd.second - qwq[3]) * 5.00);
 	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
