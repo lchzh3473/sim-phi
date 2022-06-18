@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros Simpled EUI', [1, 5, 5, 10], 1611795955, 1652747710];
+const _i = ['Phigros Simpled EUI', [1, 5, 5, 11], 1611795955, 1652747710];
 const urls = {
 	zip: ["//unpkg.com/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -1691,7 +1691,7 @@ function qwqdraw1(now) {
 		ctxos.font = `${lineScale * 1.32}px Saira`;
 		ctxos.fillText(stat.combo, wlen, lineScale * 1.375);
 		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
-		ctxos.font = `${lineScale * 0.70}px Saira`;
+		ctxos.font = `${lineScale * 0.45}px Saira`;
 		ctxos.fillText(autoplay.checked ? "AUTOPLAY" : "COMBOS", wlen, lineScale * 1.9);
 	}
 	//绘制歌名和等级
@@ -1834,16 +1834,16 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = "left";
 	ctxos.font = "30px Saira";
-	ctxos.fillText(statData.scoreDelta, 1174.5+250, 500+50);
+	ctxos.fillText(statData.scoreDelta, 1174.5+275, 500+50);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.font = "40px Saira";
-	ctxos.fillText(stat.accStr, 1528*1.05, 545*1.2);
+	ctxos.fillText(stat.accStr, 1528*1.05-100, 545*1.2);
 	ctxos.font = "40px Saira";
 	ctxos.fillText(stat.maxcombo, 1528*0.64+5, 545*1.2);
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
 	ctxos.fillStyle = statData.textBelowColor;
-	ctxos.fillText(statData.textBelowStr, 1174.5, 500-75);
+	ctxos.fillText(statData.textBelowStr, 1145.1-125, 500-75);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
 	ctxos.font = "75px Saira";
