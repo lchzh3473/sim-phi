@@ -1789,7 +1789,8 @@ function qwqdraw3(statData) {
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalCompositeOperation = "destination-out";
 	ctxos.globalAlpha = 1;
-	const k = 3.7320508075688776; //tan75°
+	//const k = 3.7320508075688776; //tan75°
+        const k = 11.43005230276134307;
 	ctxos.setTransform(canvasos.width - canvasos.height / k, 0, -canvasos.height / k, canvasos.height, canvasos.height / k, 0);
 	ctxos.fillRect(0, 0, 1, tween[8](range((qwqEnd.second - 0.13) * 0.94)));
 	ctxos.resetTransform();
@@ -1831,7 +1832,7 @@ function qwqdraw3(statData) {
 	ctxos.fillText(statData.scoreBest, 1180, 428);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = "right";
-	ctxos.fillText(statData.scoreDelta, 1919, 275);
+	ctxos.fillText(statData.scoreDelta, 1145, 275);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.textAlign = "left";
 	ctxos.fillText(stat.accStr, 352, 545);
@@ -1844,7 +1845,7 @@ function qwqdraw3(statData) {
 	ctxos.textAlign = "center";
 	ctxos.font = "86px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
-	ctxos.fillText(stat.scoreStr, 1075, 554);
+	ctxos.fillText(stat.scoreStr, 1919, 554-114);
 	ctxos.font = "26px Saira";
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillText(stat.perfect, 891, 645);
