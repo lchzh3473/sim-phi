@@ -1,5 +1,5 @@
 "use strict";
-const _i = ['Phigros Simpled EUI', [1, 5, 5, 7, 1], 1611795955, 1652747710];
+const _i = ['Phigros Simpled EUI', [1, 5, 5, 7, 2], 1611795955, 1652747710];
 const urls = {
 	zip: ["//unpkg.com/@zip.js/zip.js/dist/zip.min.js", "//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js"],
 	browser: ["//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js", "//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js", "//passer-by.com/browser/Browser.js"],
@@ -1825,13 +1825,13 @@ function qwqdraw3(statData) {
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
-	ctxos.fillText(statData.newBestStr, 950*1.1, 500+65);
+	ctxos.fillText(statData.newBestStr, 1000, 500+65);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
-	ctxos.fillText(statData.scoreBest, 1024*1.1, 500+65);
+	ctxos.fillText(statData.scoreBest, 1000+50, 500+65);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = "right";
-	ctxos.fillText(statData.scoreDelta, 1280*1.1, 500+65);
+	ctxos.fillText(statData.scoreDelta, 1000+100, 500+65);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.fillText(stat.accStr, 1528*1.05, 545*1.2);
         ctxos.textAlign = "left";
@@ -1839,7 +1839,7 @@ function qwqdraw3(statData) {
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(statData.textAboveStr, 383 + Math.min(dxlvl, 750), 208);
 	ctxos.fillStyle = statData.textBelowColor;
-	ctxos.fillText(statData.textBelowStr, 950*1.1, 500-25);
+	ctxos.fillText(statData.textBelowStr, 1000, 500-50);
 	ctxos.fillStyle = "#fff";
 	ctxos.textAlign = "center";
 	ctxos.font = "75px Saira";
