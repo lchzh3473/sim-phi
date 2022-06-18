@@ -1821,7 +1821,7 @@ function qwqdraw3(statData) {
 	const qwq3 = 410 - range((qwqEnd.second - 1.87) * 2.14) * 164;
 	//ctxos.drawImage(res["LevelOver3"], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
 	//ctxos.drawImage(res["Ranks"][stat.rankStatus], 661*4 - qwq3 / 2, 545*2 - qwq3 / 2, qwq3, qwq3);
-	ctxos.drawImage(res["Ranks"][stat.rankStatus], 919, 250, qwq3, qwq3);
+	ctxos.drawImage(res["Ranks"][stat.rankStatus], 919*2, 100, qwq3, qwq3);
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
