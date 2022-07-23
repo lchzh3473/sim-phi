@@ -24,6 +24,11 @@
 	display: none;
 }
 
+:root {
+	/* Firefox */
+	scrollbar-width: none;
+}
+
 html,
 body {
 	/*overflow: hidden;*/
