@@ -7,8 +7,13 @@
 	<title>(っ °Д °;)っ</title>
 	<link rel="stylesheet" href="/utils/style.css">
 	<link rel="stylesheet" href="./style.css">
+	<script src="//fastly.jsdelivr.net/npm/eruda"></script>
+	<script>if ((new URLSearchParams(location.search)).has('test')) eruda.init();</script>
 	<script defer src="/utils/stat.js"></script>
-	<script defer src="./script.js?v=1419"></script>
+	<script defer src="./js/common.js?v=14191"></script>
+	<script defer src="./js/pec2json.js?v=14191"></script>
+	<script defer src="./js/reader.js?v=14191"></script>
+	<script defer src="./script.js?v=14191"></script>
 	<script defer src="/utils/main.js"></script>
 </head>
 
@@ -21,6 +26,7 @@
 			<input type="button" id="demo" value="Demo" style="display:none">
 			<input type="file" accept="application/x-zip-compressed" id="upload">
 			<label for="upload">选择zip</label>
+			<!-- <input type="button" value="缓存" onclick="location.reload(true)"> -->
 			<input type="text" style="width:0;flex-grow:1;flex-shrink:1;pointer-events:none" id="filename">
 		</div>
 		<input type="button" value="重置" onclick="location.reload(true)">
@@ -89,7 +95,7 @@
 		</div>
 		<div><strong id="msg-out">&ensp;</strong></div>
 		<div id="stage">
-			<canvas id="canvas" class="fade"></canvas>
+			<canvas id="_canvas" class="fade"></canvas>
 			<div id="mask">
 				<div>Tips: Do not distribute the URL in case the proliferation of low-tech videos!</div>
 				<div>为维护社区良好环境，避免低技术视频泛滥，请不要直接传播模拟器网址！</div>

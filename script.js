@@ -1,7 +1,13 @@
 'use strict';
 const _i = ['Phigros模拟器', [1, 4, 19], 1611795955, 1654879848];
+const tween = {
+	easeInSine: pos => 1 - Math.cos(pos * Math.PI / 2),
+	easeOutSine: pos => Math.sin(pos * Math.PI / 2),
+	easeOutCubic: pos => 1 + (pos - 1) ** 3,
+}
 const urls = {
 	zip: ['//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js', '//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js'],
+	jszip: ['//cdn.jsdelivr.net/npm/jszip', '//fastly.jsdelivr.net/npm/jszip'],
 	browser: ['//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js', '//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js', '//passer-by.com/browser/Browser.js'],
 	bitmap: ['//cdn.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js', '//fastly.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js'],
 	blur: ['//cdn.jsdelivr.net/npm/stackblur-canvas', '//fastly.jsdelivr.net/npm/stackblur-canvas'],
@@ -105,6 +111,7 @@ const selectflip = document.getElementById('select-flip');
 const selectspeed = document.getElementById('select-speed');
 const config = {
 	speed: 1,
+	isJSZip: true,
 	setSpeed(num) {
 		this.speed = 2 ** (num / 12);
 	}
@@ -152,7 +159,7 @@ const chartInfoData = []; //info.csv
 const AspectRatio = 16 / 9; //宽高比上限
 const Deg = Math.PI / 180; //角度转弧度
 let wlen, hlen, wlen2, hlen2, noteScale, lineScale; //背景图相关
-const canvas = document.getElementById('canvas');
+const canvas = document.getElementById('_canvas');
 const ctx = canvas.getContext('2d'); //游戏界面(alpha:false会出现兼容问题)
 const canvasos = document.createElement('canvas'); //用于绘制游戏主界面
 const ctxos = canvasos.getContext('2d');
@@ -171,35 +178,6 @@ const Renderer = { //存放谱面
 	reverseholds: [],
 	tapholds: []
 };
-//全屏相关
-const full = {
-	toggle(elem) {
-		if (!this.enabled) return false;
-		if (this.element) {
-			if (document.exitFullscreen) return document.exitFullscreen();
-			if (document.cancelFullScreen) return document.cancelFullScreen();
-			if (document.webkitCancelFullScreen) return document.webkitCancelFullScreen();
-			if (document.mozCancelFullScreen) return document.mozCancelFullScreen();
-			if (document.msExitFullscreen) return document.msExitFullscreen();
-		} else {
-			if (!(elem instanceof HTMLElement)) elem = document.body;
-			if (elem.requestFullscreen) return elem.requestFullscreen();
-			if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen();
-			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen();
-			if (elem.msRequestFullscreen) return elem.msRequestFullscreen();
-		}
-	},
-	check(elem) {
-		if (!(elem instanceof HTMLElement)) elem = document.body;
-		return this.element == elem;
-	},
-	get element() {
-		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-	},
-	get enabled() {
-		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled);
-	}
-};
 async function checkSupport() {
 	window.addEventListener('error', e => message.sendError(e.message));
 	window.addEventListener('unhandledrejection', e => message.sendError(e.reason));
@@ -210,8 +188,8 @@ async function checkSupport() {
 	if (typeof md5 != 'function') await loadJS(urls.md5).catch(() => message.throwError('md5组件加载失败，请检查网络'));
 	message.sendMessage('加载Browser组件...');
 	if (typeof Browser != 'function') await loadJS(urls.browser).catch(() => message.throwError('Browser组件加载失败，请检查网络'));
-	message.sendMessage('加载zip组件...');
-	if (typeof zip != 'object') await loadJS(urls.zip).catch(() => message.throwError('zip组件加载失败，请检查网络'));
+	// message.sendMessage('加载zip组件...');
+	// if (typeof zip != 'object') await loadJS(urls.zip).catch(() => message.throwError('zip组件加载失败，请检查网络'));
 	message.sendMessage('检查浏览器兼容性...');
 	const info = new Browser;
 	if (info.browser == 'XiaoMi') message.sendWarning('检测到小米浏览器，可能存在切后台声音消失的问题');
@@ -244,20 +222,6 @@ async function checkSupport() {
 	Object.assign(window, { actx, stopPlaying, playSound });
 	message.sendMessage('检测是否支持全屏...');
 	if (!full.enabled) message.sendWarning('检测到当前浏览器不支持全屏，播放时双击右下角将无反应');
-
-	function loadJS(qwq) {
-		const a = (function*(arg) { yield* arg; })(qwq instanceof Array ? qwq.reverse() : arguments);
-		const load = url => new Promise((resolve, reject) => {
-			if (!url) return reject();
-			const script = document.createElement('script');
-			script.onload = () => resolve(script);
-			script.onerror = () => load(a.next().value).then(script => resolve(script)).catch(e => reject(e));
-			script.src = url;
-			script.crossOrigin = 'anonymous';
-			document.head.appendChild(script);
-		});
-		return load(a.next().value);
-	}
 }
 //qwq
 selectbg.onchange = () => {
@@ -1086,107 +1050,23 @@ let isOutStart = false; //结尾过渡动画
 let isOutEnd = false; //临时变量
 let isPaused = true; //暂停
 //加载文件
-const loadFile = function(file) {
+function loadFile(file) {
 	qwq[1] = true;
-	document.getElementById('demo').classList.add('hide');
-	const reader = new FileReader();
+	document.getElementById('demo').classList.add('hide'); //以后考虑移除
+	const reader = new FileReader;
 	reader.readAsArrayBuffer(file);
 	reader.onprogress = progress => { //显示加载文件进度
 		const size = file.size;
 		message.sendMessage(`加载文件：${Math.floor(progress.loaded / size * 100)}%`);
 	};
-	reader.onload = async function() {
-		//加载zip//gildas-lormeau.github.io/zip.js)
-		const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(this.result)));
-		reader.getEntries().then(async zipDataRaw => {
-			const zipData = [];
-			for (const i of zipDataRaw) {
-				if (i.filename.replace(/.*\//, '')) zipData.push(i); //过滤文件夹
-			}
-			console.log(zipData);
-			let loadedNum = 0;
-			const zipRaw = await Promise.all(zipData.map(async i => {
-				if (i.filename == 'line.csv') {
-					const data = await i.getData(new zip.TextWriter());
-					const chartLine = csv2array(data, true);
-					chartLineData.push(...chartLine);
-					loading(++loadedNum);
-					return chartLine;
-				}
-				if (i.filename == 'info.csv') {
-					const data_2 = await i.getData(new zip.TextWriter());
-					const chartInfo = csv2array(data_2, true);
-					chartInfoData.push(...chartInfo);
-					loading(++loadedNum);
-					return chartInfo;
-				}
-				return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
-					const audioData = await actx.decodeAudioData(data.buffer);
-					bgms[i.filename] = audioData;
-					selectbgm.appendChild(createOption(i.filename, i.filename));
-					loading(++loadedNum);
-					return audioData;
-				}).catch(async () => {
-					const data = await i.getData(new zip.BlobWriter());
-					const imageData = await createImageBitmap(data);
-					bgs[i.filename] = imageData;
-					bgsBlur[i.filename] = await createImageBitmap(imgBlur(imageData));
-					selectbg.appendChild(createOption(i.filename, i.filename));
-					loading(++loadedNum);
-					return imageData;
-				}).catch(async () => {
-					const data = await i.getData(new zip.TextWriter());
-					console.log(JSON.parse(data)); //test
-					const jsonData = await chart123(JSON.parse(data));
-					charts[i.filename] = jsonData;
-					charts[i.filename]['md5'] = md5(data);
-					selectchart.appendChild(createOption(i.filename, i.filename));
-					loading(++loadedNum);
-					return jsonData;
-				}).catch(async () => {
-					const data = await i.getData(new zip.TextWriter());
-					const jsonData = await chart123(chartp23(data, i.filename));
-					charts[i.filename] = jsonData;
-					charts[i.filename]['md5'] = md5(data);
-					selectchart.appendChild(createOption(i.filename, i.filename));
-					loading(++loadedNum);
-					return jsonData;
-				}).catch(error => {
-					console.log(error);
-					loading(++loadedNum);
-					message.sendWarning(`不支持的文件：${i.filename}`);
-					return undefined;
-				});
-			}));
-
-			function createOption(innerhtml, value) {
-				const option = document.createElement('option');
-				const isHidden = /(^|\/)\./.test(innerhtml);
-				option.innerHTML = isHidden ? '' : innerhtml;
-				option.value = value;
-				if (isHidden) option.classList.add('hide');
-				return option;
-			}
-
-			function loading(num) {
-				message.sendMessage(`读取文件：${Math.floor(num / zipData.length * 100)}%`);
-				if (num == zipData.length) {
-					if (selectchart.children.length == 0) {
-						message.sendError('读取出错：未发现谱面文件'); //test
-					} else if (selectbgm.children.length == 0) {
-						message.sendError('读取出错：未发现音乐文件'); //test
-					} else {
-						select.classList.remove('disabled');
-						btnPause.classList.add('disabled');
-						adjustInfo();
-					}
-				}
-			}
-			console.log(zipRaw);
-		}, () => {
-			message.sendError('读取出错：不是zip文件'); //test
-		});
-		reader.close();
+	reader.onload = function() {
+		if (config.isJSZip) {
+			if (typeof JSZip != 'function') loadJS(urls.jszip).then(() => ljs(this.result));
+			else ljs(this.result);
+		} else {
+			if (typeof zip != 'object') loadJS(urls.zip).then(() => ljs2(this.result));
+			else ljs2(this.result);
+		}
 	}
 }
 //note预处理
@@ -1656,15 +1536,15 @@ function qwqdraw1(now) {
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalCompositeOperation = 'source-over';
 	//绘制进度条
-	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
+	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.drawImage(res['ProgressBar'], (qwq[5] ? duration - timeBgm : timeBgm) / duration * 1920 - 1920, 0);
 	//绘制文字
 	ctxos.resetTransform();
 	ctxos.fillStyle = '#fff';
 	//开头过渡动画
 	if (qwqIn.second < 3) {
-		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
-		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween[2](6 - qwqIn.second * 2);
+		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
+		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween.easeOutSine(6 - qwqIn.second * 2);
 		ctxos.textAlign = 'center';
 		//歌名
 		ctxos.textBaseline = 'alphabetic';
@@ -1685,14 +1565,14 @@ function qwqdraw1(now) {
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(1, 0, 0, 1, wlen, hlen);
-		const imgW = lineScale * 48 * (qwqIn.second < 0.67 ? tween[3](qwqIn.second * 1.5) : 1);
+		const imgW = lineScale * 48 * (qwqIn.second < 0.67 ? tween.easeInSine(qwqIn.second * 1.5) : 1);
 		const imgH = lineScale * 0.15;
-		if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween[2](6 - qwqIn.second * 2);
+		if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween.easeOutSine(6 - qwqIn.second * 2);
 		ctxos.drawImage(lineColor.checked ? res['JudgeLineMP'] : res['JudgeLine'], -imgW / 2, -imgH / 2, imgW, imgH);
 	}
 	//绘制分数和combo以及暂停按钮
 	ctxos.globalAlpha = 1;
-	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween[2](qwqIn.second * 1.5) - 1) : -tween[2](qwqOut.second * 1.5)) * 1.75);
+	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = 'alphabetic';
 	ctxos.font = `${lineScale * 0.95}px Mina,Noto Sans SC`;
 	ctxos.textAlign = 'right';
@@ -1702,13 +1582,13 @@ function qwqdraw1(now) {
 		ctxos.textAlign = 'center';
 		ctxos.font = `${lineScale * 1.32}px Mina,Noto Sans SC`;
 		ctxos.fillText(stat.combo, wlen, lineScale * 1.375);
-		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween[2](qwqIn.second * 1.5) : (1 - tween[2](qwqOut.second * 1.5));
+		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) : (1 - tween.easeOutSine(qwqOut.second * 1.5));
 		ctxos.font = `${lineScale * 0.66}px Mina,Noto Sans SC`;
 		ctxos.fillText(autoplay.checked ? 'Autoplay' : 'combo', wlen, lineScale * 2.05);
 	}
 	//绘制歌名和等级
 	ctxos.globalAlpha = 1;
-	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween[2](qwqIn.second * 1.5)) : tween[2](qwqOut.second * 1.5)) * 1.75);
+	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween.easeOutSine(qwqIn.second * 1.5)) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = 'alphabetic';
 	ctxos.textAlign = 'right';
 	ctxos.font = `${lineScale * 0.63}px Mina,Noto Sans SC`;
@@ -1724,8 +1604,8 @@ function qwqdraw1(now) {
 	ctxos.resetTransform();
 	if (qwq[0]) {
 		//绘制时间和帧率以及note打击数
-		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween[2](qwqIn.second * 1.5);
-		else ctxos.globalAlpha = 1 - tween[2](qwqOut.second * 1.5);
+		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
+		else ctxos.globalAlpha = 1 - tween.easeOutSine(qwqOut.second * 1.5);
 		ctxos.textBaseline = 'middle';
 		ctxos.font = `${lineScale * 0.4}px Mina,Noto Sans SC`;
 		ctxos.textAlign = 'left';
@@ -1741,7 +1621,7 @@ function qwqdraw1(now) {
 	//判定线函数，undefined/0:默认,1:非,2:恒成立
 	function drawLine(bool) {
 		ctxos.globalAlpha = 1;
-		const tw = 1 - tween[2](qwqOut.second * 1.5);
+		const tw = 1 - tween.easeOutSine(qwqOut.second * 1.5);
 		for (const i of Renderer.lines) {
 			if (bool ^ i.imageB && qwqOut.second < 0.67) {
 				ctxos.globalAlpha = i.alpha;
@@ -1805,7 +1685,7 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = 1;
 	const k = 3.7320508075688776; //tan75°
 	ctxos.setTransform(canvasos.width - canvasos.height / k, 0, -canvasos.height / k, canvasos.height, canvasos.height / k, 0);
-	ctxos.fillRect(0, 0, 1, tween[8](range((qwqEnd.second - 0.13) * 0.94)));
+	ctxos.fillRect(0, 0, 1, tween.easeOutCubic(range((qwqEnd.second - 0.13) * 0.94)));
 	ctxos.resetTransform();
 	ctxos.globalCompositeOperation = 'destination-over';
 	const qwq0 = (canvasos.width - canvasos.height / k) / (16 - 9 / k);
@@ -1815,7 +1695,7 @@ function qwqdraw3(statData) {
 	ctxos.drawImage(res['LevelOver1'], 102, 378);
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.globalAlpha = 1;
-	ctxos.drawImage(res['LevelOver5'], 700 * tween[8](range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
+	ctxos.drawImage(res['LevelOver5'], 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
 	//歌名和等级
 	ctxos.fillStyle = '#fff';
 	ctxos.textBaseline = 'middle';
@@ -1823,11 +1703,11 @@ function qwqdraw3(statData) {
 	ctxos.font = '80px Mina,Noto Sans SC';
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
 	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Mina,Noto Sans SC`;
-	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 320, 145);
+	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 145);
 	ctxos.font = '30px Mina,Noto Sans SC';
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
 	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Mina,Noto Sans SC`;
-	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween[8](range(qwqEnd.second * 1.25)) - 317, 208);
+	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 208);
 	ctxos.font = '30px Mina,Noto Sans SC';
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
@@ -1972,469 +1852,6 @@ function chart123(chart) {
 	}
 	return newChart;
 }
-
-function chartp23(pec, filename) {
-	class Chart {
-		constructor() {
-			this.formatVersion = 3;
-			this.offset = 0;
-			this.numOfNotes = 0;
-			this.judgeLineList = [];
-		}
-		pushLine(judgeLine) {
-			this.judgeLineList.push(judgeLine);
-			this.numOfNotes += judgeLine.numOfNotes;
-			return judgeLine;
-		}
-	}
-	class JudgeLine {
-		constructor(bpm) {
-			this.numOfNotes = 0;
-			this.numOfNotesAbove = 0;
-			this.numOfNotesBelow = 0;
-			this.bpm = 120;
-			this.bpm = bpm;
-			('speedEvents,notesAbove,notesBelow,judgeLineDisappearEvents,judgeLineMoveEvents,judgeLineRotateEvents,judgeLineDisappearEventsPec,judgeLineMoveEventsPec,judgeLineRotateEventsPec').split(',').map(i => this[i] = []);
-		}
-		pushNote(note, pos, isFake) {
-			switch (pos) {
-				case undefined:
-				case 1:
-					this.notesAbove.push(note);
-					break;
-				case 2:
-					this.notesBelow.push(note);
-					break;
-				default:
-					this.notesBelow.push(note);
-					console.warn('Warning: Illeagal Note Side: ' + pos);
-			}
-			if (!isFake) {
-				this.numOfNotes++;
-				this.numOfNotesAbove++;
-			}
-		}
-		pushEvent(type, startTime, endTime, n1, n2, n3, n4) {
-			const evt = {
-				startTime: startTime,
-				endTime: endTime,
-			}
-			if (typeof startTime == 'number' && typeof endTime == 'number' && startTime > endTime) {
-				console.warn('Warning: startTime ' + startTime + ' is larger than endTime ' + endTime);
-				//return;
-			}
-			switch (type) {
-				case 0:
-					evt.value = n1;
-					this.speedEvents.push(evt);
-					break;
-				case 1:
-					evt.start = n1;
-					evt.end = n2;
-					evt.start2 = 0;
-					evt.end2 = 0;
-					this.judgeLineDisappearEvents.push(evt);
-					break;
-				case 2:
-					evt.start = n1;
-					evt.end = n2;
-					evt.start2 = n3;
-					evt.end2 = n4;
-					this.judgeLineMoveEvents.push(evt);
-					break;
-				case 3:
-					evt.start = n1;
-					evt.end = n2;
-					evt.start2 = 0;
-					evt.end2 = 0;
-					this.judgeLineRotateEvents.push(evt);
-					break;
-				case -1:
-					evt.value = n1;
-					evt.motionType = 1;
-					this.judgeLineDisappearEventsPec.push(evt);
-					break;
-				case -2:
-					evt.value = n1;
-					evt.value2 = n2;
-					evt.motionType = n3;
-					this.judgeLineMoveEventsPec.push(evt);
-					break;
-				case -3:
-					evt.value = n1;
-					evt.motionType = n2;
-					this.judgeLineRotateEventsPec.push(evt);
-					break;
-				default:
-					throw `Unexpected Event Type: ${type}`;
-			}
-		}
-	}
-	class Note {
-		constructor(type, time, x, holdTime, speed) {
-			this.type = type;
-			this.time = time;
-			this.positionX = x;
-			this.holdTime = type == 3 ? holdTime : 0;
-			this.speed = isNaN(speed) ? 1 : speed; //默认值不为0不能改成Number(speed)||1
-			//this.floorPosition = time % 1e9 / 104 * 1.2;
-		}
-	}
-	//test start
-	const rawChart = pec.match(/[^\n\r ]+/g).map(i => isNaN(i) ? String(i) : Number(i));
-	const qwqChart = new Chart();
-	const raw = {};
-	('bp,n1,n2,n3,n4,cv,cp,cd,ca,cm,cr,cf').split(',').map(i => raw[i] = []);
-	const rawarr = [];
-	let fuckarr = [1, 1]; //n指令的#和&
-	let rawstr = '';
-	if (!isNaN(rawChart[0])) qwqChart.offset = (rawChart.shift() / 1e3 - 0.175); //v18x固定延迟
-	for (let i = 0; i < rawChart.length; i++) {
-		let p = rawChart[i];
-		if (!isNaN(p)) rawarr.push(p);
-		else if (p == '#' && rawstr[0] == 'n') fuckarr[0] = rawChart[++i];
-		else if (p == '&' && rawstr[0] == 'n') fuckarr[1] = rawChart[++i];
-		else if (raw[p]) pushCommand(p);
-		else throw `Unknown Command: ${p}`;
-	}
-	pushCommand(''); //补充最后一个元素(bug)
-	//处理bpm变速
-	if (!raw.bp[0]) raw.bp.push([0, 120]);
-	const baseBpm = raw.bp[0][1];
-	if (raw.bp[0][0]) raw.bp.unshift([0, baseBpm]);
-	const bpmEvents = []; //存放bpm变速事件
-	let fuckBpm = 0;
-	raw.bp.sort((a, b) => a[0] - b[0]).forEach((i, idx, arr) => {
-		if (arr[idx + 1] && arr[idx + 1][0] <= 0) return; //过滤负数
-		const start = i[0] < 0 ? 0 : i[0];
-		const end = arr[idx + 1] ? arr[idx + 1][0] : 1e9;
-		const bpm = i[1];
-		bpmEvents.push({
-			startTime: start,
-			endTime: end,
-			bpm: bpm,
-			value: fuckBpm
-		});
-		fuckBpm += (end - start) / bpm;
-	});
-
-	function pushCommand(next) {
-		if (raw[rawstr]) {
-			if (rawstr[0] == 'n') {
-				rawarr.push(...fuckarr);
-				fuckarr = [1, 1];
-			}
-			raw[rawstr].push(JSON.parse(JSON.stringify(rawarr)));
-		}
-		rawarr.length = 0;
-		rawstr = next;
-	}
-	//将pec时间转换为pgr时间
-	function calcTime(timePec) {
-		let timePhi = 0;
-		for (const i of bpmEvents) {
-			if (timePec < i.startTime) break;
-			if (timePec > i.endTime) continue;
-			timePhi = Math.round(((timePec - i.startTime) / i.bpm + i.value) * baseBpm * 32);
-		}
-		return timePhi;
-	}
-	//处理note和判定线事件
-	let linesPec = [];
-	for (const i of raw.n1) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushNote(new Note(1, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] / 115.2, 0, i[5]), i[3], i[4]);
-		if (i[3] != 1 && i[3] != 2) message.sendWarning(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n1 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
-		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
-	} //102.4
-	for (const i of raw.n2) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] / 115.2, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
-		if (i[4] != 1 && i[4] != 2) message.sendWarning(`检测到非法方向:${i[4]}(将被视为2)\n位于:"n2 ${i.slice(0, 5).join(' ')} # ${i[6]} & ${i[7]}"\n来自${filename}`);
-		if (i[5]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n2 ${i.slice(0, 6).join(' ')}"\n来自${filename}`);
-		if (i[7] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n2 ${i.slice(0, 5).join(' ')} # ${i[6]} & ${i[7]}"\n来自${filename}`);
-	}
-	for (const i of raw.n3) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] / 115.2, 0, i[5]), i[3], i[4]);
-		if (i[3] != 1 && i[3] != 2) message.sendWarning(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n3 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
-		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
-	}
-	for (const i of raw.n4) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushNote(new Note(2, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] / 115.2, 0, i[5]), i[3], i[4]);
-		if (i[3] != 1 && i[3] != 2) message.sendWarning(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n4 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
-		if (i[4]) message.sendWarning(`检测到FakeNote(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
-		if (i[6] != 1) message.sendWarning(`检测到异常Note(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
-	}
-	//变速
-	for (const i of raw.cv) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushEvent(0, calcTime(i[1]), null, i[2] / 7.0); //6.0??
-	}
-	//不透明度
-	for (const i of raw.ca) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[1]), i[2] > 0 ? i[2] / 255 : 0); //暂不支持alpha值扩展
-		if (i[2] < 0) message.sendWarning(`检测到负数Alpha:${i[2]}(将被视为0)\n位于:"ca ${i.join(' ')}"\n来自${filename}`);
-	}
-	for (const i of raw.cf) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		if (i[1] > i[2]) {
-			message.sendWarning(`检测到开始时间大于结束时间(将禁用此事件)\n位于:"cf ${i.join(' ')}"\n来自${filename}`);
-			continue;
-		}
-		linesPec[i[0]].pushEvent(-1, calcTime(i[1]), calcTime(i[2]), i[3] > 0 ? i[3] / 255 : 0);
-		if (i[3] < 0) message.sendWarning(`检测到负数Alpha:${i[3]}(将被视为0)\n位于:"cf ${i.join(' ')}"\n来自${filename}`);
-	}
-	//移动
-	for (const i of raw.cp) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushEvent(-2, calcTime(i[1]), calcTime(i[1]), i[2] / 2048, i[3] / 1400, 1);
-	}
-	for (const i of raw.cm) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		if (i[1] > i[2]) {
-			message.sendWarning(`检测到开始时间大于结束时间(将禁用此事件)\n位于:"cm ${i.join(' ')}"\n来自${filename}`);
-			continue;
-		}
-		linesPec[i[0]].pushEvent(-2, calcTime(i[1]), calcTime(i[2]), i[3] / 2048, i[4] / 1400, i[5]);
-		if (i[5] && !tween[i[5]] && i[5] != 1) message.sendWarning(`未知的缓动类型:${i[5]}(将被视为1)\n位于:"cm ${i.join(' ')}"\n来自${filename}`);
-	}
-	//旋转
-	for (const i of raw.cd) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		linesPec[i[0]].pushEvent(-3, calcTime(i[1]), calcTime(i[1]), -i[2], 1); //??
-	}
-	for (const i of raw.cr) {
-		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
-		if (i[1] > i[2]) {
-			message.sendWarning(`检测到开始时间大于结束时间(将禁用此事件)\n位于:"cr ${i.join(' ')}"\n来自${filename}`);
-			continue;
-		}
-		linesPec[i[0]].pushEvent(-3, calcTime(i[1]), calcTime(i[2]), -i[3], i[4]);
-		if (i[4] && !tween[i[4]] && i[4] != 1) message.sendWarning(`未知的缓动类型:${i[4]}(将被视为1)\n位于:"cr ${i.join(' ')}"\n来自${filename}`);
-	}
-	for (const i of linesPec) {
-		if (i) {
-			i.notesAbove.sort((a, b) => a.time - b.time); //以后移到123函数
-			i.notesBelow.sort((a, b) => a.time - b.time); //以后移到123函数
-			let s = i.speedEvents;
-			let ldp = i.judgeLineDisappearEventsPec;
-			let lmp = i.judgeLineMoveEventsPec;
-			let lrp = i.judgeLineRotateEventsPec;
-			const srt = (a, b) => (a.startTime - b.startTime) + (a.endTime - b.endTime); //不单独判断以避免误差
-			s.sort(srt); //以后移到123函数
-			ldp.sort(srt); //以后移到123函数
-			lmp.sort(srt); //以后移到123函数
-			lrp.sort(srt); //以后移到123函数
-			//cv和floorPosition一并处理
-			let y = 0;
-			for (let j = 0; j < s.length; j++) {
-				s[j].endTime = j < s.length - 1 ? s[j + 1].startTime : 1e9;
-				if (s[j].startTime < 0) s[j].startTime = 0;
-				s[j].floorPosition = y;
-				y += (s[j].endTime - s[j].startTime) * s[j].value / i.bpm * 1.875;
-			}
-			for (const j of i.notesAbove) {
-				let qwqwq = 0;
-				let qwqwq2 = 0;
-				let qwqwq3 = 0;
-				for (const k of i.speedEvents) {
-					if (j.time % 1e9 > k.endTime) continue;
-					if (j.time % 1e9 < k.startTime) break;
-					qwqwq = k.floorPosition;
-					qwqwq2 = k.value;
-					qwqwq3 = j.time % 1e9 - k.startTime;
-				}
-				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
-				if (j.type == 3) j.speed *= qwqwq2;
-			}
-			for (const j of i.notesBelow) {
-				let qwqwq = 0;
-				let qwqwq2 = 0;
-				let qwqwq3 = 0;
-				for (const k of i.speedEvents) {
-					if (j.time % 1e9 > k.endTime) continue;
-					if (j.time % 1e9 < k.startTime) break;
-					qwqwq = k.floorPosition;
-					qwqwq2 = k.value;
-					qwqwq3 = j.time % 1e9 - k.startTime;
-				}
-				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
-				if (j.type == 3) j.speed *= qwqwq2;
-			}
-			//整合motionType
-			let ldpTime = 0;
-			let ldpValue = 0;
-			for (const j of ldp) {
-				i.pushEvent(1, ldpTime, j.startTime, ldpValue, ldpValue);
-				if (tween[j.motionType]) {
-					for (let k = parseInt(j.startTime); k < parseInt(j.endTime); k++) {
-						let ptt1 = (k - j.startTime) / (j.endTime - j.startTime);
-						let ptt2 = (k + 1 - j.startTime) / (j.endTime - j.startTime);
-						let pt1 = j.value - ldpValue;
-						i.pushEvent(1, k, k + 1, ldpValue + tween[j.motionType](ptt1) * pt1, ldpValue + tween[j.motionType](ptt2) * pt1);
-					}
-				} else if (j.motionType) i.pushEvent(1, j.startTime, j.endTime, ldpValue, j.value);
-				ldpTime = j.endTime;
-				ldpValue = j.value;
-			}
-			i.pushEvent(1, ldpTime, 1e9, ldpValue, ldpValue);
-			//
-			let lmpTime = 0;
-			let lmpValue = 0;
-			let lmpValue2 = 0;
-			for (const j of lmp) {
-				i.pushEvent(2, lmpTime, j.startTime, lmpValue, lmpValue, lmpValue2, lmpValue2);
-				if (tween[j.motionType]) {
-					for (let k = parseInt(j.startTime); k < parseInt(j.endTime); k++) {
-						let ptt1 = (k - j.startTime) / (j.endTime - j.startTime);
-						let ptt2 = (k + 1 - j.startTime) / (j.endTime - j.startTime);
-						let pt1 = j.value - lmpValue;
-						let pt2 = j.value2 - lmpValue2;
-						i.pushEvent(2, k, k + 1, lmpValue + tween[j.motionType](ptt1) * pt1, lmpValue + tween[j.motionType](ptt2) * pt1, lmpValue2 + tween[j.motionType](ptt1) * pt2, lmpValue2 + tween[j.motionType](ptt2) * pt2);
-					}
-				} else if (j.motionType) i.pushEvent(2, j.startTime, j.endTime, lmpValue, j.value, lmpValue2, j.value2);
-				lmpTime = j.endTime;
-				lmpValue = j.value;
-				lmpValue2 = j.value2;
-			}
-			i.pushEvent(2, lmpTime, 1e9, lmpValue, lmpValue, lmpValue2, lmpValue2);
-			//
-			let lrpTime = 0;
-			let lrpValue = 0;
-			for (const j of lrp) {
-				i.pushEvent(3, lrpTime, j.startTime, lrpValue, lrpValue);
-				if (tween[j.motionType]) {
-					for (let k = parseInt(j.startTime); k < parseInt(j.endTime); k++) {
-						let ptt1 = (k - j.startTime) / (j.endTime - j.startTime);
-						let ptt2 = (k + 1 - j.startTime) / (j.endTime - j.startTime);
-						let pt1 = j.value - lrpValue;
-						i.pushEvent(3, k, k + 1, lrpValue + tween[j.motionType](ptt1) * pt1, lrpValue + tween[j.motionType](ptt2) * pt1);
-					}
-				} else if (j.motionType) i.pushEvent(3, j.startTime, j.endTime, lrpValue, j.value);
-				lrpTime = j.endTime;
-				lrpValue = j.value;
-			}
-			i.pushEvent(3, lrpTime, 1e9, lrpValue, lrpValue);
-			qwqChart.pushLine(i);
-		}
-	}
-	return JSON.parse(JSON.stringify(qwqChart));
-}
-const tween = [null, null,
-	pos => Math.sin(pos * Math.PI / 2), //2
-	pos => 1 - Math.cos(pos * Math.PI / 2), //3
-	pos => 1 - (pos - 1) ** 2, //4
-	pos => pos ** 2, //5
-	pos => (1 - Math.cos(pos * Math.PI)) / 2, //6
-	pos => ((pos *= 2) < 1 ? pos ** 2 : -((pos - 2) ** 2 - 2)) / 2, //7
-	pos => 1 + (pos - 1) ** 3, //8
-	pos => pos ** 3, //9
-	pos => 1 - (pos - 1) ** 4, //10
-	pos => pos ** 4, //11
-	pos => ((pos *= 2) < 1 ? pos ** 3 : ((pos - 2) ** 3 + 2)) / 2, //12
-	pos => ((pos *= 2) < 1 ? pos ** 4 : -((pos - 2) ** 4 - 2)) / 2, //13
-	pos => 1 + (pos - 1) ** 5, //14
-	pos => pos ** 5, //15
-	pos => 1 - 2 ** (-10 * pos), //16
-	pos => 2 ** (10 * (pos - 1)), //17
-	pos => Math.sqrt(1 - (pos - 1) ** 2), //18
-	pos => 1 - Math.sqrt(1 - pos ** 2), //19
-	pos => (2.70158 * pos - 1) * (pos - 1) ** 2 + 1, //20
-	pos => (2.70158 * pos - 1.70158) * pos ** 2, //21
-	pos => ((pos *= 2) < 1 ? (1 - Math.sqrt(1 - pos ** 2)) : (Math.sqrt(1 - (pos - 2) ** 2) + 1)) / 2, //22
-	pos => pos < 0.5 ? (14.379638 * pos - 5.189819) * pos ** 2 : (14.379638 * pos - 9.189819) * (pos - 1) ** 2 + 1, //23
-	pos => 1 - 2 ** (-10 * pos) * Math.cos(pos * Math.PI / .15), //24
-	pos => 2 ** (10 * (pos - 1)) * Math.cos((pos - 1) * Math.PI / .15), //25
-	pos => ((pos *= 11) < 4 ? pos ** 2 : pos < 8 ? (pos - 6) ** 2 + 12 : pos < 10 ? (pos - 9) ** 2 + 15 : (pos - 10.5) ** 2 + 15.75) / 16, //26
-	pos => 1 - tween[26](1 - pos), //27
-	pos => (pos *= 2) < 1 ? tween[26](pos) / 2 : tween[27](pos - 1) / 2 + .5, //28
-	pos => pos < 0.5 ? 2 ** (20 * pos - 11) * Math.sin((160 * pos + 1) * Math.PI / 18) : 1 - 2 ** (9 - 20 * pos) * Math.sin((160 * pos + 1) * Math.PI / 18) //29
-];
-//导出json
-function chartify(json) {
-	let newChart = {};
-	newChart.formatVersion = 3;
-	newChart.offset = json.offset;
-	newChart.numOfNotes = json.numOfNotes;
-	newChart.judgeLineList = [];
-	for (const i of json.judgeLineList) {
-		let newLine = {};
-		newLine.numOfNotes = i.numOfNotes;
-		newLine.numOfNotesAbove = i.numOfNotesAbove;
-		newLine.numOfNotesBelow = i.numOfNotesBelow;
-		newLine.bpm = i.bpm;
-		('speedEvents,notesAbove,notesBelow,judgeLineDisappearEvents,judgeLineMoveEvents,judgeLineRotateEvents').split(',').map(i => newLine[i] = []);
-		for (const j of i.speedEvents) {
-			if (j.startTime == j.endTime) continue;
-			let newEvent = {};
-			newEvent.startTime = j.startTime;
-			newEvent.endTime = j.endTime;
-			newEvent.value = Number(j.value.toFixed(6));
-			newEvent.floorPosition = Number(j.floorPosition.toFixed(6));
-			newLine.speedEvents.push(newEvent);
-		}
-		for (const j of i.notesAbove) {
-			let newNote = {};
-			newNote.type = j.type;
-			newNote.time = j.time;
-			newNote.positionX = Number(j.positionX.toFixed(6));
-			newNote.holdTime = j.holdTime;
-			newNote.speed = Number(j.speed.toFixed(6));
-			newNote.floorPosition = Number(j.floorPosition.toFixed(6));
-			newLine.notesAbove.push(newNote);
-		}
-		for (const j of i.notesBelow) {
-			let newNote = {};
-			newNote.type = j.type;
-			newNote.time = j.time;
-			newNote.positionX = Number(j.positionX.toFixed(6));
-			newNote.holdTime = j.holdTime;
-			newNote.speed = Number(j.speed.toFixed(6));
-			newNote.floorPosition = Number(j.floorPosition.toFixed(6));
-			newLine.notesBelow.push(newNote);
-		}
-		for (const j of i.judgeLineDisappearEvents) {
-			if (j.startTime == j.endTime) continue;
-			let newEvent = {};
-			newEvent.startTime = j.startTime;
-			newEvent.endTime = j.endTime;
-			newEvent.start = Number(j.start.toFixed(6));
-			newEvent.end = Number(j.end.toFixed(6));
-			newEvent.start2 = Number(j.start2.toFixed(6));
-			newEvent.end2 = Number(j.end2.toFixed(6));
-			newLine.judgeLineDisappearEvents.push(newEvent);
-		}
-		for (const j of i.judgeLineMoveEvents) {
-			if (j.startTime == j.endTime) continue;
-			let newEvent = {};
-			newEvent.startTime = j.startTime;
-			newEvent.endTime = j.endTime;
-			newEvent.start = Number(j.start.toFixed(6));
-			newEvent.end = Number(j.end.toFixed(6));
-			newEvent.start2 = Number(j.start2.toFixed(6));
-			newEvent.end2 = Number(j.end2.toFixed(6));
-			newLine.judgeLineMoveEvents.push(newEvent);
-		}
-		for (const j of i.judgeLineRotateEvents) {
-			if (j.startTime == j.endTime) continue;
-			let newEvent = {};
-			newEvent.startTime = j.startTime;
-			newEvent.endTime = j.endTime;
-			newEvent.start = Number(j.start.toFixed(6));
-			newEvent.end = Number(j.end.toFixed(6));
-			newEvent.start2 = Number(j.start2.toFixed(6));
-			newEvent.end2 = Number(j.end2.toFixed(6));
-			newLine.judgeLineRotateEvents.push(newEvent);
-		}
-		newChart.judgeLineList.push(newLine);
-	}
-	return newChart;
-}
 //调节画面尺寸和全屏相关
 function adjustSize(source, dest, scale) {
 	const [sw, sh, dw, dh] = [source.width, source.height, dest.width, dest.height];
@@ -2492,54 +1909,4 @@ function hex2rgba(color) {
 //rgba数组(0-1)转十六进制
 function rgba2hex(...rgba) {
 	return '#' + rgba.map(i => ('00' + Math.round(Number(i) * 255 || 0).toString(16)).slice(-2)).join('');
-}
-//读取csv
-function csv2array(data, isObject) {
-	console.log(data);
-	const strarr = data.replace(/\r/g, '').split('\n');
-	const col = [];
-	for (const i of strarr) {
-		let rowstr = '';
-		let isQuot = false;
-		let beforeQuot = false;
-		const row = [];
-		for (const j of i) {
-			if (j == '"') {
-				if (!isQuot) isQuot = true;
-				else if (beforeQuot) {
-					rowstr += j;
-					beforeQuot = false;
-				} else beforeQuot = true;
-			} else if (j == ',') {
-				if (!isQuot) {
-					row.push(rowstr);
-					rowstr = '';
-				} else if (beforeQuot) {
-					row.push(rowstr);
-					rowstr = '';
-					isQuot = false;
-					beforeQuot = false;
-				} else rowstr += j;
-			} else if (!beforeQuot) rowstr += j;
-			else throw 'Error 1';
-		}
-		if (!isQuot) {
-			row.push(rowstr);
-			rowstr = '';
-		} else if (beforeQuot) {
-			row.push(rowstr);
-			rowstr = '';
-			isQuot = false;
-			beforeQuot = false;
-		} else throw 'Error 2';
-		col.push(row);
-	}
-	if (!isObject) return col;
-	const qwq = [];
-	for (let i = 1; i < col.length; i++) {
-		const obj = {};
-		for (let j = 0; j < col[0].length; j++) obj[col[0][j]] = col[i][j];
-		qwq.push(obj);
-	}
-	return qwq;
 }
