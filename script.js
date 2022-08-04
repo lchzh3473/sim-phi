@@ -941,8 +941,8 @@ const stat = {
 			scoreDelta: (s2 > l2 ? '- ' : '+ ') + Math.abs(scoreBest - this.scoreStr),
 			textAboveColor: '#65fe43',
 			textAboveStr: `  ( Speed ${config.speed.toFixed(2)}x )`,
-			textBelowColor: '#fe4365',
-			textBelowStr: 'AUTO PLAY',
+			textBelowColor: '#ffc500',
+			textBelowStr: 'ALL  PERFECT',
 		}
 		if (config.speed == 1) Object.assign(pbj, { textAboveStr: '' });
 		if (isAuto) return Object.assign(pbj, { newBestColor: '#fff', newBestStr: 'BEST', scoreDelta: '' });
@@ -1584,7 +1584,7 @@ function qwqdraw1(now) {
 		ctxos.fillText(stat.combo, wlen, lineScale * 1.375);
 		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) : (1 - tween.easeOutSine(qwqOut.second * 1.5));
 		ctxos.font = `${lineScale * 0.66}px Mina,Noto Sans SC`;
-		ctxos.fillText(autoplay.checked ? 'Autoplay' : 'combo', wlen, lineScale * 2.05);
+		ctxos.fillText(autoplay.checked ? 'combo' : 'combo', wlen, lineScale * 2.05);
 	}
 	//绘制歌名和等级
 	ctxos.globalAlpha = 1;
