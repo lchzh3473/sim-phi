@@ -853,13 +853,23 @@ window.onload = async function() {
 	if (!qwq()) message.throwError('检测到图片加载异常，请关闭所有应用程序然后重试');
 }
 async function qwqImage(img, color) {
-	const clickqwq = imgShader(img, color);
+	//const clickqwq = imgShader(img, color);
 	const arr = [];
 	const min = Math.min(img.width, img.height);
 	const max = Math.max(img.width, img.height);
-	for (let i = 0; i < parseInt(max / min); i++) arr[i] = await createImageBitmap(clickqwq, 0, i * min, min, min);
+	for (let i = 0; i < parseInt(max / min); i++) arr[i] = await createImageBitmap(imgShader(await createImageBitmap(getImagePortion(img, 0, i * min, min, min)), color));
 	return arr;
 }
+//先分割图片，再使用imgShader，防止因为图片过大爆掉canvas内存
+function getImagePortion(imgObj, startX, startY, newWidth, newHeight){
+	const tnCanvas = document.createElement('canvas');
+	const tnCanvasContext = tnCanvas.getContext('2d');
+	tnCanvas.width = newWidth;
+	tnCanvas.height = newHeight;
+	tnCanvasContext.drawImage(imgObj, startX, startY, newWidth, newHeight, 0, 0, newWidth, newHeight);
+	return tnCanvasContext.getImageData(0, 0, newWidth, newHeight);
+}
+
 //必要组件
 let stopDrawing;
 let energy = 0;
