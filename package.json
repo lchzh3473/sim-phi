@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@zip.js/zip.js": "^2.4.26",
+    "jszip": "^3.10.0"
+  }
+}

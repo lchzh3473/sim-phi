@@ -1,4 +1,47 @@
 'use strict';
+const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
+class Timer {
+	constructor() {
+		this.reset();
+	}
+	play() {
+		if (!this.isPaused) throw new Error('Time has been playing');
+		this.t1 = performance.now();
+		this.isPaused = false;
+	}
+	pause() {
+		if (this.isPaused) throw new Error('Time has been paused');
+		this.t0 = this.time;
+		this.isPaused = true;
+	}
+	reset() {
+		this.t0 = 0;
+		this.t1 = 0;
+		this.isPaused = true;
+	}
+	addTime(num) {
+		this.t0 += num;
+	}
+	get time() {
+		if (this.isPaused) return this.t0;
+		return this.t0 + performance.now() - this.t1;
+	}
+	get second() {
+		return this.time / 1e3;
+	}
+}
+const frameTimer = { //计算fps
+	tick: 0,
+	time: performance.now(),
+	fps: '',
+	addTick(fr = 10) {
+		if (++this.tick >= fr) {
+			this.tick = 0;
+			this.fps = (1e3 * fr / (-this.time + (this.time = performance.now()))).toFixed(0);
+		}
+		return this.fps;
+	}
+}
 //全屏相关
 const full = {
 	toggle(elem) {
@@ -21,11 +64,67 @@ const full = {
 		if (!(elem instanceof HTMLElement)) elem = document.body;
 		return this.element == elem;
 	},
+	get onchange() {
+		if (document.onfullscreenchange !== undefined) return 'fullscreenchange';
+		if (document.onwebkitfullscreenchange !== undefined) return 'webkitfullscreenchange';
+		if (document.onmozfullscreenchange !== undefined) return 'mozfullscreenchange';
+	},
+	get onerror() {
+		if (document.onfullscreenerror !== undefined) return 'fullscreenerror';
+		if (document.onwebkitfullscreenerror !== undefined) return 'webkitfullscreenerror';
+		if (document.onmozfullscreenerror !== undefined) return 'mozfullscreenerror';
+	},
+	get isFullScreen() {
+		return document.fullScreen || document.mozFullScreen || document.webkitIsFullScreen;
+	},
 	get element() {
 		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
 	},
 	get enabled() {
 		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled);
+	}
+};
+const audio = {
+	/** @type {AudioContext} */
+	_actx: null,
+	_inited: false,
+	_started: false,
+	/** @type {AudioBufferSourceNode[]} */
+	_bfs: [],
+	init(actx) {
+		this._actx = actx || window.AudioContext || window.webkitAudioContext;
+		this._inited = true;
+	},
+	start(actx) {
+		if (!this._inited) this.init(actx);
+		if (!this._started) this._actx = new this._actx();
+		this._started = true;
+	},
+	decode(arraybuffer) {
+		const actx = this.actx;
+		return actx.decodeAudioData(arraybuffer);
+	},
+	play(res, loop, isOut, offset, playbackrate) {
+		const actx = this.actx;
+		const bfs = this._bfs;
+		const gain = actx.createGain();
+		const bufferSource = actx.createBufferSource();
+		bufferSource.buffer = res;
+		bufferSource.loop = loop; //循环播放
+		bufferSource.connect(gain);
+		bufferSource.playbackRate.value = Number(playbackrate) || 1;
+		if (isOut) gain.connect(actx.destination);
+		bufferSource.start(0, offset);
+		bfs[bfs.length] = bufferSource;
+	},
+	stop() {
+		const bfs = this._bfs;
+		for (const i of bfs) i.stop();
+		bfs.length = 0;
+	},
+	get actx() {
+		if (!this._started) this.start();
+		return this._actx;
 	}
 };
 
@@ -77,7 +176,6 @@ function csv2array(data, isObject) {
 	}
 	return qwq;
 }
-
 // function loadJS(url, callback) {
 // 	const script = document.createElement('script');
 // 	const fn = callback || function() {};

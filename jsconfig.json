@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es6"
+	},
+	"include": [
+		"js/*","./script.js"
+	],
+	"exclude": [
+		"**/*-min.*"
+	]
+}

@@ -43,11 +43,22 @@ body {
 
 #stage {
 	background-color: rgba(0, 0, 0, 0.2);
-	position: relative;
 	margin: auto;
+	line-height: 0;
+}
+
+#stage:not(.full) {
+	position: relative;
 	width: 80vw;
 	max-width: 854px;
-	line-height: 0;
+}
+
+#stage.full {
+	position: fixed;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
 }
 
 #mask {

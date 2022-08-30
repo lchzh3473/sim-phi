@@ -4,7 +4,7 @@
 
 body {
 	background-color: transparent;
-	font-family: Consolas, Menlo, monospace;
+	font-family: 'Noto Sans SC';
 	text-align: left;
 	font-size: calc(12px + 1vmin);
 }

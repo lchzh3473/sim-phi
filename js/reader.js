@@ -23,7 +23,7 @@ function ljs(result) {
 				return chartInfo;
 			}
 			return i.async('uint8array').then(async data => {
-				const audioData = await actx.decodeAudioData(data.buffer);
+				const audioData = await audio.decode(data.buffer);
 				bgms[i.name] = audioData;
 				selectbgm.appendChild(createOption(i.name, i.name));
 				loading(++loadedNum);
@@ -117,7 +117,7 @@ function ljs2(result) {
 				return chartInfo;
 			}
 			return i.getData(new zip.Uint8ArrayWriter()).then(async data => {
-				const audioData = await actx.decodeAudioData(data.buffer);
+				const audioData = await audio.decode(data.buffer);
 				bgms[i.filename] = audioData;
 				selectbgm.appendChild(createOption(i.filename, i.filename));
 				loading(++loadedNum);
@@ -183,4 +183,13 @@ function ljs2(result) {
 		message.sendError('读取出错：不是zip文件'); //test
 	});
 	reader.close();
+}
+
+function imgBlur(img) {
+	const canvas = document.createElement('canvas');
+	canvas.width = img.width;
+	canvas.height = img.height;
+	const ctx = canvas.getContext('2d');
+	ctx.drawImage(img, 0, 0);
+	return StackBlur.imageDataRGB(ctx.getImageData(0, 0, img.width, img.height), 0, 0, img.width, img.height, Math.ceil(Math.min(img.width, img.height) * 0.0125));
 }
