@@ -10,9 +10,7 @@
 
 模拟器并不拥有官方素材(如音符贴图/打击音效/结算UI)的版权，如有侵权请联系模拟器作者下架相关内容。
 
-感谢[@Mac-Fus](https://space.bilibili.com/319384496)提供虚拟机支持
-
-感谢[@星星awa](https://space.bilibili.com/111933676)提供Safari适配思路
+特别感谢 [@Mac-Fus](https://space.bilibili.com/319384496 "Mac虚拟机支持") [@星星awa](https://space.bilibili.com/111933676 "Safari适配方案") [@luch4736](https://space.bilibili.com/481266830 "直接的iOS设备和支持qwq") 提供针对苹果设备的技术支持！
 
 ## 更新日志
 
@@ -32,7 +30,7 @@
 
 #### 修复
 
-- 修复读取`info.csv`时`Note`大小不能正常读取的问题
+- 修复`info.csv`的按键缩放可能无法读取的问题
 - 现在 Android 默认的文件选择器能够正确识别`zip`文件类型
 
 ### [1.4.19] - 2022.6.11

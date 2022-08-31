@@ -51,13 +51,11 @@ const full = {
 			if (document.cancelFullScreen) return document.cancelFullScreen();
 			if (document.webkitCancelFullScreen) return document.webkitCancelFullScreen();
 			if (document.mozCancelFullScreen) return document.mozCancelFullScreen();
-			if (document.msExitFullscreen) return document.msExitFullscreen();
 		} else {
 			if (!(elem instanceof HTMLElement)) elem = document.body;
 			if (elem.requestFullscreen) return elem.requestFullscreen();
 			if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen();
 			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen();
-			if (elem.msRequestFullscreen) return elem.msRequestFullscreen();
 		}
 	},
 	check(elem) {
@@ -74,14 +72,11 @@ const full = {
 		if (document.onwebkitfullscreenerror !== undefined) return 'webkitfullscreenerror';
 		if (document.onmozfullscreenerror !== undefined) return 'mozfullscreenerror';
 	},
-	get isFullScreen() {
-		return document.fullScreen || document.mozFullScreen || document.webkitIsFullScreen;
-	},
 	get element() {
-		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
 	},
 	get enabled() {
-		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled);
+		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled);
 	}
 };
 const audio = {
