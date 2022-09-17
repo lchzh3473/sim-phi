@@ -1,14 +1,14 @@
-# [Demo](https://lchz&#104;3473.github.io/sim-phi/index "Phigros模拟器")
+# [Demo](https://lchz&#104;3473.github.io/sim-phi/index "Phi&#103;ros模拟器")
 
 ## 简介
 
-如题，用js/canvas还原Phigros游戏画面，属于个人兴趣项目，仅用于学习和测试；
+如题，用 js/canvas 还原 Phi&#103;ros 游戏画面，属于个人兴趣项目，仅用于学习和测试；
 
-模拟器代码部分为作者独立编写，与《Phigros》游戏本体无关，您因使用或修改代码所造成的一切后果由您自己承担；
+模拟器代码部分为 [@lchz&#104;3473](https://space.bilibili.com/274753872) 独立编写，与《[Phi&#103;ros](https://www.taptap.com/app/165287)》游戏本体无关，您因使用或修改代码所造成的一切后果由您自己承担；
 
 不提供游戏本体安装包及逆向工具/教程，也不提供谱面下载；
 
-模拟器并不拥有官方素材(如音符贴图/打击音效/结算UI)的版权，如有侵权请联系模拟器作者下架相关内容。
+模拟器并不拥有官方素材(如音符贴图/打击音效/结算UI)的版权，如有侵权请[联系模拟器作者](mailto:lchz%683473@163.com?subject=[GitHub]lchz%683473/sim-phi)下架相关内容。
 
 特别感谢 [@Mac-Fus](https://space.bilibili.com/319384496 "Mac虚拟机支持") [@星星awa](https://space.bilibili.com/111933676 "Safari适配方案") [@luch4736](https://space.bilibili.com/481266830 "直接的iOS设备和支持qwq") 提供针对苹果设备的技术支持！
 
@@ -25,7 +25,7 @@
 
 #### 更改
 
-- 微调`Note`默认大小(放大约`1.01`倍)
+- 微调`Note`默认大小(缩小约0.99%)
 - 将`info.csv`的按键缩放由`ScaleRatio`调整为`NoteScale`(数值越大`Note`越大，默认`1`)
 
 #### 修复
@@ -443,6 +443,6 @@
 
 #### 更改
 
-- `模拟Demo`改为Phigros愚人节谱`Spasmodic SP`
+- `模拟Demo`改为Phi&#103;ros愚人节谱`Spasmodic SP`
 
 ### [1.0.0] - 2021-01-28

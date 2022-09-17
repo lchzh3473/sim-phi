@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "@zip.js/zip.js": "^2.4.26",
-    "jszip": "^3.10.0"
+    "jszip": "^3.10.0",
+    "md5-js": "^0.0.3",
+    "stackblur-canvas": "^2.5.0"
   }
 }
