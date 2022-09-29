@@ -44,18 +44,28 @@ const frameTimer = { //计算fps
 }
 //全屏相关
 const full = {
+	/**
+	 * @param {HTMLElement} elem 
+	 * @returns {Promise}
+	 */
 	toggle(elem) {
-		if (!this.enabled) return false;
+		//Apple第三方浏览器可能根本没有包含full的属性或方法qwq
+		if (!this.enabled) return Promise.reject();
+		const onFullscreen = () => new Promise((resolve, reject) => {
+			const onchange = evt => { resolve(evt), document.removeEventListener(this.onchange, onchange) };
+			const onerror = evt => { reject(evt), document.removeEventListener(this.onerror, onerror) };
+			document.addEventListener(this.onchange, onchange);
+			document.addEventListener(this.onerror, onerror);
+		})
 		if (this.element) {
-			if (document.exitFullscreen) return document.exitFullscreen();
-			if (document.cancelFullScreen) return document.cancelFullScreen();
-			if (document.webkitCancelFullScreen) return document.webkitCancelFullScreen();
-			if (document.mozCancelFullScreen) return document.mozCancelFullScreen();
+			if (document.exitFullscreen) return document.exitFullscreen() || onFullscreen();
+			if (document.webkitExitFullscreen) return document.webkitExitFullscreen() || onFullscreen();
+			if (document.mozCancelFullScreen) return document.mozCancelFullScreen() || onFullscreen();
 		} else {
 			if (!(elem instanceof HTMLElement)) elem = document.body;
-			if (elem.requestFullscreen) return elem.requestFullscreen();
-			if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen();
-			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen();
+			if (elem.requestFullscreen) return elem.requestFullscreen() || onFullscreen();
+			if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen() || onFullscreen();
+			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen() || onFullscreen();
 		}
 	},
 	check(elem) {
@@ -73,10 +83,10 @@ const full = {
 		if (document.onmozfullscreenerror !== undefined) return 'mozfullscreenerror';
 	},
 	get element() {
-		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+		return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || null;
 	},
 	get enabled() {
-		return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled);
+		return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || false;
 	}
 };
 const audio = {
@@ -87,7 +97,7 @@ const audio = {
 	/** @type {AudioBufferSourceNode[]} */
 	_bfs: [],
 	init(actx) {
-		this._actx = actx || window.AudioContext || window.webkitAudioContext;
+		this._actx = actx || self.AudioContext || self.webkitAudioContext;
 		this._inited = true;
 	},
 	start(actx) {
@@ -191,18 +201,34 @@ function csv2array(data, isObject) {
 // 		document.getElementsByTagName('head')[0].appendChild(script);
 // 	});
 // }
-// window.onerror=(...a)=>console.log('qwq',a);
-// window.addEventListener('error',(...a)=>console.log('qwq',a));
-function loadJS(qwq) {
-	const a = (function*(arg) { yield* arg; })(qwq instanceof Array ? qwq.reverse() : arguments);
+// self.onerror=(...a)=>console.log('qwq',a);
+// self.addEventListener('error',(...a)=>console.log('qwq',a));
+const urls = {
+	zip: ['//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js', '//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip.min.js'],
+	jszip: ['//cdn.jsdelivr.net/npm/jszip', '//fastly.jsdelivr.net/npm/jszip'],
+	browser: ['//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js', '//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js' /* , '//passer-by.com/browser/Browser.js' */ ],
+	bitmap: ['//cdn.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js', '//fastly.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js'],
+	blur: ['//cdn.jsdelivr.net/npm/stackblur-canvas', '//fastly.jsdelivr.net/npm/stackblur-canvas'],
+	md5: ['//cdn.jsdelivr.net/npm/md5-js', '//fastly.jsdelivr.net/npm/md5-js'],
+}
+const getConstructorName = obj => {
+	if (obj === null) return 'Null';
+	if (obj === undefined) return 'Undefined';
+	return obj.constructor.name;
+}
+const isUndefined = name => self[name] === undefined;
+//Legacy
+function loadJS(urls) {
+	const arr = Array.from(urls instanceof Array ? urls : arguments, i => new URL(i, location).href);
+	const args = (function*(arg) { yield* arg; })(arr);
 	const load = url => new Promise((resolve, reject) => {
-		if (!url) return reject();
+		if (!url) return reject(arr);
 		const script = document.createElement('script');
 		script.onload = () => resolve(script);
-		script.onerror = () => load(a.next().value).then(script => resolve(script)).catch(e => reject(e));
+		script.onerror = () => load(args.next().value).then(script => resolve(script)).catch(e => reject(e));
 		script.src = url;
 		script.crossOrigin = 'anonymous';
 		document.head.appendChild(script);
 	});
-	return load(a.next().value);
+	return load(args.next().value);
 }

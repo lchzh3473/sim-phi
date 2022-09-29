@@ -24,8 +24,7 @@ const simphi = {
 		}
 		get scoreNum() {
 			const a = 1e6 * (this.perfect * 0.9 + this.good * 0.585 + this.maxcombo * 0.1) / this.numOfNotes;
-			const b = 1e6 * (this.noteRank[4] + this.great * 0.65 + this.good * 0.35) / this.numOfNotes;
-			return hyperMode.checked ? (isFinite(b) ? b : 0) : (isFinite(a) ? a : 0);
+			return isFinite(a) ? a : 0;
 		}
 		get scoreStr() {
 			const a = this.scoreNum.toFixed(0);
@@ -33,8 +32,7 @@ const simphi = {
 		}
 		get accNum() {
 			const a = (this.perfect + this.good * 0.65) / this.all;
-			const b = (this.noteRank[4] + this.great * 0.65 + this.good * 0.35) / this.all;
-			return hyperMode.checked ? (isFinite(b) ? b : 0) : (isFinite(a) ? a : 0);
+			return isFinite(a) ? a : 0;
 		}
 		get accStr() {
 			return (100 * this.accNum).toFixed(2) + '%';
@@ -42,7 +40,6 @@ const simphi = {
 		get lineStatus() {
 			if (this.bad) return 0;
 			if (this.good) return 3;
-			if (this.great && hyperMode.checked) return 2;
 			return 1;
 		}
 		get rankStatus() {
@@ -132,39 +129,43 @@ const simphi = {
 			this.canvasos = document.createElement('canvas'); //绘制游戏主界面
 			this.ctxos = this.canvasos.getContext('2d');
 			this.stage.appendChild(this.canvas);
+			this.canvas.style.cssText = ';position:absolute;top:0px;left:0px;right:0px;bottom:0px';
 			this.isFull = false;
-			console.log('Hello, Phigros Simulator!');
+			const resizeObserver = new ResizeObserver(() => this.resizeCanvas());
+			resizeObserver.observe(this.stage);
+			console.log('Hello, Phi\x67ros Simulator!');
 			//qwq
 			this.speed = 1;
 			this.isJSZip = true;
-			this.config = {};
+			// this.config = {};
 			this.chart = {};
-			this.music = {};
-			this.background = {};
-			this.width = 1920;
-			this.height = 1080;
+			// this.music = {};
+			// this.background = {};
+			// this.width = 1920;
+			// this.height = 1080;
 			this.lineScale = 57.6;
 			this.noteScale = 1; //note缩放设定值
 			this.noteScaleRatio = 8e3; //note缩放比率，由noteScale计算而来
-			this.brightness = 0;
-			this.songName = '';
-			this.chartLevel = '';
-			this.illustrator = '';
-			this.chartDesign = '';
-			this.feedback = true;
-			this.imageBlur = true;
+			this.brightness = 0.6;
+			this.aspectRatio = 1.777778;
+			// this.songName = '';
+			// this.chartLevel = '';
+			// this.illustrator = '';
+			// this.chartDesign = '';
+			// this.feedback = true;
+			// this.imageBlur = true;
 			this.multiHint = true;
-			this.hitSound = true;
-			this.anchorPoint = false;
-			this.coloredLine = true;
-			this.perfectLine = '#feffa9';
-			this.goodLine = '#a2eeff';
-			this.perfectNote = '#ffeca0';
-			this.goodNote = '#b4e1ff';
-			this.badNote = '#6c4343';
-			this.playMode = 'autoplay';
-			this.showTransition = true;
-			this.chartOffset = 0;
+			// this.hitSound = true;
+			// this.anchorPoint = false;
+			// this.coloredLine = true;
+			// this.perfectLine = '#feffa9';
+			// this.goodLine = '#a2eeff';
+			// this.perfectNote = '#ffeca0';
+			// this.goodNote = '#b4e1ff';
+			// this.badNote = '#6c4343';
+			// this.playMode = 'autoplay';
+			// this.showTransition = true;
+			// this.chartOffset = 0;
 			this._mirrorType = 0;
 			//qwq
 			this.chart = null;
@@ -193,24 +194,23 @@ const simphi = {
 			Object.assign(_this, options);*/
 		}
 		//config
+		setAspectRatio(num) {
+			this.aspectRatio = Number(num);
+			this.resizeCanvas();
+		}
 		setNoteScale(num) {
 			this.noteScale = Number(num);
 			this.resizeCanvas();
 		}
 		resizeCanvas() {
-			const { canvas, canvasos, isFull } = this;
-			const AspectRatio = 16 / 9;
-			const width = document.documentElement.clientWidth;
-			const height = document.documentElement.clientHeight;
-			const defaultWidth = Math.min(854, width * 0.8);
-			const defaultHeight = defaultWidth / (selectaspectratio.value || 16 / 9);
-			const realWidth = Math.floor(isFull ? width : defaultWidth);
-			const realHeight = Math.floor(isFull ? height : defaultHeight);
-			canvas.style.cssText += `;width:${realWidth}px;height:${realHeight}px`;
-			canvas.width = realWidth * devicePixelRatio;
-			canvas.height = realHeight * devicePixelRatio;
-			canvasos.width = Math.min(realWidth, realHeight * AspectRatio) * devicePixelRatio;
-			canvasos.height = realHeight * devicePixelRatio;
+			const { stage, canvas, canvasos } = this;
+			const width = stage.clientWidth;
+			const height = stage.clientHeight;
+			canvas.style.cssText += `;width:${width}px;height:${height}px`; //只有inset还是会溢出
+			canvas.width = width * devicePixelRatio;
+			canvas.height = height * devicePixelRatio;
+			canvasos.width = Math.min(width, height * 16 / 9) * devicePixelRatio;
+			canvasos.height = height * devicePixelRatio;
 			this.wlen = canvasos.width / 2;
 			this.hlen = canvasos.height / 2;
 			this.mirrorView();

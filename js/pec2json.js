@@ -300,7 +300,7 @@ function pec2json(pec, filename) {
 				s[j].endTime = j < s.length - 1 ? s[j + 1].startTime : 1e9;
 				if (s[j].startTime < 0) s[j].startTime = 0;
 				s[j].floorPosition = y;
-				y += (s[j].endTime - s[j].startTime) * s[j].value / i.bpm * 1.875;
+				y = Math.fround(y + (s[j].endTime - s[j].startTime) * s[j].value / i.bpm * 1.875);
 			}
 			for (const j of i.notesAbove) {
 				let qwqwq = 0;
@@ -313,7 +313,7 @@ function pec2json(pec, filename) {
 					qwqwq2 = k.value;
 					qwqwq3 = j.time % 1e9 - k.startTime;
 				}
-				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
+				j.floorPosition = Math.fround(qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875);
 				if (j.type == 3) j.speed *= qwqwq2;
 			}
 			for (const j of i.notesBelow) {
@@ -327,7 +327,7 @@ function pec2json(pec, filename) {
 					qwqwq2 = k.value;
 					qwqwq3 = j.time % 1e9 - k.startTime;
 				}
-				j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875;
+				j.floorPosition = Math.fround(qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875);
 				if (j.type == 3) j.speed *= qwqwq2;
 			}
 			//整合motionType
