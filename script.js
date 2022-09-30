@@ -328,7 +328,7 @@ $$('.title').addEventListener('click', function() {
 $('demo').addEventListener('click', function(evt) {
 	evt.target.classList.add('hide');
 	const xhr = new XMLHttpRequest();
-	xhr.open('get', './src/demo.png', true); //避免gitee的404
+	xhr.open('get', 'src/demo.png', true); //避免gitee的404
 	xhr.responseType = 'arraybuffer';
 	xhr.onprogress = evt => uploader.onprogress(evt);
 	xhr.onload = () => uploader.onload({ target: { result: xhr.response } }, { name: 'demo.zip' });
@@ -773,8 +773,8 @@ function getPos(obj) {
 }
 const res = {}; //存放资源
 //初始化
-self.onload = async function() {
-	$$('.uploader').classList.add('disabled');
+document.addEventListener('DOMContentLoaded', async function qwqwq() {
+	document.removeEventListener('DOMContentLoaded', qwqwq);
 	let loadedNum = 0;
 	let errorNum = 0;
 	msgHandler.sendMessage('初始化...');
@@ -841,7 +841,7 @@ self.onload = async function() {
 		return b.getImageData(0, 0, 1, 1).data[0];
 	}
 	if (!qwq()) msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
-}
+});
 async function qwqImage(img, color) {
 	const clickqwq = imgShader(img, color);
 	const arr = [];
