@@ -94,7 +94,6 @@ const msgHandler = {
 const stat = new simphi.Stat();
 const app = new simphi.Renderer($('stage')); //test
 const { canvas, ctx, canvasos, ctxos } = app;
-const select = $('select');
 const selectbg = $('select-bg');
 const btnPlay = $('btn-play');
 const btnPause = $('btn-pause');
@@ -252,73 +251,81 @@ function resizeStage() {
 	if (app.isFull) app.stage.style.cssText = ';position:fixed;top:0;left:0;bottom:0;right:0';
 	else app.stage.style.cssText = `;width:${stageWidth.toFixed()}px;height:${stageHeight.toFixed()}px`;
 }
-//uploader start
-$('uploader-upload').addEventListener('click', uploader.uploadFile);
-$('uploader-file').addEventListener('click', uploader.uploadFile);
-$('uploader-dir').addEventListener('click', uploader.uploadDir);
-uploader.onprogress = function(evt, i) { //显示加载文件进度
-	msgHandler.sendMessage(`加载文件：${Math.floor(evt.loaded / evt.total * 100)}%`);
-};
-uploader.onload = function(evt, i) {
-	console.log(evt);
-	readZip({ name: i.name, buffer: evt.target.result, path: i.webkitRelativePath || i.name }, {
-		isJSZip: app.isJSZip,
-		onread: data => handleFile(data).then(function() {
-			uploader.done++;
-			msgHandler.sendMessage(`读取文件：${uploader.done}/${uploader.total}`);
-			qwqCheck();
-		})
-	});
-}
-
-function qwqCheck() {
-	if (uploader.done == uploader.total) {
-		$$('.uploader').classList.remove('disabled');
-		select.classList.remove('disabled');
-		btnPause.classList.add('disabled');
+//uploader
+{
+	let uploader_done = 0;
+	let uploader_total = 0;
+	$('uploader-upload').addEventListener('click', uploader.uploadFile);
+	$('uploader-file').addEventListener('click', uploader.uploadFile);
+	$('uploader-dir').addEventListener('click', uploader.uploadDir);
+	/** @type {((_:FileList) => void)} */
+	uploader.onchange = e => {
+		console.log(e.length);
+		if (e.length) $('uploader').classList.add('disabled');
+	}
+	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
+	uploader.onprogress = function(evt, i) { //显示加载文件进度
+		msgHandler.sendMessage(`加载文件：${Math.floor(evt.loaded / evt.total * 100)}%`);
+	};
+	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
+	uploader.onload = function(evt, i) {
+		console.log(evt);
+		readZip({
+			name: i.name,
+			buffer: evt.target.result,
+			path: i.webkitRelativePath || i.name
+		}, { isJSZip: app.isJSZip, onread: handleFile });
+	}
+	/** 
+	 * @param {ReaderData} data 
+	 * @param {number} total
+	 */
+	async function handleFile(data, total) {
+		uploader_total = total;
+		console.log(data);
+		switch (data.type) {
+			case 'line':
+				chartLineData.push(...data.data);
+				break;
+			case 'info':
+				chartInfoData.push(...data.data);
+				break;
+			case 'audio':
+				bgms[data.name] = data.data;
+				selectbgm.appendChild(createOption(data.name, data.name));
+				break;
+			case 'image':
+				bgs[data.name] = data.data;
+				bgsBlur[data.name] = await createImageBitmap(imgBlur(data.data));
+				selectbg.appendChild(createOption(data.name, data.name));
+				break;
+			case 'chart':
+				charts[data.name] = data.data;
+				charts[data.name]['md5'] = data.md5;
+				selectchart.appendChild(createOption(data.name, data.name));
+				break;
+			default:
+				console.error(data.data);
+				msgHandler.sendWarning(`不支持的文件：${data.name}`);
+		}
+		msgHandler.sendMessage(`读取文件：${++uploader_done}/${uploader_total}`);
+		if (uploader_done != uploader_total) return;
+		$('uploader').classList.remove('disabled');
 		adjustInfo();
-	} else $$('.uploader').classList.add('disabled');
-}
-async function handleFile(data) {
-	select.classList.add('disabled');
-	btnPause.classList.remove('disabled');
-	console.log(data);
-	switch (data.type) {
-		case 'line':
-			chartLineData.push(...data.data);
-			break;
-		case 'info':
-			chartInfoData.push(...data.data);
-			break;
-		case 'audio':
-			bgms[data.name] = data.data;
-			selectbgm.appendChild(createOption(data.name, data.name));
-			break;
-		case 'image':
-			bgs[data.name] = data.data;
-			bgsBlur[data.name] = await createImageBitmap(imgBlur(data.data));
-			selectbg.appendChild(createOption(data.name, data.name));
-			break;
-		case 'chart':
-			charts[data.name] = data.data;
-			charts[data.name]['md5'] = data.md5;
-			selectchart.appendChild(createOption(data.name, data.name));
-			break;
-		default:
-			console.error(data.data);
-			msgHandler.sendWarning(`不支持的文件：${data.name}`);
-	}
-
-	function createOption(innerhtml, value) {
-		const option = document.createElement('option');
-		const isHidden = /(^|\/)\./.test(innerhtml);
-		option.innerHTML = isHidden ? '' : innerhtml;
-		option.value = value;
-		if (isHidden) option.classList.add('hide');
-		return option;
+		/**
+		 * @param {string} innerhtml 
+		 * @param {string} value 
+		 */
+		function createOption(innerhtml, value) {
+			const option = document.createElement('option');
+			const isHidden = /(^|\/)\./.test(innerhtml);
+			option.innerHTML = isHidden ? '' : innerhtml;
+			option.value = value;
+			if (isHidden) option.classList.add('hide');
+			return option;
+		}
 	}
 }
-//uploader end
 //qwq[water,demo,democlick]
 const qwq = [true, false, 3, 0, 0, 0];
 eval(atob('IWZ1bmN0aW9uKCl7Y29uc3QgdD1uZXcgRGF0ZTtpZigxIT10LmdldERhdGUoKXx8MyE9dC5nZXRNb250aCgpKXJldHVybjtjb25zdCBuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpO24udHlwZT0idGV4dC9qYXZhc2NyaXB0IixuLnNyYz0iLi9yLW1pbi5qcyIsZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoImhlYWQiKVswXS5hcHBlbmRDaGlsZChuKX0oKTs'));
@@ -335,6 +342,7 @@ $('demo').addEventListener('click', function(evt) {
 	xhr.send();
 });
 //qwq end
+//hit start
 const hit = {
 	mouse: {}, //存放鼠标事件(用于检测，下同)
 	mouseDown: {},
@@ -361,7 +369,7 @@ const specialClick = {
 		this.time[id] = now;
 	}
 }
-class Click {
+class Hit {
 	constructor(offsetX, offsetY) {
 		this.offsetX = Number(offsetX);
 		this.offsetY = Number(offsetY);
@@ -370,13 +378,13 @@ class Click {
 	}
 	static activate(offsetX, offsetY) {
 		const { lineScale } = app;
-		hit.taps.push(new Click(offsetX, offsetY));
+		hit.taps.push(new Hit(offsetX, offsetY));
 		if (offsetX < lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(0);
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY < lineScale * 1.5) specialClick.click(1);
 		if (offsetX < lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(2);
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) specialClick.click(3);
 		if (qwqEnd.second > 0) qwq[3] = qwq[3] > 0 ? -qwqEnd.second : qwqEnd.second;
-		return new Click(offsetX, offsetY);
+		return new Hit(offsetX, offsetY);
 	}
 	move(offsetX, offsetY) {
 		this.offsetX = Number(offsetX);
@@ -386,9 +394,9 @@ class Click {
 	}
 	animate() {
 		if (!this.time++) {
-			if (this.isMoving) clickEvents0.push(ClickEvent0.getClickMove(this.offsetX, this.offsetY));
-			else clickEvents0.push(ClickEvent0.getClickTap(this.offsetX, this.offsetY));
-		} else clickEvents0.push(ClickEvent0.getClickHold(this.offsetX, this.offsetY));
+			if (this.isMoving) hitEvents0.push(HitEvent0.move(this.offsetX, this.offsetY));
+			else hitEvents0.push(HitEvent0.tap(this.offsetX, this.offsetY));
+		} else hitEvents0.push(HitEvent0.hold(this.offsetX, this.offsetY));
 	}
 }
 class Judgement {
@@ -423,7 +431,7 @@ class Judgements extends Array {
 		} else if (!isPaused) {
 			for (const j in hit.mouse) {
 				const i = hit.mouse[j];
-				if (i instanceof Click) {
+				if (i instanceof Hit) {
 					if (i.time) this[this.length] = new Judgement(i.offsetX, i.offsetY, 2);
 					else if (i.isMoving) this[this.length] = new Judgement(i.offsetX, i.offsetY, 3);
 					//else this[this.length]=new Judgement(i.offsetX, i.offsetY, 1));
@@ -431,7 +439,7 @@ class Judgements extends Array {
 			}
 			for (const j in hit.touch) {
 				const i = hit.touch[j];
-				if (i instanceof Click) {
+				if (i instanceof Hit) {
 					if (i.time) this[this.length] = new Judgement(i.offsetX, i.offsetY, 2);
 					else if (i.isMoving) this[this.length] = new Judgement(i.offsetX, i.offsetY, 3);
 					//else this[this.length]=new Judgement(i.offsetX, i.offsetY, 1));
@@ -439,14 +447,14 @@ class Judgements extends Array {
 			}
 			for (const j in hit.keyboard) {
 				const i = hit.keyboard[j];
-				if (i instanceof Click) {
+				if (i instanceof Hit) {
 					if (i.time) this[this.length] = new Judgement(i.offsetX, i.offsetY, 2);
 					else /*if (i.isMoving)*/ this[this.length] = new Judgement(i.offsetX, i.offsetY, 3);
 					//else this[this.length]=new Judgement(i.offsetX, i.offsetY, 1));
 				}
 			}
 			for (const i of hit.taps) {
-				if (i instanceof Click) this[this.length] = new Judgement(i.offsetX, i.offsetY, 1);
+				if (i instanceof Hit) this[this.length] = new Judgement(i.offsetX, i.offsetY, 1);
 			}
 		}
 	};
@@ -470,27 +478,27 @@ class Judgements extends Array {
 						} else if (deltaTime > 0.08) {
 							i.status = 7; //console.log('Good(Early)', i.name);
 							if ($('hitSong').checked) audio.play(res['HitSong0'], false, true, 0);
-							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
+							hitEvents1.push(HitEvent1.good(i.projectX, i.projectY));
+							hitEvents2.push(HitEvent2.early(i.projectX, i.projectY));
 						} else if (deltaTime > 0.04) {
 							i.status = 5; //console.log('Perfect(Early)', i.name);
 							if ($('hitSong').checked) audio.play(res['HitSong0'], false, true, 0);
-							clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
+							hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
+							hitEvents2.push(HitEvent2.early(i.projectX, i.projectY));
 						} else if (deltaTime > -0.04 || i.frameCount < 1) {
 							i.status = 4; //console.log('Perfect(Max)', i.name);
 							if ($('hitSong').checked) audio.play(res['HitSong0'], false, true, 0);
-							clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+							hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
 						} else if (deltaTime > -0.08 || i.frameCount < 2) {
 							i.status = 1; //console.log('Perfect(Late)', i.name);
 							if ($('hitSong').checked) audio.play(res['HitSong0'], false, true, 0);
-							clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
+							hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
+							hitEvents2.push(HitEvent2.late(i.projectX, i.projectY));
 						} else {
 							i.status = 3; //console.log('Good(Late)', i.name);
 							if ($('hitSong').checked) audio.play(res['HitSong0'], false, true, 0);
-							clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-							clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
+							hitEvents1.push(HitEvent1.good(i.projectX, i.projectY));
+							hitEvents2.push(HitEvent2.late(i.projectX, i.projectY));
 						}
 						if (i.status) {
 							stat.addCombo(i.status, 1);
@@ -503,7 +511,7 @@ class Judgements extends Array {
 			} else if (i.type == 2) {
 				if (i.status == 4 && deltaTime < 0) {
 					if ($('hitSong').checked) audio.play(res['HitSong1'], false, true, 0);
-					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+					hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
 					stat.addCombo(4, 2);
 					i.scored = true;
 				} else if (!i.status) {
@@ -519,9 +527,9 @@ class Judgements extends Array {
 			} else if (i.type == 3) {
 				if (i.status3) {
 					if ((performance.now() - i.status3) * i.holdTime >= 1.6e4 * i.realHoldTime) { //间隔时间与bpm成反比
-						if (i.status2 % 4 == 0) clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-						else if (i.status2 % 4 == 1) clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-						else if (i.status2 % 4 == 3) clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
+						if (i.status2 % 4 == 0) hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
+						else if (i.status2 % 4 == 1) hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
+						else if (i.status2 % 4 == 3) hitEvents1.push(HitEvent1.good(i.projectX, i.projectY));
 						i.status3 = performance.now();
 					}
 					if (deltaTime + i.realHoldTime < 0.2) {
@@ -539,27 +547,27 @@ class Judgements extends Array {
 							if ($('hitSong').checked) audio.play(res['HitSong0'], false, true, 0);
 							if (deltaTime > 0.08) {
 								i.status2 = 7; //console.log('Good(Early)', i.name);
-								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
+								hitEvents1.push(HitEvent1.good(i.projectX, i.projectY));
+								hitEvents2.push(HitEvent2.early(i.projectX, i.projectY));
 								i.status3 = performance.now();
 							} else if (deltaTime > 0.04) {
 								i.status2 = 5; //console.log('Perfect(Early)', i.name);
-								clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickEarly(i.projectX, i.projectY));
+								hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
+								hitEvents2.push(HitEvent2.early(i.projectX, i.projectY));
 								i.status3 = performance.now();
 							} else if (deltaTime > -0.04 || i.frameCount < 1) {
 								i.status2 = 4; //console.log('Perfect(Max)', i.name);
-								clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+								hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
 								i.status3 = performance.now();
 							} else if (deltaTime > -0.08 || i.frameCount < 2) {
 								i.status2 = 1; //console.log('Perfect(Late)', i.name);
-								clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
+								hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
+								hitEvents2.push(HitEvent2.late(i.projectX, i.projectY));
 								i.status3 = performance.now();
 							} else {
 								i.status2 = 3; //console.log('Good(Late)', i.name);
-								clickEvents1.push(ClickEvent1.getClickGood(i.projectX, i.projectY));
-								clickEvents2.push(ClickEvent2.getClickLate(i.projectX, i.projectY));
+								hitEvents1.push(HitEvent1.good(i.projectX, i.projectY));
+								hitEvents2.push(HitEvent2.late(i.projectX, i.projectY));
 								i.status3 = performance.now();
 							}
 							this.splice(j, 1);
@@ -577,7 +585,7 @@ class Judgements extends Array {
 			} else if (i.type == 4) {
 				if (i.status == 4 && deltaTime < 0) {
 					if ($('hitSong').checked) audio.play(res['HitSong2'], false, true, 0);
-					clickEvents1.push(ClickEvent1.getClickPerfect(i.projectX, i.projectY));
+					hitEvents1.push(HitEvent1.perfect(i.projectX, i.projectY));
 					stat.addCombo(4, 4);
 					i.scored = true;
 				} else if (!i.status) {
@@ -597,7 +605,7 @@ class Judgements extends Array {
 	}
 }
 const judgements = new Judgements();
-class ClickEvents extends Array {
+class HitEvents extends Array {
 	/**	@param {(value)=>boolean} predicate */
 	defilter(predicate) {
 		let i = this.length;
@@ -616,10 +624,10 @@ class ClickEvents extends Array {
 		this.length = 0;
 	}
 }
-const clickEvents0 = new ClickEvents(); //存放点击特效
-const clickEvents1 = new ClickEvents(); //存放点击特效
-const clickEvents2 = new ClickEvents(); //存放点击特效
-class ClickEvent0 {
+const hitEvents0 = new HitEvents(); //存放点击特效
+const hitEvents1 = new HitEvents(); //存放点击特效
+const hitEvents2 = new HitEvents(); //存放点击特效
+class HitEvent0 {
 	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX);
 		this.offsetY = Number(offsetY);
@@ -627,37 +635,37 @@ class ClickEvent0 {
 		this.text = String(n2);
 		this.time = 0;
 	}
-	static getClickTap(offsetX, offsetY) {
+	static tap(offsetX, offsetY) {
 		//console.log('Tap', offsetX, offsetY);
-		return new ClickEvent0(offsetX, offsetY, 'cyan', '');
+		return new HitEvent0(offsetX, offsetY, 'cyan', '');
 	}
-	static getClickHold(offsetX, offsetY) {
+	static hold(offsetX, offsetY) {
 		//console.log('Hold', offsetX, offsetY);
-		return new ClickEvent0(offsetX, offsetY, 'lime', '');
+		return new HitEvent0(offsetX, offsetY, 'lime', '');
 	}
-	static getClickMove(offsetX, offsetY) {
+	static move(offsetX, offsetY) {
 		//console.log('Move', offsetX, offsetY);
-		return new ClickEvent0(offsetX, offsetY, 'violet', '');
+		return new HitEvent0(offsetX, offsetY, 'violet', '');
 	}
 }
-class ClickEvent1 {
+class HitEvent1 {
 	constructor(offsetX, offsetY, n1, n2, n3) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
 		this.time = performance.now();
 		this.duration = 500;
-		this.images = res['Clicks'][n1]; //以后做缺少检测
+		this.images = res['HitEffect'][n1]; //以后做缺少检测
 		this.color = String(n3);
 		this.rand = Array(Number(n2) || 0).fill().map(() => [Math.random() * 80 + 185, Math.random() * 2 * Math.PI]);
 	}
-	static getClickPerfect(offsetX, offsetY) {
-		return new ClickEvent1(offsetX, offsetY, 'rgba(255,236,160,0.8823529)', 4, '#ffeca0');
+	static perfect(offsetX, offsetY) {
+		return new HitEvent1(offsetX, offsetY, 'rgba(255,236,160,0.8823529)', 4, '#ffeca0');
 	}
-	static getClickGood(offsetX, offsetY) {
-		return new ClickEvent1(offsetX, offsetY, 'rgba(180,225,255,0.9215686)', 3, '#b4e1ff');
+	static good(offsetX, offsetY) {
+		return new HitEvent1(offsetX, offsetY, 'rgba(180,225,255,0.9215686)', 3, '#b4e1ff');
 	}
 }
-class ClickEvent2 {
+class HitEvent2 {
 	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
@@ -666,13 +674,13 @@ class ClickEvent2 {
 		this.color = String(n1);
 		this.text = String(n2);
 	}
-	static getClickEarly(offsetX, offsetY) {
+	static early(offsetX, offsetY) {
 		//console.log('Tap', offsetX, offsetY);
-		return new ClickEvent2(offsetX, offsetY, '#03aaf9', 'Early');
+		return new HitEvent2(offsetX, offsetY, '#03aaf9', 'Early');
 	}
-	static getClickLate(offsetX, offsetY) {
+	static late(offsetX, offsetY) {
 		//console.log('Hold', offsetX, offsetY);
-		return new ClickEvent2(offsetX, offsetY, '#ff4612', 'Late');
+		return new HitEvent2(offsetX, offsetY, '#ff4612', 'Late');
 	}
 }
 //适配PC鼠标
@@ -680,7 +688,7 @@ canvas.addEventListener('mousedown', function(evt) {
 	evt.preventDefault();
 	const idx = evt.button;
 	const { x, y } = getPos(evt);
-	hit.mouse[idx] = Click.activate(x, y);
+	hit.mouse[idx] = Hit.activate(x, y);
 	hit.mouseDown[idx] = true;
 });
 self.addEventListener('mousemove', function(evt) {
@@ -713,15 +721,15 @@ self.addEventListener('keydown', function(evt) {
 	if (btnPlay.value != '停止') return;
 	evt.preventDefault();
 	if (evt.key == 'Shift') btnPause.click();
-	else if (hit.keyboard[evt.code] instanceof Click);
-	else hit.keyboard[evt.code] = Click.activate(NaN, NaN);
+	else if (hit.keyboard[evt.code] instanceof Hit);
+	else hit.keyboard[evt.code] = Hit.activate(NaN, NaN);
 }, false);
 self.addEventListener('keyup', function(evt) {
 	if (document.activeElement.classList.value == 'input') return;
 	if (btnPlay.value != '停止') return;
 	evt.preventDefault();
 	if (evt.key == 'Shift');
-	else if (hit.keyboard[evt.code] instanceof Click) delete hit.keyboard[evt.code];
+	else if (hit.keyboard[evt.code] instanceof Hit) delete hit.keyboard[evt.code];
 }, false);
 self.addEventListener('blur', () => {
 	for (const i in hit.keyboard) delete hit.keyboard[i]; //失去焦点清除键盘事件
@@ -735,7 +743,7 @@ canvas.addEventListener('touchstart', function(evt) {
 	for (const i of evt.changedTouches) {
 		const idx = i.identifier; //移动端存在多押bug(可能已经解决了？)
 		const { x, y } = getPos(i);
-		hit.touch[idx] = Click.activate(x, y);
+		hit.touch[idx] = Hit.activate(x, y);
 	}
 }, passive);
 canvas.addEventListener('touchmove', function(evt) {
@@ -771,41 +779,40 @@ function getPos(obj) {
 		y: (obj.clientY - rect.top) / canvas.offsetHeight * canvas.height
 	};
 }
+//hit end
 const res = {}; //存放资源
 //初始化
-document.addEventListener('DOMContentLoaded', async function qwqwq() {
-	document.removeEventListener('DOMContentLoaded', qwqwq);
+document.addEventListener('DOMContentLoaded', async function qwq() {
+	document.removeEventListener('DOMContentLoaded', qwq);
 	let loadedNum = 0;
 	let errorNum = 0;
+	const pth = atob('Ly9sY2h6aDM0NzMuZ2l0aHViLmlvL2Fzc2V0cy8jIyMucG5n');
+	const erc = str => str.includes('.') ? str : pth.replace('###', str);
 	msgHandler.sendMessage('初始化...');
 	if (await checkSupport()) return;
 	//加载资源
-	await Promise.all((obj => {
-		const arr = [];
-		for (const i in obj) arr[arr.length] = [i, obj[i]];
-		return arr;
-	})({
-		JudgeLine: '//s2.loli.net/2022/09/17/6KWy2EfTCuRUFxX.png',
-		ProgressBar: '//s2.loli.net/2022/09/17/mY7OJg4hMelbxTA.png',
-		SongsNameBar: '//s2.loli.net/2022/09/17/DLxHd4MEpZFcWU8.png',
-		clickRaw: '//s2.loli.net/2022/09/17/g9DGOskoXYUvPln.png',
-		Tap: '//s2.loli.net/2022/09/17/ASQvbslMIUy87oX.png',
-		Tap2: '//s2.loli.net/2022/09/17/WCnYOfHmEiSha1Z.png',
-		TapHL: '//s2.loli.net/2022/09/17/wjmvxcBrOLyIR2G.png',
-		Drag: '//s2.loli.net/2022/09/17/VGFMnkPq1QNwcUh.png',
-		DragHL: '//s2.loli.net/2022/09/17/KWE2rghs4wMGbkx.png',
-		HoldHead: '//s2.loli.net/2022/09/17/HflLiuoNPRd8mSk.png',
-		HoldHeadHL: '//s2.loli.net/2022/09/17/8ifr4lbNBXDWcCy.png',
-		Hold: '//s2.loli.net/2022/09/17/IxhuB8n5evjSmPR.png',
-		HoldHL: '//s2.loli.net/2022/09/17/uq4cIX6TAdynfH5.png',
-		HoldEnd: '//s2.loli.net/2022/09/17/tBHwAqOvlezPNc3.png',
-		Flick: '//s2.loli.net/2022/09/17/1UTk8R5tLr2C4ad.png',
-		FlickHL: '//s2.loli.net/2022/09/17/xNeqAmZuViDpU1O.png',
-		LevelOver1: '//s2.loli.net/2022/09/17/QPa8nfBx4uboLmr.png',
-		LevelOver3: '//s2.loli.net/2022/09/17/covIVUexPEJ1GHu.png',
-		LevelOver4: '//s2.loli.net/2022/09/17/9sOKqdxJy3YR2zD.png',
-		LevelOver5: '//s2.loli.net/2022/09/17/4V6U7KgHtZoXAyk.png',
-		Rank: '//s2.loli.net/2022/09/17/mbctrzpiLelENIs.png',
+	await Promise.all(Object.entries({
+		JudgeLine: 'e4449d09',
+		ProgressBar: '2b148fdc',
+		SongsNameBar: 'ef6de8f4',
+		HitEffectRaw: 'cccc5e34',
+		Tap: '81bde67a',
+		Tap2: '436c083f',
+		TapHL: '482c09c5',
+		Drag: '6d691074',
+		DragHL: '6d019101',
+		HoldHead: '46ec64aa',
+		HoldHeadHL: '9c17cca6',
+		Hold: '2df2e2f5',
+		HoldHL: '688037ea',
+		HoldEnd: 'bc6f2355',
+		Flick: 'e71c01ac',
+		FlickHL: 'cb2ee377',
+		LevelOver1: '428b99e8',
+		LevelOver3: '518c5e08',
+		LevelOver4: 'c909ace8',
+		LevelOver5: '66e9fa71',
+		Rank: '667e65d8',
 		NoImage: 'src/0.png',
 		mute: 'src/mute.ogg',
 		HitSong0: 'src/HitSong0.ogg',
@@ -813,7 +820,7 @@ document.addEventListener('DOMContentLoaded', async function qwqwq() {
 		HitSong2: 'src/HitSong2.ogg'
 	}).map(([name, src], _i, arr) => new Promise(resolve => {
 		const xhr = new XMLHttpRequest();
-		xhr.open('get', src, true);
+		xhr.open('get', src = erc(src), true);
 		xhr.responseType = 'arraybuffer';
 		xhr.send();
 		xhr.onloadend = async () => {
@@ -829,18 +836,19 @@ document.addEventListener('DOMContentLoaded', async function qwqwq() {
 	res['JudgeLineMP'] = await createImageBitmap(imgShader(res['JudgeLine'], '#feffa9'));
 	res['JudgeLineFC'] = await createImageBitmap(imgShader(res['JudgeLine'], '#a2eeff'));
 	res['TapBad'] = await createImageBitmap(imgShader(res['Tap2'], '#6c4343'));
-	res['Clicks'] = {};
+	res['HitEffect'] = {};
 	res['Ranks'] = await qwqImage(res['Rank'], 'white');
-	res['Clicks']['rgba(255,236,160,0.8823529)'] = await qwqImage(res['clickRaw'], 'rgba(255,236,160,0.8823529)'); //#fce491
-	res['Clicks']['rgba(180,225,255,0.9215686)'] = await qwqImage(res['clickRaw'], 'rgba(180,225,255,0.9215686)'); //#9ed5f3
+	res['HitEffect']['rgba(255,236,160,0.8823529)'] = await qwqImage(res['HitEffectRaw'], 'rgba(255,236,160,0.8823529)'); //#fce491
+	res['HitEffect']['rgba(180,225,255,0.9215686)'] = await qwqImage(res['HitEffectRaw'], 'rgba(180,225,255,0.9215686)'); //#9ed5f3
+	if (!(() => {
+			const b = document.createElement('canvas').getContext('2d');
+			b.drawImage(res['JudgeLine'], 0, 0);
+			return b.getImageData(0, 0, 1, 1).data[0];
+		})()) return msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
 	msgHandler.sendMessage('等待上传文件...');
-	qwqCheck();
-	const qwq = () => {
-		const b = document.createElement('canvas').getContext('2d');
-		b.drawImage(res['JudgeLine'], 0, 0);
-		return b.getImageData(0, 0, 1, 1).data[0];
-	}
-	if (!qwq()) msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
+	$('uploader').classList.remove('disabled');
+	$('select').classList.remove('disabled');
+	btnPause.classList.add('disabled');
 });
 async function qwqImage(img, color) {
 	const clickqwq = imgShader(img, color);
@@ -1071,9 +1079,9 @@ btnPlay.addEventListener('click', async function() {
 		//清除原有数据
 		fucktemp = false;
 		fucktemp2 = false;
-		clickEvents0.clear();
-		clickEvents1.clear();
-		clickEvents2.clear();
+		hitEvents0.clear();
+		hitEvents1.clear();
+		hitEvents2.clear();
 		qwqIn.reset();
 		qwqOut.reset();
 		qwqEnd.reset();
@@ -1234,11 +1242,11 @@ function calcqwq(now) {
 	}
 	hit.taps.length = 0; //qwq
 	frameTimer.addTick(); //计算fps
-	clickEvents0.defilter(i => i.time++ > 0); //清除打击特效
-	clickEvents1.defilter(i => now >= i.time + i.duration); //清除打击特效
-	clickEvents2.defilter(i => now >= i.time + i.duration); //清除打击特效
-	for (const i in hit.mouse) hit.mouse[i] instanceof Click && hit.mouse[i].animate();
-	for (const i in hit.touch) hit.touch[i] instanceof Click && hit.touch[i].animate();
+	hitEvents0.defilter(i => i.time++ > 0); //清除打击特效
+	hitEvents1.defilter(i => now >= i.time + i.duration); //清除打击特效
+	hitEvents2.defilter(i => now >= i.time + i.duration); //清除打击特效
+	for (const i in hit.mouse) hit.mouse[i] instanceof Hit && hit.mouse[i].animate();
+	for (const i in hit.touch) hit.touch[i] instanceof Hit && hit.touch[i].animate();
 	if (qwq[4] && stat.good + stat.bad) {
 		stat.reset();
 		specialClick.func[1]();
@@ -1281,11 +1289,11 @@ function qwqdraw1(now) {
 	};
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	ctxos.globalCompositeOperation = 'destination-over'; //由后往前绘制
-	if ($('showCE2').checked) clickEvents2.anim(anim2);
+	if ($('showCE2').checked) hitEvents2.anim(anim2);
 	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
-	clickEvents1.anim(anim1, now);
+	hitEvents1.anim(anim1, now);
 	if (qwq[4]) ctxos.filter = 'none';
-	if ($('feedback').checked) clickEvents0.anim(anim0);
+	if ($('feedback').checked) hitEvents0.anim(anim0);
 	if (qwqIn.second >= 3 && qwqOut.second == 0) {
 		if (showPoint.checked) { //绘制定位点
 			ctxos.font = `${lineScale}px Mina,Noto Sans SC`;

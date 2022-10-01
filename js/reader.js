@@ -1,14 +1,12 @@
 const uploader = {
 	// files: [],
-	done: 0,
-	total: 0,
 	input: Object.assign(document.createElement('input'), {
 		type: 'file',
-		accept: '*/*',
+		accept: '',
 		multiple: true,
 		/**@this {HTMLInputElement} */
 		onchange() {
-			console.log(this.files);
+			uploader.onchange(this.files);
 			for (const i of this.files) { //加载文件
 				const reader = new FileReader;
 				reader.readAsArrayBuffer(i);
@@ -25,16 +23,25 @@ const uploader = {
 		uploader.input.webkitdirectory = true;
 		uploader.input.click();
 	},
+	onchange() {},
 	onprogress() {},
 	onload() {}
 }
-/** @param {{name:string,path:string,buffer:ArrayBuffer}} result */
-function readZip(result, { isJSZip = true, onread = () => Promise.resolve() }) {
+/**
+ * @typedef {{type:string,data:{}[]|ArrayBuffer|ImageBitmap}} ReaderData
+ * @typedef {{name:string,path:string,buffer:ArrayBuffer}} DataType
+ * @param {{name:string,path:string,buffer:ArrayBuffer}} result 
+ * @param {{isJSZip:boolean,onread:(param1:ReaderData,param2:number)=>void}} param1 
+ */
+function readZip(result, { isJSZip, onread }) {
 	const string = async i => {
 		const decoder = new TextDecoder;
 		return decoder.decode(i);
 	};
-	/** @param {{name:string,path:string,buffer:ArrayBuffer}} i */
+	/**
+	 * @param {DataType} i 
+	 * @returns {Promise<ReaderData>}
+	 */
 	const it = async i => {
 		if (i.name == 'line.csv') {
 			const data = await string(i.buffer);
@@ -84,12 +91,13 @@ function readZip(result, { isJSZip = true, onread = () => Promise.resolve() }) {
 	// } else self._zip_reader.postMessage(result);
 	if (!self._zip_worker) {
 		const worker = new Worker(`js/worker-zip.js#${tl}`); //以后考虑indexedDB存储url
+		let total = 0;
 		worker.addEventListener('message', async msg => {
 			/** @type {{data:{name:string,path:string,buffer:ArrayBuffer},total:number}} */
 			const data = msg.data;
-			uploader.total = data.total;
+			total = data.total;
 			const result = await it(data.data);
-			return onread(result);
+			return onread(result, total);
 		});
 		self._zip_worker = worker;
 	}

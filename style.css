@@ -67,7 +67,7 @@ body {
 	display: inline-flex;
 	justify-content: center;
 } */
-.uploader {
+#uploader {
 	display: inline-block;
 	position: relative;
 }
@@ -86,7 +86,7 @@ body {
 	background: #fff;
 }
 
-.uploader:hover #uploader-select {
+#uploader:hover #uploader-select {
 	visibility: visible;
 }
 
