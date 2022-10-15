@@ -4,7 +4,7 @@
 		"target": "ESNext"
 	},
 	"include": [
-		"js/*","./script.js"
+		"js/*","./script.js","utils/main.js"
 	],
 	"exclude": [
 		"**/*-min.*","**/* copy.*"

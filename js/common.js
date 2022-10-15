@@ -218,11 +218,25 @@ const getConstructorName = obj => {
 }
 const isUndefined = name => self[name] === undefined;
 //Legacy
+{
+	class DOMException extends self.DOMException {
+		constructor(message, name) {
+			super(message, name);
+			if (Error.captureStackTrace) {
+				Error.captureStackTrace(this, DOMException); //过滤自身stack
+			} else {
+				this.stack = (new Error).stack.replace(/.+\n/, '');
+			}
+		}
+	}
+	self.DOMException = DOMException;
+}
+
 function loadJS(urls) {
 	const arr = Array.from(urls instanceof Array ? urls : arguments, i => new URL(i, location).href);
 	const args = (function*(arg) { yield* arg; })(arr);
 	const load = url => new Promise((resolve, reject) => {
-		if (!url) return reject(arr);
+		if (!url) return reject(new DOMException('All urls are invalid\n' + arr.join('\n'), 'NetworkError'));
 		const script = document.createElement('script');
 		script.onload = () => resolve(script);
 		script.onerror = () => load(args.next().value).then(script => resolve(script)).catch(e => reject(e));

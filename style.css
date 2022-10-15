@@ -1,25 +1,3 @@
-/* mina-regular */
-@import url("//fonts.loli.net/css?family=Mina");
-
-@font-face {
-	font-family: 'Mina';
-	font-style: normal;
-	font-weight: regular;
-	/* IE9 Compat Modes */
-	src: url('//lib.baomitu.com/fonts/mina/mina-regular.eot');
-	src: local('Mina'), local('Mina-Normal'),
-		/* IE6-IE8 */
-		url('//lib.baomitu.com/fonts/mina/mina-regular.eot?#iefix') format('embedded-opentype'),
-		/* Super Modern Browsers */
-		url('//lib.baomitu.com/fonts/mina/mina-regular.woff2') format('woff2'),
-		/* Modern Browsers */
-		url('//lib.baomitu.com/fonts/mina/mina-regular.woff') format('woff'),
-		/* Safari, Android, iOS */
-		url('//lib.baomitu.com/fonts/mina/mina-regular.ttf') format('truetype'),
-		/* Legacy iOS */
-		url('//lib.baomitu.com/fonts/mina/mina-regular.svg#Mina') format('svg');
-}
-
 ::-webkit-scrollbar {
 	display: none;
 }
@@ -50,7 +28,7 @@ body {
 
 #mask {
 	color: gray;
-	font-family: Mina, Consolas, Menlo, monospace;
+	font-family: Custom, Consolas, Menlo, monospace;
 	font-size: 4vmin;
 	position: absolute;
 	width: 70vmin;

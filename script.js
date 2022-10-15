@@ -71,7 +71,7 @@ const msgHandler = {
 		}
 	},
 	sendWarning(msg, isHTML) {
-		const msgText = isHTML ? msg : msg.replace(/&/g, '&amp;').replace(/</g, '&lt;'); //.replace(/\r?\n|\r/g, '<br>');
+		const msgText = isHTML ? msg : Utils.escapeHTML(msg);
 		this.msgbox(msgText, 'warn');
 		this.sendMessage(this.lastMessage);
 	},
@@ -160,31 +160,36 @@ const chartInfoData = []; //info.csv
 async function checkSupport() {
 	/** @param {Error} error */
 	const sysError = (error, message) => {
+		const type = getConstructorName(error);
 		// if (message == 'Script error.') return;
 		let message2 = String(error);
 		let detail = String(error);
 		if (error instanceof Error) {
-			message2 = error.message;
-			if (error.stack.startsWith(error)) detail = `${message2}\n${error.stack.slice(error.stack.indexOf('\n') + 1)}`;
-			else detail = `${message2}\n    ${error.stack.split('\n').join('\n    ')}`; //Safari
+			const stack = error.stack || 'Stack not available';
+			if (error.name == type) message2 = error.message;
+			else message2 = `${error.name}: ${error.message}`;
+			const idx = stack.indexOf(message2) + 1;
+			if (idx) detail = `${message2}\n${stack.slice(idx+message2.length)}`;
+			else detail = `${message2}\n    ${stack.split('\n').join('\n    ')}`; //Safari
 		}
 		if (message) message2 = message;
-		const errMessage = `[${getConstructorName(error)}] ${message2}`;
-		const errDetail = `[${getConstructorName(error)}] ${detail}`;
-		msgHandler.sendError(errMessage, errDetail.replace(/&/g, '&amp;').replace(/</g, '&lt;'));
+		const errMessage = `[${type}] ${message2.split('\n')[0]}`;
+		const errDetail = `[${type}] ${detail}`;
+		msgHandler.sendError(errMessage, Utils.escapeHTML(errDetail));
 	};
 	self.addEventListener('error', e => sysError(e.error, e.message));
 	self.addEventListener('unhandledrejection', e => sysError(e.reason));
 	const loadPlugin = async (name, urls, check) => {
 		if (!check()) return true;
 		const errmsg1 = `错误：${name}组件加载失败（点击查看详情）`;
-		const errmsg2 = `${name}组件加载失败，请检查您的网络连接然后重试：\n`;
+		const errmsg2 = `${name}组件加载失败，请检查您的网络连接然后重试：`;
 		const errmsg3 = `${name}组件加载失败，请检查浏览器兼容性`;
 		msgHandler.sendMessage(`加载${name}组件...`);
-		if (!await loadJS(urls).catch(e => msgHandler.sendError(errmsg1, errmsg2 + e.join('\n'), true))) return false;
+		if (!await loadJS(urls).catch(e => msgHandler.sendError(errmsg1, e.message.replace(/.+/, errmsg2), true))) return false;
 		if (!check()) return true;
 		return msgHandler.sendError(errmsg1, errmsg3, true);
 	};
+	await Utils.addFont('Mina', { alt: 'Custom' });
 	//兼容性检测
 	msgHandler.sendMessage('检查浏览器兼容性...');
 	const isMobile = navigator.standalone !== undefined || navigator.platform.indexOf('Linux') > -1 && navigator.maxTouchPoints == 5;
@@ -824,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 		xhr.responseType = 'arraybuffer';
 		xhr.send();
 		xhr.onloadend = async () => {
-			if (xhr.response == null) {
+			if (!xhr.response || !xhr.response.byteLength) {
 				msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(src,location)}`, true);
 			} else if (/\.(mp3|wav|ogg)$/i.test(src)) res[name] = await audio.decode(xhr.response);
 			else if (/\.(png|jpeg|jpg)$/i.test(src)) res[name] = await createImageBitmap(new Blob([xhr.response]));
@@ -1140,7 +1145,7 @@ function loop() {
 	ctx.globalAlpha = 1;
 	ctx.drawImage(canvasos, (canvas.width - canvasos.width) / 2, 0);
 	//Copyright
-	ctx.font = `${lineScale * 0.4}px Mina,Noto Sans SC`;
+	ctx.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
 	ctx.fillStyle = '#ccc';
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = 'right';
@@ -1249,7 +1254,8 @@ function calcqwq(now) {
 	for (const i in hit.touch) hit.touch[i] instanceof Hit && hit.touch[i].animate();
 	if (qwq[4] && stat.good + stat.bad) {
 		stat.reset();
-		specialClick.func[1]();
+		btnPlay.click();
+		btnPlay.click();
 	}
 }
 
@@ -1280,7 +1286,7 @@ function qwqdraw1(now) {
 	const anim2 = i => { //绘制打击特效2
 		const tick = (now - i.time) / i.duration;
 		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
-		ctxos.font = `bold ${noteScaleRatio*(256+128* (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Mina,Noto Sans SC`;
+		ctxos.font = `bold ${noteScaleRatio*(256+128* (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Custom,Noto Sans SC`;
 		ctxos.textAlign = 'center';
 		ctxos.textBaseline = 'middle';
 		ctxos.fillStyle = i.color;
@@ -1296,7 +1302,7 @@ function qwqdraw1(now) {
 	if ($('feedback').checked) hitEvents0.anim(anim0);
 	if (qwqIn.second >= 3 && qwqOut.second == 0) {
 		if (showPoint.checked) { //绘制定位点
-			ctxos.font = `${lineScale}px Mina,Noto Sans SC`;
+			ctxos.font = `${lineScale}px Custom,Noto Sans SC`;
 			ctxos.textAlign = 'center';
 			ctxos.textBaseline = 'bottom';
 			for (const i of app.notes) {
@@ -1358,19 +1364,19 @@ function qwqdraw1(now) {
 		ctxos.textAlign = 'center';
 		//歌名
 		ctxos.textBaseline = 'alphabetic';
-		ctxos.font = `${lineScale * 1.1}px Mina,Noto Sans SC`;
+		ctxos.font = `${lineScale * 1.1}px Custom,Noto Sans SC`;
 		const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Mina,Noto Sans SC`;
+		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
 		ctxos.fillText(inputName.value || inputName.placeholder, app.wlen, app.hlen * 0.75);
 		//曲绘和谱师
 		ctxos.textBaseline = 'top';
-		ctxos.font = `${lineScale * 0.55}px Mina,Noto Sans SC`;
+		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
 		const dxi = ctxos.measureText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`).width;
-		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxi*(canvasos.width-lineScale*1.5)}px Mina,Noto Sans SC`;
+		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxi*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
 		ctxos.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, app.wlen, app.hlen * 1.25 + lineScale * 0.15);
-		ctxos.font = `${lineScale * 0.55}px Mina,Noto Sans SC`;
+		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
 		const dxc = ctxos.measureText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`).width;
-		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxc*(canvasos.width-lineScale*1.5)}px Mina,Noto Sans SC`;
+		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxc*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
 		ctxos.fillText(`Level designed by ${inputDesigner.value || inputDesigner.placeholder}`, app.wlen, app.hlen * 1.25 + lineScale * 1.0);
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
@@ -1384,15 +1390,15 @@ function qwqdraw1(now) {
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = 'alphabetic';
-	ctxos.font = `${lineScale * 0.95}px Mina,Noto Sans SC`;
+	ctxos.font = `${lineScale * 0.95}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'right';
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
 	if (stat.combo > 2) {
 		ctxos.textAlign = 'center';
-		ctxos.font = `${lineScale * 1.32}px Mina,Noto Sans SC`;
+		ctxos.font = `${lineScale * 1.32}px Custom,Noto Sans SC`;
 		ctxos.fillText(stat.combo, app.wlen, lineScale * 1.375);
 		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) : (1 - tween.easeOutSine(qwqOut.second * 1.5));
-		ctxos.font = `${lineScale * 0.66}px Mina,Noto Sans SC`;
+		ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
 		ctxos.fillText(autoplay.checked ? 'Autoplay' : 'combo', app.wlen, lineScale * 2.05);
 	}
 	//绘制歌名和等级
@@ -1400,22 +1406,22 @@ function qwqdraw1(now) {
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween.easeOutSine(qwqIn.second * 1.5)) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = 'alphabetic';
 	ctxos.textAlign = 'right';
-	ctxos.font = `${lineScale * 0.63}px Mina,Noto Sans SC`;
+	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
-	if (dxlvl > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(app.wlen - lineScale )}px Mina,Noto Sans SC`;
+	if (dxlvl > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(app.wlen - lineScale )}px Custom,Noto Sans SC`;
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
 	ctxos.drawImage(res['SongsNameBar'], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctxos.textAlign = 'left';
-	ctxos.font = `${lineScale * 0.63}px Mina,Noto Sans SC`;
+	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-	if (dxsnm > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxsnm*(app.wlen - lineScale )}px Mina,Noto Sans SC`;
+	if (dxsnm > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxsnm*(app.wlen - lineScale )}px Custom,Noto Sans SC`;
 	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvasos.height - lineScale * 0.66);
 	ctxos.resetTransform();
 	//绘制时间和帧率以及note打击数
 	if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
 	else ctxos.globalAlpha = 1 - tween.easeOutSine(qwqOut.second * 1.5);
 	ctxos.textBaseline = 'middle';
-	ctxos.font = `${lineScale * 0.4}px Mina,Noto Sans SC`;
+	ctxos.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'left';
 	ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
 	ctxos.textAlign = 'right';
@@ -1501,15 +1507,15 @@ function qwqdraw3(statData) {
 	ctxos.fillStyle = '#fff';
 	ctxos.textBaseline = 'middle';
 	ctxos.textAlign = 'left';
-	ctxos.font = '80px Mina,Noto Sans SC';
+	ctxos.font = '80px Custom,Noto Sans SC';
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Mina,Noto Sans SC`;
+	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Custom,Noto Sans SC`;
 	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 145);
-	ctxos.font = '30px Mina,Noto Sans SC';
+	ctxos.font = '30px Custom,Noto Sans SC';
 	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
-	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Mina,Noto Sans SC`;
+	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Custom,Noto Sans SC`;
 	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 208);
-	ctxos.font = '30px Mina,Noto Sans SC';
+	ctxos.font = '30px Custom,Noto Sans SC';
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
 	const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
@@ -1536,10 +1542,10 @@ function qwqdraw3(statData) {
 	ctxos.fillText(statData.textBelowStr, 1355, 590);
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'center';
-	ctxos.font = '86px Mina,Noto Sans SC';
+	ctxos.font = '86px Custom,Noto Sans SC';
 	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
 	ctxos.fillText(stat.scoreStr, 1075, 554);
-	ctxos.font = '26px Mina,Noto Sans SC';
+	ctxos.font = '26px Custom,Noto Sans SC';
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillText(stat.perfect, 891, 645);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
@@ -1548,7 +1554,7 @@ function qwqdraw3(statData) {
 	ctxos.fillText(stat.noteRank[6], 1196, 645);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
 	ctxos.fillText(stat.noteRank[2], 1349, 645);
-	ctxos.font = '22px Mina,Noto Sans SC';
+	ctxos.font = '22px Custom,Noto Sans SC';
 	const qwq4 = range((qwq[3] > 0 ? qwqEnd.second - qwq[3] : 0.2 - qwqEnd.second - qwq[3]) * 5.00);
 	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
 	ctxos.fillStyle = '#696';
@@ -1665,7 +1671,7 @@ function imgShader(img, color, limit = 512) {
 	const canvas = document.createElement('canvas');
 	canvas.width = img.width;
 	canvas.height = img.height;
-	const ctx = canvas.getContext('2d');
+	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
 	ctx.drawImage(img, 0, 0);
 	for (let dx = 0; dx < img.width; dx += limit) {
 		for (let dy = 0; dy < img.height; dy += limit) {
