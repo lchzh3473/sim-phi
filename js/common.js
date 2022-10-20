@@ -1,4 +1,5 @@
 'use strict';
+const isAppleDevice=()=>(navigator.userAgent.indexOf('like Mac OS X') > -1) || (navigator.userAgent.indexOf('Macintosh') > -1);
 const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
 class Timer {
 	constructor() {
@@ -48,15 +49,40 @@ const full = {
 	 * @param {HTMLElement} elem 
 	 * @returns {Promise}
 	 */
+	oriWidth: null,
+	oriHeight: null,
 	toggle(elem) {
 		//Apple第三方浏览器可能根本没有包含full的属性或方法qwq
-		if (!this.enabled) return Promise.reject();
 		const onFullscreen = () => new Promise((resolve, reject) => {
 			const onchange = evt => { resolve(evt), document.removeEventListener(this.onchange, onchange) };
 			const onerror = evt => { reject(evt), document.removeEventListener(this.onerror, onerror) };
 			document.addEventListener(this.onchange, onchange);
 			document.addEventListener(this.onerror, onerror);
 		})
+		const stage=$("stage")
+		if (!this.enabled || isAppleDevice()) {
+		    if (stage.style.display=="flex") {
+    			canvas.style.position="relative";
+                $("playhide").style.display="block";
+                stage.style.display="block";
+                stage.style.width=this.oriWidth;
+                stage.style.height=this.oriHeight;
+    		} else {
+                $("playhide").style.display="none";
+                window.scrollTo(0,0);
+            	canvas.style.position="fixed";
+            	if(!this.oriWidth) {
+            	    this.oriWidth=stage.style.width;
+            	    this.oriHeight=stage.style.height;
+            	}
+            	stage.style.width=`${window.visualViewport.width}px`;
+            	stage.style.height=`${window.visualViewport.height}px`;
+            	stage.style.display="flex";
+            	stage.style.justifyContent="center";
+            	stage.style.alignContent="center";
+    		}
+    		return new Promise((resolve)=>resolve(true));
+		}
 		if (this.element) {
 			if (document.exitFullscreen) return document.exitFullscreen() || onFullscreen();
 			if (document.webkitExitFullscreen) return document.webkitExitFullscreen() || onFullscreen();
