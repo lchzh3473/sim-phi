@@ -70,7 +70,7 @@ const full = {
 	},
 	check(elem) {
 		if (!(elem instanceof HTMLElement)) elem = document.body;
-		return this.element == elem;
+		return this.element === elem;
 	},
 	get onchange() {
 		if (document.onfullscreenchange !== undefined) return 'fullscreenchange';
@@ -109,6 +109,10 @@ const audio = {
 		const actx = this.actx;
 		return actx.decodeAudioData(arraybuffer);
 	},
+	mute(length) {
+		const actx = this.actx;
+		return actx.createBuffer(2, 44100 * length, 44100);
+	},
 	play(res, loop, isOut, offset, playbackrate) {
 		const actx = this.actx;
 		const bfs = this._bfs;
@@ -142,13 +146,13 @@ function csv2array(data, isObject) {
 		let beforeQuot = false;
 		const row = [];
 		for (const j of i) {
-			if (j == '"') {
+			if (j === '"') {
 				if (!isQuot) isQuot = true;
 				else if (beforeQuot) {
 					rowstr += j;
 					beforeQuot = false;
 				} else beforeQuot = true;
-			} else if (j == ',') {
+			} else if (j === ',') {
 				if (!isQuot) {
 					row.push(rowstr);
 					rowstr = '';

@@ -5,9 +5,14 @@
 	<!--viewport-fit=cover:Fill the whole screen on iPhone X-->
 	<meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 	<title>(っ °Д °;)っ</title>
-	<!-- <link rel="manifest" href="./manifest.json"> -->
+	<link rel="manifest" href="./manifest.json">
 	<link rel="stylesheet" href="/utils/style.css">
 	<link rel="stylesheet" href="style.css?v=14216">
+	<script>
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.register('/service-worker.js').then(() => { console.log('Service Worker Registered'); });
+		}
+	</script>
 	<script>
 		; (function () {
 			var src = '//cdn.jsdelivr.net/npm/eruda';
@@ -58,7 +63,7 @@
 						<option value="1.777778" selected>16:9</option>
 					</select>
 				</div>
-				<div>按键缩放：<select id="select-scale-ratio" style="width:4em">
+				<div>按键缩放：<select id="select-note-scale" style="width:4em">
 						<option value="0.8">极小</option>
 						<option value="0.9">较小</option>
 						<option value="1" selected>默认</option>
@@ -66,7 +71,7 @@
 						<option value="1.3">极大</option>
 					</select>
 				</div>
-				<div>背景变暗：<select id="select-global-alpha" style="width:4em">
+				<div>背景变暗：<select id="select-background-dim" style="width:4em">
 						<option value="1">黑暗</option>
 						<option value="0.8">昏暗</option>
 						<option value="0.6" selected>默认</option>
@@ -74,10 +79,11 @@
 						<option value="0.2">明亮</option>
 					</select>
 				</div><br>
-				<div>歌名：<input id="input-name" class="input" style="width:7em" placeholder="Untitled"></div>
-				<div>等级：<input id="input-level" class="input" style="width:7em" placeholder="SP  Lv.?"></div><br>
-				<div>曲绘：<input id="input-illustrator" class="input" style="width:7em" placeholder="nameless"></div>
-				<div>谱师：<input id="input-designer" class="input" style="width:7em" placeholder="nameless"></div><br>
+				<div>歌名：<input id="input-name" class="input" style="width:7em" placeholder="&#60; Untitled &#62;"></div>
+				<!-- <div>曲师：<input id="input-artist" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div> -->
+				<div>等级：<input id="input-level" class="input" style="width:7em" placeholder="&#60; SP  Lv.? &#62;"></div><br>
+				<div>曲绘：<input id="input-illustrator" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div>
+				<div>谱师：<input id="input-charter" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div><br>
 				<div><input type="checkbox" id="feedback" checked><label for="feedback">触摸反馈</label></div>
 				<div><input type="checkbox" id="imageBlur" checked><label for="imageBlur">背景模糊</label></div>
 				<div><input type="checkbox" id="highLight" checked><label for="highLight">多押高亮</label></div><br>

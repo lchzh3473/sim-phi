@@ -28,29 +28,49 @@ const uploader = {
 	onload() {}
 }
 /**
- * @typedef {{type:string,data:{}[]|ArrayBuffer|ImageBitmap}} ReaderData
- * @typedef {{name:string,path:string,buffer:ArrayBuffer}} DataType
+ * @typedef {object} ReaderData
+ * @property {string} name
+ * @property {string} type
+ * @property {ArrayBuffer|ImageBitmap|{}[]} data
+ * 
+ * @typedef {object} DataType
+ * @property {string} name
+ * @property {string} path
+ * @property {ArrayBuffer} buffer
+ * 
  * @param {{name:string,path:string,buffer:ArrayBuffer}} result 
  * @param {{isJSZip:boolean,onread:(param1:ReaderData,param2:number)=>void}} param1 
  */
 function readZip(result, { isJSZip, onread }) {
 	const string = async i => {
-		const decoder = new TextDecoder;
-		return decoder.decode(i);
+		const labels = ['utf-8', 'gbk', 'big5', 'shift_jis'];
+		for (const label of labels) {
+			const decoder = new TextDecoder(label, { fatal: true }); // '\ufffd'
+			try {
+				return decoder.decode(i);
+			} catch (e) {
+				if (label === labels[labels.length - 1]) throw e;
+			}
+		}
 	};
 	/**
 	 * @param {DataType} i 
 	 * @returns {Promise<ReaderData>}
 	 */
 	const it = async i => {
-		if (i.name == 'line.csv') {
+		if (i.name === 'line.csv') {
 			const data = await string(i.buffer);
 			const chartLine = csv2array(data, true);
 			return { type: 'line', data: chartLine };
 		}
-		if (i.name == 'info.csv') {
+		if (i.name === 'info.csv') {
 			const data = await string(i.buffer);
 			const chartInfo = csv2array(data, true);
+			return { type: 'info', data: chartInfo };
+		}
+		if (i.name === 'Settings.txt' || i.name === 'info.txt') {
+			const data = await string(i.buffer);
+			const chartInfo = Pec.info(data); //qwq
 			return { type: 'info', data: chartInfo };
 		}
 		return (async () => {
@@ -68,7 +88,7 @@ function readZip(result, { isJSZip, onread }) {
 		}).catch(async () => {
 			const data = await string(i.buffer);
 			console.log(i);
-			const pecData = pec2json(data, i.name);
+			const pecData = Pec.parse(data, i.name);
 			const jsonData = await chart123(pecData.data);
 			for (const i of pecData.messages) msgHandler.sendWarning(i);
 			return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
@@ -102,4 +122,36 @@ function readZip(result, { isJSZip, onread }) {
 		self._zip_worker = worker;
 	}
 	self._zip_worker.postMessage(result, [result.buffer]);
+}
+//test
+function chart123(chart) {
+	const newChart = JSON.parse(JSON.stringify(chart)); //深拷贝
+	switch (parseInt(newChart.formatVersion)) { //加花括号以避免beautify缩进bug
+		case 1: {
+			newChart.formatVersion = 3;
+			for (const i of newChart.judgeLineList) {
+				for (const j of i.judgeLineMoveEvents) {
+					j.start2 = j.start % 1e3 / 520;
+					j.end2 = j.end % 1e3 / 520;
+					j.start = parseInt(j.start / 1e3) / 880;
+					j.end = parseInt(j.end / 1e3) / 880;
+				}
+			}
+		}
+		case 3: {
+			for (const i of newChart.judgeLineList) {
+				let y = 0;
+				for (const j of i.speedEvents) {
+					if (j.startTime < 0) j.startTime = 0;
+					j.floorPosition = y;
+					y = Math.fround(y + (j.endTime - j.startTime) * j.value / i.bpm * 1.875); //float32
+				}
+			}
+		}
+		case 3473:
+			break;
+		default:
+			throw `Unsupported formatVersion: ${newChart.formatVersion}`;
+	}
+	return newChart;
 }

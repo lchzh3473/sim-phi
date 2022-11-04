@@ -78,7 +78,7 @@
 			</tr>
 			<tr>
 				<td class="left"><a name="info2" href="#info1" target="_self">[6]</a></td>
-				<td class="right">info.csv：置于zip文件根目录，用于自动填写谱面信息 (参考:<a href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,Music,Image,AspectRatio,NoteScale,GlobalAlpha,Name,Level,Illustrator,Designer<br>
+				<td class="right">info.csv：置于zip文件根目录，用于自动填写谱面信息 (参考:<a href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,Music,Image,Name,Artist,Level,Illustrator,Charter,AspectRatio,NoteScale,BackgroundDim<br>
 					<table class="real-table">
 						<tr>
 							<th class="left">属性</th>
@@ -97,20 +97,12 @@
 							<td class="right">图片(zip文件内完整路径)</td>
 						</tr>
 						<tr>
-							<td class="left">AspectRatio</td>
-							<td class="right">宽高比(画面宽度与高度的比值，默认1.777778，即16:9)</td>
-						</tr>
-						<tr>
-							<td class="left">NoteScale</td>
-							<td class="right">按键缩放(数值越大Note越大，默认1)</td>
-						</tr>
-						<tr>
-							<td class="left">GlobalAlpha</td>
-							<td class="right">背景变暗(背景不透明度，默认0.6)</td>
-						</tr>
-						<tr>
 							<td class="left">Name</td>
 							<td class="right">名称(显示在画面左下角)</td>
+						</tr>
+						<tr>
+							<td class="left">Artist</td>
+							<td class="right">曲师(显示位置待定)</td>
 						</tr>
 						<tr>
 							<td class="left">Level</td>
@@ -121,15 +113,27 @@
 							<td class="right">曲绘(显示于过渡动画)</td>
 						</tr>
 						<tr>
-							<td class="left">Designer</td>
+							<td class="left">Charter</td>
 							<td class="right">谱师(显示于过渡动画)</td>
+						</tr>
+						<tr>
+							<td class="left">AspectRatio</td>
+							<td class="right">宽高比(画面宽度与高度的比值，默认1.777778，即16:9)</td>
+						</tr>
+						<tr>
+							<td class="left">NoteScale</td>
+							<td class="right">按键缩放(数值越大Note越大，默认1)</td>
+						</tr>
+						<tr>
+							<td class="left">BackgroundDim</td>
+							<td class="right">背景变暗(背景不透明度，默认0.6)</td>
 						</tr>
 					</table>
 				</td>
 			</tr>
 			<tr>
 				<td class="left"><a name="line2" href="#line1" target="_self">[7]</a></td>
-				<td class="right">line.csv：置于zip文件根目录，用于替换指定判定线贴图 (参考:<a href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,LineId,Image,Vert,Horz,IsDark<br>
+				<td class="right">line.csv：置于zip文件根目录，用于替换指定判定线贴图 (参考:<a href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,LineId,Image,Scale,Aspect,UseBackgroundDim,UseLineColor,UseLineScale<br>
 					<table class="real-table">
 						<tr>
 							<th class="left">属性</th>
@@ -148,16 +152,24 @@
 							<td class="right">图片(zip文件内完整路径)</td>
 						</tr>
 						<tr>
-							<td class="left">Vert</td>
-							<td class="right">垂直宽度(负数取绝对值作为画面高度的比值，例如-0.5代表画面高度的一半；正数取绝对值为125倍判定线宽度的比值，例如0.016代表2倍判定线宽度；0代表隐藏判定线，不推荐使用；默认值0.008)</td>
+							<td class="left">Scale</td>
+							<td class="right">缩放(将图片以画面单位高度(画面高度/1080)整体缩放，默认1)</td>
 						</tr>
 						<tr>
-							<td class="left">Horz</td>
-							<td class="right">水平拉伸(图片长宽比与原图长宽比的比值，例如2代表将原图水平拉伸至原来的2倍；默认值1.042)</td>
+							<td class="left">Aspect</td>
+							<td class="right">拉伸(将图片水平拉伸至原来的若干倍，默认1)</td>
 						</tr>
 						<tr>
-							<td class="left">IsDark</td>
-							<td class="right">跟随背景变暗(1:是；0:否，即图片亮度不受背景变暗的影响；默认值0)</td>
+							<td class="left">UseBackgroundDim</td>
+							<td class="right">跟随背景变暗(1:是；0:否，即图片亮度不受背景变暗的影响；默认0)</td>
+						</tr>
+						<tr>
+							<td class="left">UseLineColor</td>
+							<td class="right">跟随FC/AP指示器着色(1:是，即图片随FC/AP指示器着色；0:否；默认1)</td>
+						</tr>
+						<tr>
+							<td class="left">UseLineScale</td>
+							<td class="right">使用判定线缩放策略(1:是，即宽高比小于3:4时缩放受画面宽度影响；0:否；默认1)</td>
 						</tr>
 					</table>
 				</td>
@@ -224,7 +236,7 @@
 			</tr>
 			<tr>
 				<th class="left">Q:</th>
-				<th class="right">部分浏览器全屏时滑动意外地调节了亮度或音量怎么办？</th>
+				<th class="right">部分浏览器全屏时滑动意外地调节亮度或音量怎么办？</th>
 			</tr>
 			<tr>
 				<td class="left">A:</td>

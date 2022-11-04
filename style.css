@@ -26,6 +26,10 @@ body {
 	line-height: 0;
 }
 
+#stage canvas {
+	background-color: #000;
+}
+
 #mask {
 	color: gray;
 	font-family: Custom, Consolas, Menlo, monospace;

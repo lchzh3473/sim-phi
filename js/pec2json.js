@@ -1,4 +1,5 @@
-function pec2json(pec, filename) {
+const Pec = {};
+Pec.parse = function(pec, filename) {
 	const tween = [null, null,
 		pos => Math.sin(pos * Math.PI / 2), //2
 		pos => 1 - Math.cos(pos * Math.PI / 2), //3
@@ -69,7 +70,7 @@ function pec2json(pec, filename) {
 				startTime: startTime,
 				endTime: endTime,
 			};
-			if (typeof startTime == 'number' && typeof endTime == 'number' && startTime > endTime) {
+			if (typeof startTime === 'number' && typeof endTime === 'number' && startTime > endTime) {
 				console.warn('Warning: startTime ' + startTime + ' is larger than endTime ' + endTime);
 				//return;
 			}
@@ -125,7 +126,7 @@ function pec2json(pec, filename) {
 			this.type = type;
 			this.time = time;
 			this.positionX = x;
-			this.holdTime = type == 3 ? holdTime : 0;
+			this.holdTime = type === 3 ? holdTime : 0;
 			this.speed = isNaN(speed) ? 1 : speed; //默认值不为0不能改成Number(speed)||1
 			//this.floorPosition = time % 1e9 / 104 * 1.2;
 		}
@@ -156,8 +157,8 @@ function pec2json(pec, filename) {
 	for (let i = 0; i < rawChart.length; i++) {
 		let p = rawChart[i];
 		if (!isNaN(p)) rawarr.push(p);
-		else if (p == '#' && rawstr[0] == 'n') fuckarr[0] = rawChart[++i];
-		else if (p == '&' && rawstr[0] == 'n') fuckarr[1] = rawChart[++i];
+		else if (p === '#' && rawstr[0] === 'n') fuckarr[0] = rawChart[++i];
+		else if (p === '&' && rawstr[0] === 'n') fuckarr[1] = rawChart[++i];
 		else if (raw[p]) pushCommand(p);
 		else throw `Unknown Command: ${p}`;
 	}
@@ -184,7 +185,7 @@ function pec2json(pec, filename) {
 
 	function pushCommand(next) {
 		if (raw[rawstr]) {
-			if (rawstr[0] == 'n') {
+			if (rawstr[0] === 'n') {
 				rawarr.push(...fuckarr);
 				fuckarr = [1, 1];
 			}
@@ -208,30 +209,30 @@ function pec2json(pec, filename) {
 	for (const i of raw.n1) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(1, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] / 115.2, 0, i[5]), i[3], i[4]);
-		if (i[3] != 1 && i[3] != 2) warnings.push(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n1 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
+		if (i[3] !== 1 && i[3] !== 2) warnings.push(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n1 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
 		if (i[4]) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
-		if (i[6] != 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[6] !== 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n1 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	} //102.4
 	for (const i of raw.n2) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(3, calcTime(i[1]) + (i[5] ? 1e9 : 0), i[3] / 115.2, calcTime(i[2]) - calcTime(i[1]), i[6]), i[4], i[5]);
-		if (i[4] != 1 && i[4] != 2) warnings.push(`检测到非法方向:${i[4]}(将被视为2)\n位于:"n2 ${i.slice(0, 5).join(' ')} # ${i[6]} & ${i[7]}"\n来自${filename}`);
+		if (i[4] !== 1 && i[4] !== 2) warnings.push(`检测到非法方向:${i[4]}(将被视为2)\n位于:"n2 ${i.slice(0, 5).join(' ')} # ${i[6]} & ${i[7]}"\n来自${filename}`);
 		if (i[5]) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"n2 ${i.slice(0, 6).join(' ')}"\n来自${filename}`);
-		if (i[7] != 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n2 ${i.slice(0, 5).join(' ')} # ${i[6]} & ${i[7]}"\n来自${filename}`);
+		if (i[7] !== 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n2 ${i.slice(0, 5).join(' ')} # ${i[6]} & ${i[7]}"\n来自${filename}`);
 	}
 	for (const i of raw.n3) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(4, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] / 115.2, 0, i[5]), i[3], i[4]);
-		if (i[3] != 1 && i[3] != 2) warnings.push(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n3 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[3] !== 1 && i[3] !== 2) warnings.push(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n3 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 		if (i[4]) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
-		if (i[6] != 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[6] !== 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n3 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	for (const i of raw.n4) {
 		if (!linesPec[i[0]]) linesPec[i[0]] = new JudgeLine(baseBpm);
 		linesPec[i[0]].pushNote(new Note(2, calcTime(i[1]) + (i[4] ? 1e9 : 0), i[2] / 115.2, 0, i[5]), i[3], i[4]);
-		if (i[3] != 1 && i[3] != 2) warnings.push(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n4 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[3] !== 1 && i[3] !== 2) warnings.push(`检测到非法方向:${i[3]}(将被视为2)\n位于:"n4 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 		if (i[4]) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(' ')}"\n来自${filename}`);
-		if (i[6] != 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
+		if (i[6] !== 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"n4 ${i.slice(0, 5).join(' ')} # ${i[5]} & ${i[6]}"\n来自${filename}`);
 	}
 	//变速
 	for (const i of raw.cv) {
@@ -265,7 +266,7 @@ function pec2json(pec, filename) {
 			continue;
 		}
 		linesPec[i[0]].pushEvent(-2, calcTime(i[1]), calcTime(i[2]), i[3] / 2048, i[4] / 1400, i[5]);
-		if (i[5] && !tween[i[5]] && i[5] != 1) warnings.push(`未知的缓动类型:${i[5]}(将被视为1)\n位于:"cm ${i.join(' ')}"\n来自${filename}`);
+		if (i[5] && !tween[i[5]] && i[5] !== 1) warnings.push(`未知的缓动类型:${i[5]}(将被视为1)\n位于:"cm ${i.join(' ')}"\n来自${filename}`);
 	}
 	//旋转
 	for (const i of raw.cd) {
@@ -279,7 +280,7 @@ function pec2json(pec, filename) {
 			continue;
 		}
 		linesPec[i[0]].pushEvent(-3, calcTime(i[1]), calcTime(i[2]), -i[3], i[4]);
-		if (i[4] && !tween[i[4]] && i[4] != 1) warnings.push(`未知的缓动类型:${i[4]}(将被视为1)\n位于:"cr ${i.join(' ')}"\n来自${filename}`);
+		if (i[4] && !tween[i[4]] && i[4] !== 1) warnings.push(`未知的缓动类型:${i[4]}(将被视为1)\n位于:"cr ${i.join(' ')}"\n来自${filename}`);
 	}
 	for (const i of linesPec) {
 		if (i) {
@@ -314,7 +315,7 @@ function pec2json(pec, filename) {
 					qwqwq3 = j.time % 1e9 - k.startTime;
 				}
 				j.floorPosition = Math.fround(qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875);
-				if (j.type == 3) j.speed *= qwqwq2;
+				if (j.type === 3) j.speed *= qwqwq2;
 			}
 			for (const j of i.notesBelow) {
 				let qwqwq = 0;
@@ -328,7 +329,7 @@ function pec2json(pec, filename) {
 					qwqwq3 = j.time % 1e9 - k.startTime;
 				}
 				j.floorPosition = Math.fround(qwqwq + qwqwq2 * qwqwq3 / i.bpm * 1.875);
-				if (j.type == 3) j.speed *= qwqwq2;
+				if (j.type === 3) j.speed *= qwqwq2;
 			}
 			//整合motionType
 			let ldpTime = 0;
@@ -391,4 +392,23 @@ function pec2json(pec, filename) {
 		data: qwqChart,
 		messages: warnings
 	};
+}
+//读取info.txt
+Pec.info = function(text) {
+	const lines = String(text).split(/\r?\n/);
+	const result = [];
+	let current = {};
+	for (const i of lines) {
+		if (i.startsWith('#')) {
+			if (Object.keys(current).length) result.push(current);
+			current = {};
+		} else {
+			let [key, value] = i.split(/:(.+)/).map(i => i.trim());
+			if (key === 'Song') key = 'Music';
+			if (key === 'Picture') key = 'Image';
+			if (key) current[key] = value;
+		}
+	}
+	if (Object.keys(current).length) result.push(current);
+	return result;
 }
