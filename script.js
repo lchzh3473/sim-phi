@@ -1,5 +1,5 @@
 'use strict';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b3'], 1611795955, 1667538897];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b4'], 1611795955, 1667555590];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -843,10 +843,10 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 				msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(src,location)}`, true);
 			} else {
 				// console.log(xhr.response)
-				const a = new DataView(xhr.response, 0, 16);
-				const header = a.getBigUint64(0);
-				if (header == 5721655457777582080n) res[name] = await audio.decode(xhr.response);
-				else if (header == 9894494448401390090n) res[name] = await createImageBitmap(new Blob([xhr.response]));
+				const a = new DataView(xhr.response, 0, 8);
+				const [header1, header2] = [a.getUint32(0), a.getUint32(4)];
+				if (header1 === 0x4f676753) res[name] = await audio.decode(xhr.response);
+				else if (header1 === 0x89504e47 && header2 === 0x0d0a1a0a) res[name] = await createImageBitmap(new Blob([xhr.response]));
 				else msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(src,location)}`, true);
 			}
 			msgHandler.sendMessage(`加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`);

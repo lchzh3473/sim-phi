@@ -97,14 +97,14 @@ function readZip(result, { isJSZip, onread }) {
 	const tl = urls[isJSZip ? 'jszip' : 'zip'].reverse()[0];
 	// 踩坑：worker实际上优化了性能，性能对比应该用zip测试而不是普通文件
 	// if (!self._zip_reader) {
-	// 	localStorage.setItem('zip_reader', tl);
-	// 	loadJS('js/reader-zip.js').then(() => {
+	// 	let total = 0;
+	// 	loadJS(tl).then(() => loadJS('js/reader-zip.js')).then(() => {
 	// 		self._zip_reader = new ZipReader(isJSZip, async msg => {
 	// 			/** @type {{data:{name:string,path:string,buffer:ArrayBuffer},total:number}} */
 	// 			const data = msg.data;
-	// 			uploader.total = data.total;
+	// 			total = data.total;
 	// 			const result = await it(data.data);
-	// 			return onread(result);
+	// 			return onread(result,total);
 	// 		});
 	// 		self._zip_reader.postMessage(result);
 	// 	});
