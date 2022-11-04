@@ -1,6 +1,6 @@
 'use strict';
-const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
-class Timer {
+export const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
+export class Timer {
 	constructor() {
 		this.reset();
 	}
@@ -30,7 +30,7 @@ class Timer {
 		return this.time / 1e3;
 	}
 }
-const frameTimer = { //计算fps
+export const frameTimer = { //计算fps
 	tick: 0,
 	time: performance.now(),
 	fps: '',
@@ -43,7 +43,7 @@ const frameTimer = { //计算fps
 	}
 }
 //全屏相关
-const full = {
+export const full = {
 	/**
 	 * @param {HTMLElement} elem 
 	 * @returns {Promise}
@@ -89,7 +89,7 @@ const full = {
 		return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || false;
 	}
 };
-const audio = {
+export const audio = {
 	/** @type {AudioContext} */
 	_actx: null,
 	_inited: false,
@@ -137,7 +137,7 @@ const audio = {
 	}
 };
 
-function csv2array(data, isObject) {
+export function csv2array(data, isObject) {
 	const strarr = data.replace(/\ufeff|\r/g, '').split('\n');
 	const col = [];
 	for (const i of strarr) {
@@ -207,7 +207,7 @@ function csv2array(data, isObject) {
 // }
 // self.onerror=(...a)=>console.log('qwq',a);
 // self.addEventListener('error',(...a)=>console.log('qwq',a));
-const urls = {
+export const urls = {
 	//奇怪的坑！iOS不用no-worker会卡住，而Windows和Android不用worker会卡住，被迫用full qwq
 	zip: ['//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip-full.min.js', '//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip-full.min.js'],
 	jszip: ['//cdn.jsdelivr.net/npm/jszip', '//fastly.jsdelivr.net/npm/jszip'],
@@ -216,12 +216,12 @@ const urls = {
 	blur: ['//cdn.jsdelivr.net/npm/stackblur-canvas', '//fastly.jsdelivr.net/npm/stackblur-canvas'],
 	md5: ['//cdn.jsdelivr.net/npm/md5-js', '//fastly.jsdelivr.net/npm/md5-js'],
 }
-const getConstructorName = obj => {
+export const getConstructorName = obj => {
 	if (obj === null) return 'Null';
 	if (obj === undefined) return 'Undefined';
 	return obj.constructor.name;
 }
-const isUndefined = name => self[name] === undefined;
+export const isUndefined = name => self[name] === undefined;
 //Legacy
 {
 	class DOMException extends self.DOMException {
@@ -237,7 +237,7 @@ const isUndefined = name => self[name] === undefined;
 	self.DOMException = DOMException;
 }
 
-function loadJS(urls) {
+export function loadJS(urls) {
 	const arr = Array.from(urls instanceof Array ? urls : arguments, i => new URL(i, location).href);
 	const args = (function*(arg) { yield* arg; })(arr);
 	const load = url => new Promise((resolve, reject) => {

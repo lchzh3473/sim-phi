@@ -1,4 +1,6 @@
-const uploader = {
+import { urls, audio, csv2array } from './common.js';
+import Pec from './pec2json.js';
+export const uploader = {
 	// files: [],
 	input: Object.assign(document.createElement('input'), {
 		type: 'file',
@@ -38,10 +40,19 @@ const uploader = {
  * @property {string} path
  * @property {ArrayBuffer} buffer
  * 
- * @param {{name:string,path:string,buffer:ArrayBuffer}} result 
- * @param {{isJSZip:boolean,onread:(param1:ReaderData,param2:number)=>void}} param1 
+ * @typedef {object} ReaderOptions
+ * @property {boolean} isJSZip
+ * @property {()=>void} onloadstart
+ * @property {(param1:ReaderData,param2:number)=>void} onread
+ * 
+ * @param {DataType} result 
+ * @param {ReaderOptions} options 
  */
-function readZip(result, { isJSZip, onread }) {
+export function readZip(result, {
+	isJSZip = true,
+	onloadstart = () => void 0,
+	onread = () => void 0
+}) {
 	const string = async i => {
 		const labels = ['utf-8', 'gbk', 'big5', 'shift_jis'];
 		for (const label of labels) {
@@ -90,8 +101,8 @@ function readZip(result, { isJSZip, onread }) {
 			console.log(i);
 			const pecData = Pec.parse(data, i.name);
 			const jsonData = await chart123(pecData.data);
-			for (const i of pecData.messages) msgHandler.sendWarning(i);
-			return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
+			// for (const i of pecData.messages) msgHandler.sendWarning(i);
+			return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: pecData.messages };
 		}).catch(error => ({ type: 'error', name: i.name, data: error }));
 	};
 	const tl = urls[isJSZip ? 'jszip' : 'zip'].reverse()[0];
@@ -110,6 +121,7 @@ function readZip(result, { isJSZip, onread }) {
 	// 	});
 	// } else self._zip_reader.postMessage(result);
 	if (!self._zip_worker) {
+		onloadstart();
 		const worker = new Worker(`js/worker-zip.js#${tl}`); //以后考虑indexedDB存储url
 		let total = 0;
 		worker.addEventListener('message', async msg => {

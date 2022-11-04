@@ -1,5 +1,7 @@
-'use strict';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b4'], 1611795955, 1667555590];
+import simphi from './js/simphi.js';
+import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
+import { uploader, readZip } from './js/reader.js';
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b5'], 1611795955, 1667577822];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -91,8 +93,8 @@ const msgHandler = {
 	}
 }
 //
-const stat = new Stat();
-const app = new Renderer($('stage')); //test
+const stat = new simphi.Stat();
+const app = new simphi.Renderer($('stage')); //test
 const { canvas, ctx, canvasos, ctxos } = app;
 const selectbg = $('select-bg');
 const btnPlay = $('btn-play');
@@ -292,7 +294,11 @@ function resizeStage() {
 			name: i.name,
 			buffer: evt.target.result,
 			path: i.webkitRelativePath || i.name
-		}, { isJSZip: app.isJSZip, onread: handleFile });
+		}, {
+			isJSZip: app.isJSZip,
+			onloadstart: () => msgHandler.sendMessage('加载zip组件...'),
+			onread: handleFile
+		});
 	}
 	/** 
 	 * @param {ReaderData} data 
@@ -318,6 +324,7 @@ function resizeStage() {
 				selectbg.appendChild(createOption(data.name, data.name));
 				break;
 			case 'chart':
+				if (data.msg) data.msg.forEach(v => msgHandler.sendWarning(v));
 				charts.set(data.name, data.data);
 				chartsMD5.set(data.name, data.md5);
 				selectchart.appendChild(createOption(data.name, data.name));
@@ -402,7 +409,7 @@ const specialClick = {
 		if (qwqEnd.second > 0) qwq[3] = qwq[3] > 0 ? -qwqEnd.second : qwqEnd.second;
 	}
 }
-const hitManager = new HitManager();
+const hitManager = new simphi.HitManager();
 class JudgeEvent {
 	constructor(offsetX, offsetY, type, event) {
 		this.offsetX = offsetX;
@@ -908,6 +915,7 @@ btnPlay.addEventListener('click', async function() {
 		audio.play(res['mute'], true, false, 0); //播放空音频(防止音画不同步)
 		app.prerenderChart(charts.get(selectchart.value)); //fuckqwq
 		app.md5 = chartsMD5.get(selectchart.value);
+		stat.level = Number(inputLevel.value.match(/\d+$/));
 		stat.reset(app.chart.numOfNotes, app.md5, selectspeed.value);
 		for (const i of app.lines) {
 			i.imageW = 6220.8; //1920
@@ -1148,6 +1156,7 @@ function calcqwq(now) {
 	//更新判定
 	hitManager.update();
 	if (qwq[4] && stat.good + stat.bad) {
+		stat.level = Number(inputLevel.value.match(/\d+$/));
 		stat.reset();
 		btnPlay.click();
 		btnPlay.click();
@@ -1363,6 +1372,7 @@ function qwqdraw2() {
 		audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`], true, true, 0);
 		qwqEnd.reset();
 		qwqEnd.play();
+		stat.level = Number(inputLevel.value.match(/\d+$/));
 		fucktemp2 = stat.getData(app.playMode === 1, selectspeed.value);
 	}, 1000);
 }

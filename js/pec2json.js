@@ -1,5 +1,6 @@
-const Pec = {};
-Pec.parse = function(pec, filename) {
+export default { parse, info };
+
+function parse(pec, filename) {
 	const tween = [null, null,
 		pos => Math.sin(pos * Math.PI / 2), //2
 		pos => 1 - Math.cos(pos * Math.PI / 2), //3
@@ -394,7 +395,7 @@ Pec.parse = function(pec, filename) {
 	};
 }
 //读取info.txt
-Pec.info = function(text) {
+function info(text) {
 	const lines = String(text).split(/\r?\n/);
 	const result = [];
 	let current = {};

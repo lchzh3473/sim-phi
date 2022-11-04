@@ -1,6 +1,7 @@
 let energy = 0;
 class Stat {
 	constructor() {
+		this.level = 0;
 		this.noteRank = [0, 0, 0, 0, 0, 0, 0, 0];
 		this.combos = [0, 0, 0, 0, 0];
 		this.maxcombo = 0;
@@ -54,7 +55,7 @@ class Stat {
 	get localData() {
 		const l1 = Math.round(this.accNum * 1e4 + 566).toString(22).slice(-3);
 		const l2 = Math.round(this.scoreNum + 40672).toString(32).slice(-4);
-		const l3 = (Number(inputLevel.value.match(/\d+$/))).toString(36).slice(-1);
+		const l3 = this.level.toString(36).slice(-1);
 		return l1 + l2 + l3;
 	}
 	getData(isAuto, speed = '') {
@@ -62,7 +63,7 @@ class Stat {
 		const s2 = this.data[this.id].slice(3, 7);
 		const l1 = Math.round(this.accNum * 1e4 + 566).toString(22).slice(-3);
 		const l2 = Math.round(this.scoreNum + 40672).toString(32).slice(-4);
-		const l3 = (Number(inputLevel.value.match(/\d+$/))).toString(36).slice(-1);
+		const l3 = this.level.toString(36).slice(-1);
 		const a = (parseInt(s2, 32) - 40672).toFixed(0);
 		const scoreBest = ('0').repeat(a.length < 7 ? 7 - a.length : 0) + a;
 		if (!isAuto) this.data[this.id] = (s1 > l1 ? s1 : l1) + (s2 > l2 ? s2 : l2) + l3;
@@ -487,6 +488,10 @@ class LineEvent {
 //规范判定线事件
 function arrangeLineEvent(events = []) {
 	const oldEvents = events.map(i => new LineEvent(i)); //深拷贝
+	if (oldEvents.length === 0) {
+		//如果没有事件，添加一个默认事件(以后添加warning)
+		return new LineEvent({ startTime: 1 - 1e6, endTime: 1e9 });
+	}
 	const newEvents = [new LineEvent(Object.assign(oldEvents[0], { startTime: 1 - 1e6 }))]; //以1-1e6开头
 	oldEvents.push(new LineEvent(Object.assign(oldEvents[oldEvents.length - 1], { endTime: 1e9 }))); //以1e9结尾
 	for (const i2 of oldEvents) { //保证时间连续性
@@ -688,3 +693,4 @@ function maxFloat2(num) {
 	a.setBigUint64(0, ((b >> 3n) | (7n << 59n)) & 0xffffffff80000000n);
 	return a.getFloat64(0);
 }
+export default { Stat, Renderer, HitManager };
