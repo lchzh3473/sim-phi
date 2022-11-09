@@ -7,7 +7,7 @@
 	<title>(っ °Д °;)っ</title>
 	<link rel="manifest" href="./manifest.json">
 	<link rel="stylesheet" href="/utils/style.css">
-	<link rel="stylesheet" href="style.css?v=14225">
+	<link rel="stylesheet" href="style.css?v=14226">
 	<script>
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').then(() => { console.log('Service Worker Registered'); });
@@ -23,7 +23,7 @@
 	</script>
 	<script>if (!window.Promise) location.href = '/412.html';</script>
 	<script src="/utils/main.js"></script>
-	<script type="module" src="script.js?v=14225"></script>
+	<script type="module" src="script.js?v=14226"></script>
 </head>
 
 <body>
@@ -75,16 +75,52 @@
 						<option value="0.2">明亮</option>
 					</select>
 				</div><br>
-				<div>歌名：<input id="input-name" class="input" style="width:7em" placeholder="&#60; Untitled &#62;"></div>
-				<!-- <div>曲师：<input id="input-artist" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div> -->
-				<div>等级：<input id="input-level" class="input" style="width:7em" placeholder="&#60; SP  Lv.? &#62;"></div><br>
+				<div>曲名：<input id="input-name" class="input" style="width:7em" placeholder="&#60; Untitled &#62;"></div>
+				<div>曲师：<input id="input-artist" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div><br>
 				<div>曲绘：<input id="input-illustrator" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div>
 				<div>谱师：<input id="input-charter" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div><br>
+				<div>难度：<select id="select-difficulty" style="width:3em">
+						<option value="" selected>--</option>
+						<option value="EZ">EZ</option>
+						<option value="HD">HD</option>
+						<option value="IN">IN</option>
+						<option value="AT">AT</option>
+					</select>
+				</div>
+				<div>等级：<select id="select-level" style="width:3em">
+						<option value="" selected>?</option>
+						<option value="1">1</option>
+						<option value="2">2</option>
+						<option value="3">3</option>
+						<option value="4">4</option>
+						<option value="5">5</option>
+						<option value="6">6</option>
+						<option value="7">7</option>
+						<option value="8">8</option>
+						<option value="9">9</option>
+						<option value="10">10</option>
+						<option value="11">11</option>
+						<option value="12">12</option>
+						<option value="13">13</option>
+						<option value="14">14</option>
+						<option value="15">15</option>
+						<option value="16">16</option>
+					</select>
+				</div>
+				<div>音效音量：<select id="select-volume" style="width:5em">
+						<option value="0">0%</option>
+						<option value="0.25">25%</option>
+						<option value="0.5">50%</option>
+						<option value="1" selected>100%</option>
+						<option value="2.5">250%</option>
+						<option value="5">500%</option>
+					</select>
+				</div><br>
 				<div><input type="checkbox" id="feedback" checked><label for="feedback">触摸反馈</label></div>
 				<div><input type="checkbox" id="imageBlur" checked><label for="imageBlur">背景模糊</label></div>
 				<div><input type="checkbox" id="highLight" checked><label for="highLight">多押高亮</label></div><br>
 				<div><input type="checkbox" id="showCE2"><label for="showCE2">Early/Late特效</label></div>
-				<div><input type="checkbox" id="hitSong" checked><label for="hitSong">开启打击音效</label></div>
+				<div><input type="checkbox" id="hitSong" checked><label for="hitSong" class="hide">开启打击音效</label></div>
 				<div><input type="checkbox" id="lineColor" checked><label for="lineColor">FC/AP指示器</label></div><br>
 				<div><input type="checkbox" id="showPoint"><label for="showPoint">显示定位点</label></div>
 				<div class="disabled-when-playing"><input type="checkbox" id="autoplay" checked><label for="autoplay">预览模式</label></div>

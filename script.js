@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b5'], 1611795955, 1667577822];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b6'], 1611795955, 1667992138];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -145,10 +145,28 @@ const scfg = function() {
 	return `(${arr.join('+')})`;
 }
 const inputName = $('input-name');
-// const inputArtist = $('input-artist');
-const inputLevel = $('input-level');
+const inputArtist = $('input-artist');
 const inputCharter = $('input-charter');
 const inputIllustrator = $('input-illustrator');
+const selectDifficulty = $('select-difficulty');
+const selectLevel = $('select-level');
+let levelText = '';
+const updateLevelText = () => {
+	const diffTable = ['SP', 'EZ', 'EZ', 'EZ', 'EZ', 'EZ', 'EZ', 'HD', 'HD', 'HD', 'HD', 'HD', 'IN', 'IN', 'IN', 'IN', 'AT'];
+	const diffString = selectDifficulty.value || diffTable[selectLevel.value] || 'SP';
+	const levelString = selectLevel.value || '?';
+	levelText = [diffString, levelString].join('  Lv.');
+};
+updateLevelText();
+selectDifficulty.addEventListener('change', updateLevelText);
+selectLevel.addEventListener('change', updateLevelText);
+$('select-volume').addEventListener('change', evt => {
+	const volume = Number(evt.target.value);
+	app.musicVolume = Math.min(1, 1 / volume);
+	app.soundVolume = Math.min(1, volume);
+	btnPause.click();
+	btnPause.click();
+});
 const inputOffset = $('input-offset');
 const showPoint = $('showPoint');
 const lineColor = $('lineColor');
@@ -223,10 +241,15 @@ function adjustInfo() {
 	for (const i of chartInfoData) {
 		if (selectchart.value === i.Chart) {
 			if (i.Name) inputName.value = i.Name;
-			// if (i.Musician) inputArtist.value = i.Musician; //Alternative
-			// if (i.Composer) inputArtist.value = i.Composer; //Alternative
-			// if (i.Artist) inputArtist.value = i.Artist;
-			if (i.Level) inputLevel.value = i.Level;
+			if (i.Musician) inputArtist.value = i.Musician; //Alternative
+			if (i.Composer) inputArtist.value = i.Composer; //Alternative
+			if (i.Artist) inputArtist.value = i.Artist;
+			if (i.Level) {
+				levelText = i.Level;
+				const p = levelText.toLocaleUpperCase().split('LV.').map(a => a.trim());
+				if (p[0]) selectDifficulty.value = p[0];
+				if (p[1]) selectLevel.value = p[1];
+			}
 			if (i.Illustrator) inputIllustrator.value = i.Illustrator;
 			if (i.Designer) inputCharter.value = i.Designer;
 			if (i.Charter) inputCharter.value = i.Charter;
@@ -504,7 +527,7 @@ const judgeManager = {
 						break;
 					}
 				} else if (deltaTime < 0) {
-					if ($('hitSong').checked) audio.play(res['HitSong1'], false, true, 0);
+					if ($('hitSong').checked) audio.play(res['HitSong1'], { gainrate: app.soundVolume });
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 2);
 					note.scored = true;
@@ -540,7 +563,7 @@ const judgeManager = {
 						}
 					}
 				} else if (deltaTime < 0) {
-					if ($('hitSong').checked) audio.play(res['HitSong2'], false, true, 0);
+					if ($('hitSong').checked) audio.play(res['HitSong2'], { gainrate: app.soundVolume });
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 4);
 					note.scored = true;
@@ -595,7 +618,7 @@ const judgeManager = {
 						noteJudge.status = 6; //console.log('Bad', i.name);
 						noteJudge.badtime = performance.now();
 					} else {
-						if ($('hitSong').checked) audio.play(res['HitSong0'], false, true, 0);
+						if ($('hitSong').checked) audio.play(res['HitSong0'], { gainrate: app.soundVolume });
 						if (deltaTime2 > 0.08) {
 							noteJudge.holdStatus = 7; //console.log('Good(Early)', i.name);
 							hitEvents1.push(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));
@@ -809,7 +832,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	canvas.classList.add('fade');
 	let loadedNum = 0;
 	let errorNum = 0;
-	const pth = atob('Ly9sY2h6aDM0NzMuZ2l0aHViLmlvL2Fzc2V0cy8=');
+	const pth = atob('aHR0cHM6Ly9sY2h6aDM0NzMuZ2l0aHViLmlvL2Fzc2V0cy8=');
 	const erc = str => pth + str;
 	msgHandler.sendMessage('初始化...');
 	if (await checkSupport()) return;
@@ -912,10 +935,10 @@ btnPlay.addEventListener('click', async function() {
 	if (this.value === '播放') {
 		if (!selectchart.value) return msgHandler.sendError('错误：未选择任何谱面');
 		if (!selectbgm.value) return msgHandler.sendError('错误：未选择任何音乐');
-		audio.play(res['mute'], true, false, 0); //播放空音频(防止音画不同步)
+		audio.play(res['mute'], { loop: true, isOut: false }); //播放空音频(防止音画不同步)
 		app.prerenderChart(charts.get(selectchart.value)); //fuckqwq
 		app.md5 = chartsMD5.get(selectchart.value);
-		stat.level = Number(inputLevel.value.match(/\d+$/));
+		stat.level = Number(levelText.match(/\d+$/));
 		stat.reset(app.chart.numOfNotes, app.md5, selectspeed.value);
 		for (const i of app.lines) {
 			i.imageW = 6220.8; //1920
@@ -1017,7 +1040,7 @@ function playBgm(data, offset) {
 	isPaused = false;
 	if (!offset) offset = 0;
 	curTimestamp = performance.now();
-	audio.play(data, false, true, offset, app.speed);
+	audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume });
 }
 let fucktemp = false;
 let fucktemp2 = false;
@@ -1156,7 +1179,7 @@ function calcqwq(now) {
 	//更新判定
 	hitManager.update();
 	if (qwq[4] && stat.good + stat.bad) {
-		stat.level = Number(inputLevel.value.match(/\d+$/));
+		stat.level = Number(levelText.match(/\d+$/));
 		stat.reset();
 		btnPlay.click();
 		btnPlay.click();
@@ -1266,7 +1289,7 @@ function qwqdraw1(now) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
 		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween.easeOutSine(6 - qwqIn.second * 2);
 		ctxos.textAlign = 'center';
-		//歌名
+		//曲名
 		ctxos.textBaseline = 'alphabetic';
 		ctxos.font = `${lineScale * 1.1}px Custom,Noto Sans SC`;
 		const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
@@ -1305,15 +1328,15 @@ function qwqdraw1(now) {
 		ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
 		ctxos.fillText(app.playMode === 1 ? 'Autoplay' : 'combo', app.wlen, lineScale * 2.05);
 	}
-	//绘制歌名和等级
+	//绘制曲名和等级
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween.easeOutSine(qwqIn.second * 1.5)) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textBaseline = 'alphabetic';
 	ctxos.textAlign = 'right';
 	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
-	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
+	const dxlvl = ctxos.measureText(levelText).width;
 	if (dxlvl > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(app.wlen - lineScale )}px Custom,Noto Sans SC`;
-	ctxos.fillText(inputLevel.value || inputLevel.placeholder, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
+	ctxos.fillText(levelText, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
 	ctxos.drawImage(res['SongsNameBar'], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctxos.textAlign = 'left';
 	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
@@ -1366,13 +1389,13 @@ function qwqdraw2() {
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
-	const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(inputLevel.value.slice(0, 2).toLocaleLowerCase());
+	const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(levelText.slice(0, 2).toLocaleLowerCase());
 	setTimeout(() => {
 		if (!fucktemp) return; //qwq
-		audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`], true, true, 0);
+		audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`], { loop: true });
 		qwqEnd.reset();
 		qwqEnd.play();
-		stat.level = Number(inputLevel.value.match(/\d+$/));
+		stat.level = Number(levelText.match(/\d+$/));
 		fucktemp2 = stat.getData(app.playMode === 1, selectspeed.value);
 	}, 1000);
 }
@@ -1402,7 +1425,7 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.globalAlpha = 1;
 	ctxos.drawImage(res['LevelOver5'], 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
-	//歌名和等级
+	//曲名和等级
 	ctxos.fillStyle = '#fff';
 	ctxos.textBaseline = 'middle';
 	ctxos.textAlign = 'left';
@@ -1411,9 +1434,9 @@ function qwqdraw3(statData) {
 	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Custom,Noto Sans SC`;
 	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 145);
 	ctxos.font = '30px Custom,Noto Sans SC';
-	const dxlvl = ctxos.measureText(inputLevel.value || inputLevel.placeholder).width;
+	const dxlvl = ctxos.measureText(levelText).width;
 	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Custom,Noto Sans SC`;
-	ctxos.fillText(inputLevel.value || inputLevel.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 208);
+	ctxos.fillText(levelText, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 208);
 	ctxos.font = '30px Custom,Noto Sans SC';
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);

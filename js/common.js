@@ -113,7 +113,24 @@ export const audio = {
 		const actx = this.actx;
 		return actx.createBuffer(2, 44100 * length, 44100);
 	},
-	play(res, loop, isOut, offset, playbackrate) {
+	/**
+	 * @typedef {Object} AudioParamOptions
+	 * @property {boolean} [loop=false]
+	 * @property {boolean} [isOut=true] 
+	 * @property {number} [offset=0] 
+	 * @property {number} [playbackrate=1] 
+	 * @property {number} [gainrate=1] 
+	 * 
+	 * @param {AudioBuffer} res
+	 * @param {AudioParamOptions} options 
+	 */
+	play(res, {
+		loop = false,
+		isOut = true,
+		offset = 0,
+		playbackrate = 1,
+		gainrate = 1
+	} = {}) {
 		const actx = this.actx;
 		const bfs = this._bfs;
 		const gain = actx.createGain();
@@ -121,7 +138,8 @@ export const audio = {
 		bufferSource.buffer = res;
 		bufferSource.loop = loop; //循环播放
 		bufferSource.connect(gain);
-		bufferSource.playbackRate.value = Number(playbackrate) || 1;
+		gain.gain.value = gainrate;
+		bufferSource.playbackRate.value = playbackrate;
 		if (isOut) gain.connect(actx.destination);
 		bufferSource.start(0, offset);
 		bfs[bfs.length] = bufferSource;
@@ -136,7 +154,6 @@ export const audio = {
 		return this._actx;
 	}
 };
-
 export function csv2array(data, isObject) {
 	const strarr = data.replace(/\ufeff|\r/g, '').split('\n');
 	const col = [];
@@ -236,7 +253,6 @@ export const isUndefined = name => self[name] === undefined;
 	}
 	self.DOMException = DOMException;
 }
-
 export function loadJS(urls) {
 	const arr = Array.from(urls instanceof Array ? urls : arguments, i => new URL(i, location).href);
 	const args = (function*(arg) { yield* arg; })(arr);

@@ -162,12 +162,13 @@ class Renderer {
 		// this.goodNote = '#b4e1ff';
 		// this.badNote = '#6c4343';
 		this.playMode = 1; //0:game,1:auto,2:hyper,3:auto&hyper
+		this.musicVolume = 1;
+		this.soundVolume = 1;
 		// this.showTransition = true;
 		// this.chartOffset = 0;
 		this._mirrorType = 0;
 		//qwq
 		this.chart = null;
-		// this.chart2 = null; //qwq
 		this.bgImage = null;
 		this.bgImageBlur = null;
 		this.bgMusic = null;
