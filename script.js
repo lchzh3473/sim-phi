@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b6'], 1611795955, 1667992138];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b7'], 1611795955, 1668332098];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -151,15 +151,41 @@ const inputIllustrator = $('input-illustrator');
 const selectDifficulty = $('select-difficulty');
 const selectLevel = $('select-level');
 let levelText = '';
-const updateLevelText = () => {
-	const diffTable = ['SP', 'EZ', 'EZ', 'EZ', 'EZ', 'EZ', 'EZ', 'HD', 'HD', 'HD', 'HD', 'HD', 'IN', 'IN', 'IN', 'IN', 'AT'];
-	const diffString = selectDifficulty.value || diffTable[selectLevel.value] || 'SP';
+const updateLevelText = type => {
+	const table = { SP: [0, 0], EZ: [1, 7], HD: [3, 12], IN: [6, 15], AT: [13, 16] };
+	let diffStr = selectDifficulty.value || 'SP';
+	let levelNum = selectLevel.value | 0;
+	if (type === 0) {
+		const diff = table[diffStr];
+		if (levelNum < diff[0]) levelNum = diff[0];
+		if (levelNum > diff[1]) levelNum = diff[1];
+		selectLevel.value = levelNum;
+		selectLevel.value = selectLevel.value;
+	} else if (type === 1) {
+		const keys = Object.keys(table);
+		if (table[diffStr][1] < levelNum)
+			for (let i = 0; i < keys.length; i++) {
+				if (table[keys[i]][1] < levelNum) continue;
+				diffStr = keys[i];
+				break;
+			}
+		else if (table[diffStr][0] > levelNum) {
+			for (let i = keys.length - 1; i >= 0; i--) {
+				if (table[keys[i]][0] > levelNum) continue;
+				diffStr = keys[i];
+				break;
+			}
+		}
+		selectDifficulty.value = diffStr;
+		selectDifficulty.value = selectDifficulty.value;
+	}
+	const diffString = selectDifficulty.value || 'SP';
 	const levelString = selectLevel.value || '?';
 	levelText = [diffString, levelString].join('  Lv.');
 };
 updateLevelText();
-selectDifficulty.addEventListener('change', updateLevelText);
-selectLevel.addEventListener('change', updateLevelText);
+selectDifficulty.addEventListener('change', updateLevelText.bind(null, 0));
+selectLevel.addEventListener('change', updateLevelText.bind(null, 1));
 $('select-volume').addEventListener('change', evt => {
 	const volume = Number(evt.target.value);
 	app.musicVolume = Math.min(1, 1 / volume);
@@ -527,7 +553,7 @@ const judgeManager = {
 						break;
 					}
 				} else if (deltaTime < 0) {
-					if ($('hitSong').checked) audio.play(res['HitSong1'], { gainrate: app.soundVolume });
+					audio.play(res['HitSong1'], { gainrate: app.soundVolume });
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 2);
 					note.scored = true;
@@ -563,7 +589,7 @@ const judgeManager = {
 						}
 					}
 				} else if (deltaTime < 0) {
-					if ($('hitSong').checked) audio.play(res['HitSong2'], { gainrate: app.soundVolume });
+					audio.play(res['HitSong2'], { gainrate: app.soundVolume });
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 4);
 					note.scored = true;
@@ -618,7 +644,7 @@ const judgeManager = {
 						noteJudge.status = 6; //console.log('Bad', i.name);
 						noteJudge.badtime = performance.now();
 					} else {
-						if ($('hitSong').checked) audio.play(res['HitSong0'], { gainrate: app.soundVolume });
+						audio.play(res['HitSong0'], { gainrate: app.soundVolume });
 						if (deltaTime2 > 0.08) {
 							noteJudge.holdStatus = 7; //console.log('Good(Early)', i.name);
 							hitEvents1.push(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));

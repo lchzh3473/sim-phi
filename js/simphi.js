@@ -134,7 +134,7 @@ class Renderer {
 		console.log('Hello, Phi\x67ros Simulator!');
 		//qwq
 		this.speed = 1;
-		this.isJSZip = false;
+		this.isJSZip = true;
 		// this.config = {};
 		this.chart = {};
 		// this.music = {};
@@ -491,7 +491,7 @@ function arrangeLineEvent(events = []) {
 	const oldEvents = events.map(i => new LineEvent(i)); //深拷贝
 	if (oldEvents.length === 0) {
 		//如果没有事件，添加一个默认事件(以后添加warning)
-		return new LineEvent({ startTime: 1 - 1e6, endTime: 1e9 });
+		return [new LineEvent({ startTime: 1 - 1e6, endTime: 1e9 })];
 	}
 	const newEvents = [new LineEvent(Object.assign(oldEvents[0], { startTime: 1 - 1e6 }))]; //以1-1e6开头
 	oldEvents.push(new LineEvent(Object.assign(oldEvents[oldEvents.length - 1], { endTime: 1e9 }))); //以1e9结尾

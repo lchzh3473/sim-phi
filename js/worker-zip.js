@@ -16,7 +16,7 @@
 	const readZip = function(data) {
 		if (self.JSZip) { //JSZip
 			/** @param {ArrayBuffer} data */
-			var loadAsync = data => JSZip.loadAsync(data, { checkCRC32: true });
+			var loadAsync = data => JSZip.loadAsync(data, { checkCRC32: true, decodeFileName: string });
 			/** @param {import("jszip")} zip */
 			var array = zip => Object.values(zip.files).filter(i => !i.dir);
 			/** @param {import("jszip").JSZipObject} i */
