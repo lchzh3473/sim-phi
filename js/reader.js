@@ -41,7 +41,6 @@ export const uploader = {
  * @property {ArrayBuffer} buffer
  * 
  * @typedef {object} ReaderOptions
- * @property {boolean} isJSZip
  * @property {()=>void} onloadstart
  * @property {(param1:ReaderData,param2:number)=>void} onread
  * 
@@ -49,7 +48,6 @@ export const uploader = {
  * @param {ReaderOptions} options 
  */
 export function readZip(result, {
-	isJSZip = true,
 	onloadstart = () => void 0,
 	onread = () => void 0
 }) {
@@ -105,7 +103,7 @@ export function readZip(result, {
 			return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: pecData.messages };
 		}).catch(error => ({ type: 'error', name: i.name, data: error }));
 	};
-	const tl = urls[isJSZip ? 'jszip' : 'zip'].reverse()[0];
+	const tl = urls['jszip'].reverse()[0];
 	// 踩坑：worker实际上优化了性能，性能对比应该用zip测试而不是普通文件
 	// if (!self._zip_reader) {
 	// 	let total = 0;
@@ -156,7 +154,8 @@ function chart123(chart) {
 				for (const j of i.speedEvents) {
 					if (j.startTime < 0) j.startTime = 0;
 					j.floorPosition = y;
-					y = Math.fround(y + (j.endTime - j.startTime) * j.value / i.bpm * 1.875); //float32
+					y += (j.endTime - j.startTime) * j.value / i.bpm * 1.875;
+					y = Math.fround(y); //float32
 				}
 			}
 		}

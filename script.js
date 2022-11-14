@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b7'], 1611795955, 1668332098];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b8'], 1611795955, 1668434622];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -344,7 +344,6 @@ function resizeStage() {
 			buffer: evt.target.result,
 			path: i.webkitRelativePath || i.name
 		}, {
-			isJSZip: app.isJSZip,
 			onloadstart: () => msgHandler.sendMessage('加载zip组件...'),
 			onread: handleFile
 		});
@@ -466,11 +465,8 @@ class JudgeEvent {
 		this.type = type | 0; //1-Tap,2-Hold/Drag,3-Move
 		this.judged = false; //是否被判定
 		this.event = event; //flick专用回调
+		this.blockTime = Infinity; //被drag/flick阻挡的时间
 	}
-	// isInArea(x, y, cosr, sinr, hw) {
-	// 	if (isNaN(this.offsetX + this.offsetY)) return true;
-	// 	return Math.abs((this.offsetX - x) * cosr + (this.offsetY - y) * sinr) <= hw;
-	// }
 }
 /**
  * 判定和音符的水平距离
@@ -507,7 +503,7 @@ const judgeManager = {
 				} else if (i.type === 2) {
 					if (deltaTime < 0.2) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
 				} else if (i.type === 3) {
-					if (i.holdTapped) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
+					if (i.holdTapTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
 					else if (deltaTime < 0.0) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
 				} else if (i.type === 4) {
 					if (deltaTime < 0.2) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 3);
@@ -546,8 +542,12 @@ const judgeManager = {
 			} else if (note.type === 2) { //Drag音符
 				if (note.status !== 4) {
 					for (const judgeEvent of list) {
-						if (judgeEvent.type !== 2) continue;
+						if (judgeEvent.type === 3) continue; //跳过Move判定
 						if (getJudgeOffset(judgeEvent, note) > width) continue;
+						if (judgeEvent.type === 1) {
+							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
+							continue;
+						}
 						// console.log('Perfect', i.name);
 						note.status = 4;
 						break;
@@ -562,8 +562,12 @@ const judgeManager = {
 				if (note.status !== 4) {
 					for (const judgeEvent of list) {
 						if (note.status === 4) break;
-						if (judgeEvent.type !== 3) continue;
+						if (judgeEvent.type === 2) continue; //跳过Hold判定
 						if (getJudgeOffset(judgeEvent, note) > width) continue;
+						if (judgeEvent.type === 1) {
+							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
+							continue;
+						}
 						let distance = getJudgeDistance(judgeEvent, note);
 						let noteJudge = note;
 						let nearcomp = false;
@@ -595,12 +599,12 @@ const judgeManager = {
 					note.scored = true;
 				}
 			} else { //Hold音符
-				if (note.type === 3 && note.holdTapped) { //是否触发头判
-					if ((performance.now() - note.holdTapped) * note.holdTime >= 1.6e4 * note.realHoldTime) { //间隔时间与bpm成反比
+				if (note.type === 3 && note.holdTapTime) { //是否触发头判
+					if ((performance.now() - note.holdTapTime) * note.holdTime >= 1.6e4 * note.realHoldTime) { //间隔时间与bpm成反比
 						if (note.holdStatus % 4 === 0) hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 						else if (note.holdStatus % 4 === 1) hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 						else if (note.holdStatus % 4 === 3) hitEvents1.push(HitEvent1.good(note.projectX, note.projectY));
-						note.holdTapped = performance.now();
+						note.holdTapTime = performance.now();
 					}
 					if (deltaTime + note.realHoldTime < 0.2) {
 						if (!note.status) stat.addCombo(note.status = note.holdStatus, 3);
@@ -610,7 +614,7 @@ const judgeManager = {
 					note.holdBroken = true; //若1帧内未按住并使其转为false，则判定为Miss
 				}
 				for (const judgeEvent of list) {
-					if (note.holdTapped) { //头判
+					if (note.holdTapTime) { //头判
 						if (judgeEvent.type !== 2) continue;
 						if (getJudgeOffset(judgeEvent, note) <= width) {
 							note.holdBroken = false;
@@ -619,6 +623,7 @@ const judgeManager = {
 						continue;
 					}
 					if (judgeEvent.type !== 1) continue; //跳过非Tap判定
+					if (judgeEvent.blockTime < note.realTime) continue; //跳过被阻挡的Tap判定
 					if (judgeEvent.judged) continue; //跳过已触发的判定
 					if (getJudgeOffset(judgeEvent, note) > width) continue;
 					let deltaTime2 = deltaTime;
@@ -627,7 +632,7 @@ const judgeManager = {
 					let nearcomp = false;
 					for (const nearNote of note.nearNotes) {
 						if (nearNote.status) continue;
-						if (nearNote.holdTapped) continue;
+						if (nearNote.holdTapTime) continue;
 						const nearDeltaTime = nearNote.realTime - realTime;
 						if (nearDeltaTime > 0.2) break;
 						if (nearNote.type === 3 && nearDeltaTime > 0.16) continue;
@@ -671,14 +676,14 @@ const judgeManager = {
 						stat.addCombo(noteJudge.status, 1);
 						noteJudge.scored = true;
 					} else {
-						noteJudge.holdTapped = performance.now();
+						noteJudge.holdTapTime = performance.now();
 						noteJudge.holdBroken = false;
 					}
 					judgeEvent.judged = true;
 					noteJudge.statOffset = deltaTime2; //qwq也许是统计偏移量？
 					if (!nearcomp) break;
 				}
-				if (!isPaused && note.holdTapped && note.holdBroken) {
+				if (!isPaused && note.holdTapTime && note.holdBroken) {
 					note.status = 2; //console.log('Miss', i.name);
 					stat.addCombo(2, 3);
 					note.scored = true;

@@ -134,7 +134,6 @@ class Renderer {
 		console.log('Hello, Phi\x67ros Simulator!');
 		//qwq
 		this.speed = 1;
-		this.isJSZip = true;
 		// this.config = {};
 		this.chart = {};
 		// this.music = {};
@@ -628,70 +627,5 @@ function chartify(json) {
 		newChart.judgeLineList.push(newLine);
 	}
 	return newChart;
-}
-//qwq
-function frix(num) {
-	const qwq = Math.fround(num);
-	if (!isFinite(qwq)) return null;
-	for (let i = 1; i < 1e3; i++) {
-		const str = qwq.toPrecision(i);
-		if (Math.fround(str) === qwq) return Number(str);
-	}
-}
-
-function frix2(num) {
-	const qwq = Math.fround(num);
-	if (!isFinite(qwq)) return null;
-	for (let i = 1; i < 1e3; i++) {
-		const str = qwq.toPrecision(i);
-		if (Math.fround(str) === qwq) {
-			const str2 = str.replace('+', '');
-			const str3 = String(Number(str2));
-			if (str3.length > str2.length) return str2;
-			return str3;
-		}
-	}
-}
-
-function frix3(obj) {
-	return JSON.stringify(obj, function(_, value) {
-		if (typeof value !== 'number') return value;
-		return frix2(value);
-	}).replace(/:"(.+?)"/g, ':$1'); //不用考虑非法值，官谱键值对的值只有数字
-}
-
-function nextFloat(num) {
-	const int = new Uint32Array(new Float32Array([num]).buffer)[0] + Math.sign(num);
-	return new Float32Array(new Uint32Array([int]).buffer)[0];
-}
-
-function maxFloat(num) {
-	return (Math.fround(num) + nextFloat(num)) / 2;
-}
-
-function ffloor(num) {
-	const f0 = Math.fround(num);
-	const u0 = new Uint32Array(new Float32Array([num]).buffer)[0];
-	const f1 = new Float32Array(new Uint32Array([u0 - 1]).buffer)[0];
-	if (num > 0) return num > f0 ? f0 : f1;
-	if (num < 0) return num < f0 ? f0 : f1;
-	return f0;
-}
-
-function fceil(num) {
-	const f0 = Math.fround(num);
-	const u0 = new Uint32Array(new Float32Array([num]).buffer)[0];
-	const f2 = new Float32Array(new Uint32Array([u0 + 1]).buffer)[0];
-	if (num > 0) return num > f0 ? f2 : f0;
-	if (num < 0) return num < f0 ? f2 : f0;
-	return f0;
-}
-
-function maxFloat2(num) {
-	const a = new DataView(new ArrayBuffer(8));
-	a.setFloat32(0, num);
-	const b = a.getBigUint64(0);
-	a.setBigUint64(0, ((b >> 3n) | (7n << 59n)) & 0xffffffff80000000n);
-	return a.getFloat64(0);
 }
 export default { Stat, Renderer, HitManager };

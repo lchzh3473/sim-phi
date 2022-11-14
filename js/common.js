@@ -225,8 +225,6 @@ export function csv2array(data, isObject) {
 // self.onerror=(...a)=>console.log('qwq',a);
 // self.addEventListener('error',(...a)=>console.log('qwq',a));
 export const urls = {
-	//奇怪的坑！iOS不用no-worker会卡住，而Windows和Android不用worker会卡住，被迫用full qwq
-	zip: ['//cdn.jsdelivr.net/npm/@zip.js/zip.js/dist/zip-full.min.js', '//fastly.jsdelivr.net/npm/@zip.js/zip.js/dist/zip-full.min.js'],
 	jszip: ['//cdn.jsdelivr.net/npm/jszip', '//fastly.jsdelivr.net/npm/jszip'],
 	browser: ['//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js', '//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js' /* , '//passer-by.com/browser/Browser.js' */ ],
 	bitmap: ['//cdn.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js', '//fastly.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js'],
