@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b8'], 1611795955, 1668434622];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b9'], 1611795955, 1668774676];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -869,9 +869,11 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	if (await checkSupport()) return;
 	//加载资源
 	await Promise.all(Object.entries({
+		JudgeLine: 'e4449d09',
+		ProgressBar: '2b148fdc',
+		SongsNameBar: 'ef6de8f4',
 		HitFXRaw: 'cccc5e34',
 		Tap: '81bde67a',
-		Tap2: '436c083f',
 		TapHL: '482c09c5',
 		Drag: '6d691074',
 		DragHL: '6d019101',
@@ -905,7 +907,8 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 			} else {
 				// console.log(xhr.response)
 				const a = new DataView(xhr.response, 0, 8);
-				const [header1, header2] = [a.getUint32(0), a.getUint32(4)];
+				const header1 = a.getUint32(0);
+				const header2 = a.getUint32(4);
 				if (header1 === 0x4f676753) res[name] = await audio.decode(xhr.response);
 				else if (header1 === 0x89504e47 && header2 === 0x0d0a1a0a) res[name] = await createImageBitmap(new Blob([xhr.response]));
 				else msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(src,location)}`, true);
@@ -917,13 +920,9 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	if (errorNum) return msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
 	res['NoImageBlack'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(0), 1, 1));
 	res['NoImageWhite'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(255), 1, 1));
-	res['JudgeLine'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(3240).fill(255), 810, 1)); //qwq
 	res['JudgeLineMP'] = await imgShader(res['JudgeLine'], '#feffa9');
 	res['JudgeLineFC'] = await imgShader(res['JudgeLine'], '#a2eeff');
-	res['ProgressBar'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(84436).map((_, i) => i % 4 === 3 || i % 7676 > 7667 ? 255 : 145), 1919, 11));
-	res['SongsNameBar'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(1008).fill(255), 7, 36));
-	res['TapBad'] = await imgShader(res['Tap2'], '#6c4343');
-	res['Tap2'].close();
+	res['TapBad'] = await imgPainter(res['Tap'], '#6c4343');
 	res['Ranks'] = await imgSplit(res['Rank']);
 	res['Rank'].close();
 	const hitRaw = await imgSplit(res['HitFXRaw']);
@@ -989,10 +988,9 @@ btnPlay.addEventListener('click', async function() {
 				const image = bgs.get(i.Image) || res['NoImageBlack'];
 				app.lines[i.LineId].imageW = image.width;
 				app.lines[i.LineId].imageH = image.height;
-				app.lines[i.LineId].imageL[0] = image;
-				app.lines[i.LineId].imageL[1] = await imgShader(image, '#feffa9');
-				app.lines[i.LineId].imageL[2] = await imgShader(image, '#a3ffac');
-				app.lines[i.LineId].imageL[3] = await imgShader(image, '#a2eeff');
+				if (!lineImages.has(image)) lineImages.set(image, new LineImage(image));
+				const lineImage = lineImages.get(image);
+				app.lines[i.LineId].imageL = [image, await lineImage.getMP(), await lineImage.getAP(), await lineImage.getFC()];
 				if (isFinite(i.Vert = parseFloat(i.Vert))) { //Legacy
 					app.lines[i.LineId].imageS = Math.abs(i.Vert) * 1080 / image.height;
 					app.lines[i.LineId].imageU = i.Vert > 0;
@@ -1575,9 +1573,35 @@ function drawNote(note, realTime, type) {
 }
 //调节画面尺寸和全屏相关(返回source播放aegleseeker会出现迷之error)
 function adjustSize(source, dest, scale) {
-	const [sw, sh, dw, dh] = [source.width, source.height, dest.width, dest.height];
+	const sw = source.width;
+	const sh = source.height;
+	const dw = dest.width;
+	const dh = dest.height;
 	if (dw * sh > dh * sw) return [dw * (1 - scale) / 2, (dh - dw * sh / sw * scale) / 2, dw * scale, dw * sh / sw * scale];
 	return [(dw - dh * sw / sh * scale) / 2, dh * (1 - scale) / 2, dh * sw / sh * scale, dh * scale];
+}
+/**@type {Map<ImageBitmap,LineImage>} */
+const lineImages = new Map;
+class LineImage {
+	/**@param {ImageBitmap} image */
+	constructor(image) {
+		this.image = image;
+		this.imageFC = null;
+		this.imageAP = null;
+		this.imageMP = null;
+	}
+	async getFC() {
+		if (!this.imageFC) this.imageFC = await imgShader(this.image, '#a2eeff');
+		return this.imageFC;
+	}
+	async getAP() {
+		if (!this.imageAP) this.imageAP = await imgShader(this.image, '#a3ffac');
+		return this.imageAP;
+	}
+	async getMP() {
+		if (!this.imageMP) this.imageMP = await imgShader(this.image, '#feffa9');
+		return this.imageMP;
+	}
 }
 /**
  * 图片模糊(StackBlur)
@@ -1597,6 +1621,7 @@ function imgBlur(img) {
  * @param {ImageBitmap} img 
  */
 function imgShader(img, color, limit = 512) {
+	const dataRGBA = hex2rgba(color);
 	const canvas = document.createElement('canvas');
 	canvas.width = img.width;
 	canvas.height = img.height;
@@ -1605,12 +1630,36 @@ function imgShader(img, color, limit = 512) {
 	for (let dx = 0; dx < img.width; dx += limit) {
 		for (let dy = 0; dy < img.height; dy += limit) {
 			const imgData = ctx.getImageData(dx, dy, limit, limit);
-			const data = hex2rgba(color);
 			for (let i = 0; i < imgData.data.length / 4; i++) {
-				imgData.data[i * 4] *= data[0] / 255;
-				imgData.data[i * 4 + 1] *= data[1] / 255;
-				imgData.data[i * 4 + 2] *= data[2] / 255;
-				imgData.data[i * 4 + 3] *= data[3] / 255;
+				imgData.data[i * 4] *= dataRGBA[0] / 255;
+				imgData.data[i * 4 + 1] *= dataRGBA[1] / 255;
+				imgData.data[i * 4 + 2] *= dataRGBA[2] / 255;
+				imgData.data[i * 4 + 3] *= dataRGBA[3] / 255;
+			}
+			ctx.putImageData(imgData, dx, dy);
+		}
+	}
+	return createImageBitmap(canvas);
+}
+/**
+ * 给图片纯色(limit用于解决iOS的InvalidStateError)
+ * @param {ImageBitmap} img 
+ */
+function imgPainter(img, color, limit = 512) {
+	const dataRGBA = hex2rgba(color);
+	const canvas = document.createElement('canvas');
+	canvas.width = img.width;
+	canvas.height = img.height;
+	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
+	ctx.drawImage(img, 0, 0);
+	for (let dx = 0; dx < img.width; dx += limit) {
+		for (let dy = 0; dy < img.height; dy += limit) {
+			const imgData = ctx.getImageData(dx, dy, limit, limit);
+			for (let i = 0; i < imgData.data.length / 4; i++) {
+				imgData.data[i * 4] = dataRGBA[0];
+				imgData.data[i * 4 + 1] = dataRGBA[1];
+				imgData.data[i * 4 + 2] = dataRGBA[2];
+				imgData.data[i * 4 + 3] *= dataRGBA[3] / 255;
 			}
 			ctx.putImageData(imgData, dx, dy);
 		}
@@ -1620,8 +1669,8 @@ function imgShader(img, color, limit = 512) {
 /**
  * 切割图片
  * @param {ImageBitmap} img 
- * @param {number} limitX
- * @param {number} limitY
+ * @param {number} [limitX]
+ * @param {number} [limitY]
  */
 function imgSplit(img, limitX, limitY) {
 	limitX = parseInt(limitX) || Math.min(img.width, img.height);

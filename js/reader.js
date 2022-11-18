@@ -79,28 +79,41 @@ export function readZip(result, {
 		}
 		if (i.name === 'Settings.txt' || i.name === 'info.txt') {
 			const data = await string(i.buffer);
-			const chartInfo = Pec.info(data); //qwq
+			const chartInfo = Pec.info(data);
 			return { type: 'info', data: chartInfo };
 		}
-		return (async () => {
+		return new Promise(() => { //binary
+			throw new Error('Just make it a promise');
+		}).catch(async () => { //audio
 			const audioData = await audio.decode(i.buffer.slice());
 			return { type: 'audio', name: i.name, data: audioData };
-		})().catch(async () => {
+		}).catch(async () => { //image
 			const data = new Blob([i.buffer]);
 			const imageData = await createImageBitmap(data);
 			return { type: 'image', name: i.name, data: imageData };
-		}).catch(async () => {
+		}).catch(async () => { //string
 			const data = await string(i.buffer);
-			console.log(JSON.parse(data)); //test
-			const jsonData = await chart123(JSON.parse(data));
-			return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
-		}).catch(async () => {
-			const data = await string(i.buffer);
-			console.log(i);
-			const pecData = Pec.parse(data, i.name);
-			const jsonData = await chart123(pecData.data);
-			// for (const i of pecData.messages) msgHandler.sendWarning(i);
-			return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: pecData.messages };
+			try {
+				JSON.parse(data);
+				return new Promise(() => { //json
+					throw new Error('Just make it a promise');
+				}).catch(async () => { //chart
+					const jsonData = await chart123(data);
+					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
+				}).catch(async () => { //rpe
+					const rpeData = Pec.parseRPE(data, i.name);
+					const jsonData = await chart123(rpeData.data);
+					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: rpeData.messages };
+				});
+			} catch (e) {
+				return new Promise(() => { //plain
+					throw new Error('Just make it a promise');
+				}).catch(async () => { //pec
+					const pecData = Pec.parse(data, i.name);
+					const jsonData = await chart123(pecData.data);
+					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: pecData.messages };
+				});
+			}
 		}).catch(error => ({ type: 'error', name: i.name, data: error }));
 	};
 	const tl = urls['jszip'].reverse()[0];
@@ -134,12 +147,13 @@ export function readZip(result, {
 	self._zip_worker.postMessage(result, [result.buffer]);
 }
 //test
-function chart123(chart) {
-	const newChart = JSON.parse(JSON.stringify(chart)); //深拷贝
-	switch (parseInt(newChart.formatVersion)) { //加花括号以避免beautify缩进bug
+function chart123(text) {
+	const chart = JSON.parse(text);
+	if (chart.formatVersion === undefined) throw new Error('Invalid chart file');
+	switch (parseInt(chart.formatVersion)) { //加花括号以避免beautify缩进bug
 		case 1: {
-			newChart.formatVersion = 3;
-			for (const i of newChart.judgeLineList) {
+			chart.formatVersion = 3;
+			for (const i of chart.judgeLineList) {
 				for (const j of i.judgeLineMoveEvents) {
 					j.start2 = j.start % 1e3 / 520;
 					j.end2 = j.end % 1e3 / 520;
@@ -149,7 +163,7 @@ function chart123(chart) {
 			}
 		}
 		case 3: {
-			for (const i of newChart.judgeLineList) {
+			for (const i of chart.judgeLineList) {
 				let y = 0;
 				for (const j of i.speedEvents) {
 					if (j.startTime < 0) j.startTime = 0;
@@ -162,7 +176,7 @@ function chart123(chart) {
 		case 3473:
 			break;
 		default:
-			throw `Unsupported formatVersion: ${newChart.formatVersion}`;
+			throw new Error(`Unsupported formatVersion: ${chart.formatVersion}`);
 	}
-	return newChart;
+	return chart;
 }
