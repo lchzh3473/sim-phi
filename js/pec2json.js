@@ -46,7 +46,6 @@ class LinePec {
 	}
 	pushNote(type, time, positionX, holdTime, speed, isAbove, isFake) {
 		this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake });
-		if (isAbove !== 1 && isAbove !== 2) console.warn('Warning: Illeagal Note Side: ' + isAbove);
 	}
 	pushSpeedEvent(time, value) {
 		this.speedEvents.push({ time, value });
@@ -116,7 +115,7 @@ class LinePec {
 				speed: i.speed * (i.type === 3 ? v2 : 1),
 				floorPosition: Math.fround(v1 + v2 * v3 / this.bpm * 1.875),
 			};
-			if (i.isAbove === 1) {
+			if (i.isAbove) {
 				result.notesAbove.push(note);
 				if (i.isFake) continue;
 				result.numOfNotes++;
@@ -193,6 +192,35 @@ class LinePec {
 	}
 }
 /**
+ * @typedef {object} BpmEvent
+ * @property {number} start 开始拍数
+ * @property {number} end 结束拍数
+ * @property {number} bpm BPM值
+ * @property {number} value 累积绝对时间(min)
+ */
+class BpmList {
+	constructor(baseBpm) {
+		this.baseBpm = Number(baseBpm) || 120;
+		this.accTime = 0;
+		/** @type {BpmEvent[]} */
+		this.list = []; //存放bpm变速事件
+	}
+	push(start, end, bpm) {
+		const value = this.accTime;
+		this.list.push({ start, end, bpm, value });
+		this.accTime += (end - start) / bpm;
+	}
+	calc(beat) { //将pec时间转换为pgr时间
+		let time = 0;
+		for (const i of this.list) {
+			if (beat > i.end) continue;
+			if (beat < i.start) break;
+			time = Math.round(((beat - i.start) / i.bpm + i.value) * this.baseBpm * 32);
+		}
+		return time;
+	}
+}
+/**
  * @param {string} pec 
  * @param {string} filename 
  */
@@ -245,62 +273,35 @@ function parse(pec, filename) {
 		} else throw new Error('Unexpected Command: ' + command);
 	}
 	result.offset = data2.offset / 1e3 - 0.175; //v18x固定延迟
-	/**
-	 * @typedef {object} BpmEvent
-	 * @property {number} start 开始拍数
-	 * @property {number} end 结束拍数
-	 * @property {number} bpm BPM值
-	 * @property {number} value 累积绝对时间(min)
-	 */
-	//处理bpm变速
-	const bpmEvents = {
-		baseBpm: 120,
-		accTime: 0,
-		/** @type {BpmEvent[]} */
-		list: [], //存放bpm变速事件
-		push(start, end, bpm) {
-			const value = this.accTime;
-			this.list.push({ start, end, bpm, value });
-			this.accTime += (end - start) / bpm;
-		},
-		calc(beat) { //将pec时间转换为pgr时间
-			let time = 0;
-			for (const i of this.list) {
-				if (beat > i.end) continue;
-				if (beat < i.start) break;
-				time = Math.round(((beat - i.start) / i.bpm + i.value) * this.baseBpm * 32);
-			}
-			return time;
-		}
-	}
+	//bpm变速
 	if (!data2.bpmList.length) throw new Error('Invalid pec file');
-	bpmEvents.baseBpm = data2.bpmList[0].bpm; //qwq
+	const bpmList = new BpmList(data2.bpmList[0].bpm); //qwq
 	data2.bpmList.sort((a, b) => a.time - b.time).forEach((i, idx, arr) => {
 		if (arr[idx + 1] && arr[idx + 1].time <= 0) return; //过滤负数
-		bpmEvents.push(i.time < 0 ? 0 : i.time, arr[idx + 1] ? arr[idx + 1].time : 1e9, i.bpm);
+		bpmList.push(i.time < 0 ? 0 : i.time, arr[idx + 1] ? arr[idx + 1].time : 1e9, i.bpm);
 	});
-	//处理note和判定线事件
+	//note和判定线事件
 	const linesPec = [];
 	for (const i of data2.notes) {
 		const type = [0, 1, 4, 2, 3].indexOf(i.type);
-		const time = bpmEvents.calc(i.time);
-		const holdTime = bpmEvents.calc(i.time2) - time;
+		const time = bpmList.calc(i.time);
+		const holdTime = bpmList.calc(i.time2) - time;
 		const speed = isNaN(i.speed) ? 1 : i.speed;
-		if (!linesPec[i.lineId]) linesPec[i.lineId] = new LinePec(bpmEvents.baseBpm);
-		linesPec[i.lineId].pushNote(type, time, i.offsetX / 115.2, holdTime, speed, i.isAbove, i.isFake); //102.4
+		if (!linesPec[i.lineId]) linesPec[i.lineId] = new LinePec(bpmList.baseBpm);
+		linesPec[i.lineId].pushNote(type, time, i.offsetX / 115.2, holdTime, speed, i.isAbove === 1, i.isFake !== 0); //102.4
 		if (i.isAbove !== 1 && i.isAbove !== 2) warnings.push(`检测到非法方向:${i.isAbove}(将被视为2)\n位于:"${i.text}"\n来自${filename}`);
-		if (i.isFake) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
+		if (i.isFake !== 0) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
 		if (i.size !== 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
 	}
 	const isMotion = i => tween[i] || i === 1;
 	for (const i of data2.lines) {
-		const t1 = bpmEvents.calc(i.time);
-		const t2 = bpmEvents.calc(i.time2);
+		const t1 = bpmList.calc(i.time);
+		const t2 = bpmList.calc(i.time2);
 		if (t1 > t2) {
 			warnings.push(`检测到开始时间大于结束时间(将禁用此事件)\n位于:"${i.text}"\n来自${filename}`);
 			continue;
 		}
-		if (!linesPec[i.lineId]) linesPec[i.lineId] = new LinePec(bpmEvents.baseBpm);
+		if (!linesPec[i.lineId]) linesPec[i.lineId] = new LinePec(bpmList.baseBpm);
 		//变速
 		if (i.type === 'v') {
 			linesPec[i.lineId].pushSpeedEvent(t1, i.speed / 7.0); //6.0??
@@ -328,17 +329,343 @@ function parse(pec, filename) {
 	}
 	return { data: JSON.stringify(result), messages: warnings };
 }
+/**
+ * @typedef {Object} LineEvent
+ * @property {number} startTime
+ * @property {number} endTime
+ * @property {number} start
+ * @property {number} end
+ * @property {number} [easingType]
+ * @property {number} [easingLeft]
+ * @property {number} [easingRight]
+ * @property {number} [delta]
+ * 
+ * @param {LineEvent[]} ls
+ * @param {LineEvent} le
+ */
+const pushLineEvent = (ls, le) => {
+	const { startTime, endTime, start, end, easingType, easingLeft, easingRight } = le;
+	const delta = (end - start) / (endTime - startTime);
+	//插入之前考虑事件时间的相互关系
+	for (let i = ls.length - 1; i >= 0; i--) {
+		const e = ls[i];
+		if (e.endTime < startTime) { //相离：补全空隙
+			ls[i + 1] = { startTime: e.endTime, endTime: startTime, start: e.end, end: e.end, delta: 0 };
+			break;
+		}
+		if (e.startTime === startTime) { //相切：直接截断
+			ls.length = i;
+			break;
+		}
+		if (e.startTime < startTime) { //相交：截断交点以后的部分
+			e.end = e.start + (startTime - e.startTime) * e.delta;
+			e.endTime = startTime;
+			e.delta = (e.end - e.start) / (startTime - e.startTime);
+			ls.length = i + 1;
+			break;
+		}
+	}
+	//插入新事件
+	if (easingType === 1 || start === end) ls.push({ startTime, endTime, start, end, delta });
+	else { //暂未考虑开始时间大于结束时间的情况
+		const t1 = end - start;
+		let x1 = 0;
+		let x2 = 0;
+		for (let j = startTime; j < endTime; j++) {
+			x1 = x2;
+			x2 = tween[easingType]((j + 1 - startTime) / (endTime - startTime) * (easingRight - easingLeft) + easingLeft);
+			ls.push({ startTime: j, endTime: j + 1, start: start + x1 * t1, end: start + x2 * t1, delta: (x2 - x1) * t1 });
+		}
+	}
+};
+/**
+ * @typedef {Object} SpeedEvent
+ * @property {number} startTime
+ * @property {number} endTime
+ * @property {number} start
+ * @property {number} end
+ * 
+ * @typedef {Object} ElSpeedEvent
+ * @property {number} time
+ * @property {number} value
+ * 
+ * @param {ElSpeedEvent[]} ls
+ * @param {SpeedEvent} le
+ */
+const pushSpeedEvent = (ls, le) => {
+	const { startTime, endTime, start, end } = le;
+	//插入之前考虑事件时间的相互关系
+	for (let i = ls.length - 1; i >= 0; i--) {
+		const e = ls[i];
+		if (e.time < startTime) { //相离：补全空隙
+			ls.length = i + 1;
+			break;
+		}
+		if (e.time === startTime) { //相切：直接截断
+			ls.length = i;
+			break;
+		}
+	}
+	//插入新事件
+	if (start === end) ls.push({ time: startTime, value: start });
+	else { //暂未考虑开始时间大于结束时间的情况
+		const t1 = end - start;
+		ls.push({ time: startTime, value: start });
+		for (let j = startTime; j < endTime; j++) {
+			const x = (j + 1 - startTime) / (endTime - startTime);
+			ls.push({ time: j + 1, value: start + x * t1 });
+		}
+	}
+}
+/**
+ * @param {LineEvent[]} e 
+ * @param {number} t 
+ * @param {boolean} d
+ */
+const getEventsValue = (e, t, d) => {
+	let result = e[0] ? e[0].start : 0;
+	for (const i of e) {
+		const { startTime, endTime, start, end, delta } = i;
+		if (t < startTime) break;
+		if (d && t === startTime) break;
+		if (t >= endTime) result = end;
+		else result = start + (t - startTime) * delta;
+	}
+	return result;
+}
+/**
+ * @param {LineEvent[]} xe
+ * @param {LineEvent[]} ye
+ */
+const combineXYEvents = (xe, ye) => {
+	const le = [];
+	const splits = [];
+	for (const i of xe) splits.push(i.startTime, i.endTime);
+	for (const i of ye) splits.push(i.startTime, i.endTime);
+	splits.sort((a, b) => a - b);
+	for (let i = 0; i < splits.length - 1; i++) {
+		const startTime = splits[i];
+		const endTime = splits[i + 1];
+		if (startTime === endTime) continue;
+		const startX = getEventsValue(xe, startTime, false);
+		const endX = getEventsValue(xe, endTime, true);
+		const startY = getEventsValue(ye, startTime, false);
+		const endY = getEventsValue(ye, endTime, true);
+		le.push({ startTime, endTime, start: startX, end: endX, start2: startY, end2: endY });
+	}
+	return le;
+}
+class LineRPE {
+	constructor(bpm) {
+		this.bpm = 120;
+		this.numOfNotes = 0;
+		this.numOfNotesAbove = 0;
+		this.numOfNotesBelow = 0;
+		this.speedEvents = [];
+		this.notes = [];
+		this.notesAbove = [];
+		this.notesBelow = [];
+		this.alphaEvents = [];
+		this.moveEvents = [];
+		this.moveXEvents = [];
+		this.moveYEvents = [];
+		this.rotateEvents = [];
+		if (!isNaN(bpm)) this.bpm = bpm;
+	}
+	pushNote(type, time, positionX, holdTime, speed, isAbove, isFake) {
+		this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake });
+	}
+	pushSpeedEvent(startTime, endTime, start, end) {
+		this.speedEvents.push({ startTime, endTime, start, end });
+	}
+	pushAlphaEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
+		this.alphaEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
+	}
+	pushMoveXEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
+		this.moveXEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
+	}
+	pushMoveYEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
+		this.moveYEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
+	}
+	pushRotateEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
+		this.rotateEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
+	}
+	format() {
+		const sortFn = (a, b) => a.time - b.time;
+		const sortFn2 = (a, b) => a.startTime - b.startTime;
+		const result = {
+			bpm: this.bpm,
+			speedEvents: [],
+			numOfNotes: 0,
+			numOfNotesAbove: 0,
+			numOfNotesBelow: 0,
+			notesAbove: [],
+			notesBelow: [],
+			judgeLineDisappearEvents: [],
+			judgeLineMoveEvents: [],
+			judgeLineRotateEvents: []
+		};
+		const pushDisappearEvent = ({ startTime, endTime, start, end }) => {
+			result.judgeLineDisappearEvents.push({ startTime, endTime, start, end, start2: 0, end2: 0 });
+		};
+		const pushMoveEvent = ({ startTime, endTime, start, end, start2, end2 }) => {
+			result.judgeLineMoveEvents.push({ startTime, endTime, start, end, start2, end2 });
+		};
+		const pushRotateEvent = ({ startTime, endTime, start, end }) => {
+			result.judgeLineRotateEvents.push({ startTime, endTime, start, end, start2: 0, end2: 0 });
+		};
+		//处理LineEvent
+		const moveXEvents = [];
+		const moveYEvents = [];
+		const rotateEvents = [];
+		const alphaEvents = [];
+		const speedEvents = [];
+		for (const i of this.moveXEvents.sort(sortFn2)) pushLineEvent(moveXEvents, i);
+		for (const i of this.moveYEvents.sort(sortFn2)) pushLineEvent(moveYEvents, i);
+		for (const i of this.rotateEvents.sort(sortFn2)) pushLineEvent(rotateEvents, i);
+		for (const i of this.alphaEvents.sort(sortFn2)) pushLineEvent(alphaEvents, i);
+		for (const i of this.speedEvents.sort(sortFn2)) pushSpeedEvent(speedEvents, i);
+		for (const i of combineXYEvents(moveXEvents, moveYEvents)) pushMoveEvent(i);
+		for (const i of rotateEvents) pushRotateEvent(i);
+		for (const i of alphaEvents) pushDisappearEvent(i);
+		//添加floorPosition
+		let fpos = 0;
+		for (let i = 0; i < speedEvents.length; i++) {
+			const startTime = Math.max(speedEvents[i].time, 0);
+			const endTime = i < speedEvents.length - 1 ? speedEvents[i + 1].time : 1e9;
+			const value = speedEvents[i].value;
+			const floorPosition = fpos;
+			fpos += (endTime - startTime) * value / this.bpm * 1.875;
+			fpos = Math.fround(fpos);
+			result.speedEvents.push({ startTime, endTime, value, floorPosition });
+		}
+		//处理notes
+		for (const i of this.notes.sort(sortFn)) {
+			const time = i.time;
+			let v1 = 0;
+			let v2 = 0;
+			let v3 = 0;
+			for (const e of result.speedEvents) {
+				if (time > e.endTime) continue;
+				if (time < e.startTime) break;
+				v1 = e.floorPosition;
+				v2 = e.value;
+				v3 = time - e.startTime;
+			}
+			const note = {
+				type: i.type,
+				time: time + (i.isFake ? 1e9 : 0),
+				positionX: i.positionX,
+				holdTime: i.holdTime,
+				speed: i.speed * (i.type === 3 ? v2 : 1),
+				floorPosition: Math.fround(v1 + v2 * v3 / this.bpm * 1.875),
+			};
+			if (i.isAbove) {
+				result.notesAbove.push(note);
+				if (i.isFake) continue;
+				result.numOfNotes++;
+				result.numOfNotesAbove++;
+			} else {
+				result.notesBelow.push(note);
+				if (i.isFake) continue;
+				result.numOfNotes++;
+				result.numOfNotesBelow++;
+			}
+		}
+		return result;
+	}
+}
 
 function parseRPE(pec, filename) {
 	const data = JSON.parse(pec);
-	const result = { formatVersion: 3, offset: 0, numOfNotes: 0, judgeLineList: [] };
-	console.log(data, filename); //qwq
+	// console.log(data, filename); //qwq
 	const meta = data.META;
 	if (!meta && !meta.RPEVersion) throw new Error('Invalid rpe file');
-	console.log(meta); //qwq
+	const result = { formatVersion: 3, offset: 0, numOfNotes: 0, judgeLineList: [] };
 	const warnings = []; //
-	warnings.push(`谱面适配建设中...\nRPE文件版本:${meta.RPEVersion}\n来自${filename}`);
-	return { data: JSON.stringify(result), messages: warnings };
+	//谱面信息
+	const info = {};
+	info.Chart = filename;
+	info.Music = meta.song;
+	info.Image = meta.background;
+	info.Name = meta.name;
+	info.Artist = meta.composer;
+	info.Charter = meta.charter;
+	info.Level = meta.level;
+	result.offset = meta.offset / 1e3;
+	//bpm变速
+	const bpmList = new BpmList(data.BPMList[0].bpm);
+	for (const i of data.BPMList) i.time = i.startTime[0] + i.startTime[1] / i.startTime[2];
+	data.BPMList.sort((a, b) => a.time - b.time).forEach((i, idx, arr) => {
+		if (arr[idx + 1] && arr[idx + 1].time <= 0) return; //过滤负数
+		bpmList.push(i.time < 0 ? 0 : i.time, arr[idx + 1] ? arr[idx + 1].time : 1e9, i.bpm);
+	});
+	console.log(data.judgeLineList);
+	for (const i of data.judgeLineList) {
+		const linePec = new LineRPE(bpmList.baseBpm);
+		if (i.notes) {
+			for (const note of i.notes) {
+				if (note.above !== 1 && note.above !== 2) warnings.push(`检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
+				if (note.isFake !== 0) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
+				if (note.yOffset !== 0) warnings.push(`未适配yOffset(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
+				if (note.size !== 1) warnings.push(`未适配size(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
+				if (note.visibleTime !== 999999) warnings.push(`未适配visibleTime(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
+				const type = [0, 1, 4, 2, 3].indexOf(note.type);
+				const time = bpmList.calc(note.startTime[0] + note.startTime[1] / note.startTime[2]);
+				const holdTime = bpmList.calc(note.endTime[0] + note.endTime[1] / note.endTime[2]) - time;
+				const speed = note.speed;
+				const positionX = note.positionX / 75.375;
+				linePec.pushNote(type, time, positionX, holdTime, speed, note.above === 1, note.isFake !== 0);
+			}
+		}
+		if (i.eventLayers.length !== 1) warnings.push(`未适配多事件层(可能无法正常显示)\n来自${filename}`);
+		const events = i.eventLayers[0];
+		for (const j of events.speedEvents) {
+			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+			const start = j.start * 11 / 45;
+			const end = j.end * 11 / 45;
+			linePec.pushSpeedEvent(startTime, endTime, start, end);
+		}
+		for (const j of events.moveXEvents) {
+			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+			const start = (j.start + 675) / 1350;
+			const end = (j.end + 675) / 1350;
+			linePec.pushMoveXEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
+		}
+		for (const j of events.moveYEvents) {
+			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+			const start = (j.start + 450) / 900;
+			const end = (j.end + 450) / 900;
+			linePec.pushMoveYEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
+		}
+		for (const j of events.rotateEvents) {
+			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+			const start = -j.start;
+			const end = -j.end;
+			linePec.pushRotateEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
+		}
+		for (const j of events.alphaEvents) {
+			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+			const start = Math.max(j.start / 255, 0);
+			const end = Math.max(j.end / 255, 0);
+			linePec.pushAlphaEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
+		}
+		const judgeLine = linePec.format();
+		result.judgeLineList.push(judgeLine);
+		result.numOfNotes += judgeLine.numOfNotes;
+	}
+	warnings.push(`RPE谱面适配建设中...\n检测到RPE版本:${meta.RPEVersion}\n来自${filename}`);
+	return { data: JSON.stringify(result), messages: warnings, info: info };
 }
 //读取info.txt
 function info(text) {

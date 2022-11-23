@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b9'], 1611795955, 1668774676];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b10'], 1611795955, 1669208946];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -310,6 +310,7 @@ function adjustInfo() {
 }
 self.addEventListener('resize', resizeStage);
 document.addEventListener(full.onchange, () => {
+	hitManager.clearByType('keyboard');
 	app.isFull = full.check();
 	resizeStage();
 });
@@ -373,6 +374,7 @@ function resizeStage() {
 				break;
 			case 'chart':
 				if (data.msg) data.msg.forEach(v => msgHandler.sendWarning(v));
+				if (data.info) chartInfoData.push(data.info);
 				charts.set(data.name, data.data);
 				chartsMD5.set(data.name, data.md5);
 				selectchart.appendChild(createOption(data.name, data.name));
@@ -812,11 +814,7 @@ self.addEventListener('keyup', function(evt) {
 	evt.preventDefault();
 	if (evt.key !== 'Shift') hitManager.deactivate('keyboard', evt.code);
 }, false);
-self.addEventListener('blur', () => {
-	for (const i of hitManager.list) {
-		if (i.type === 'keyboard') hitManager.deactivate('keyboard', i.id); //失去焦点清除键盘事件
-	}
-});
+self.addEventListener('blur', () => hitManager.clearByType('keyboard'));
 //适配移动设备
 const passive = { passive: false }; //warning
 canvas.addEventListener('touchstart', function(evt) {

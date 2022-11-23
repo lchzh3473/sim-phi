@@ -283,10 +283,10 @@ class Renderer {
 			i.alpha = 0;
 			i.rotation = 0;
 			i.positionY = 0; //临时过渡用
-			i.speedEvents = arrangeSpeedEvent(i.speedEvents);
-			i.judgeLineDisappearEvents = arrangeLineEvent(i.judgeLineDisappearEvents);
-			i.judgeLineMoveEvents = arrangeLineEvent(i.judgeLineMoveEvents);
-			i.judgeLineRotateEvents = arrangeLineEvent(i.judgeLineRotateEvents);
+			i.speedEvents = normalizeSpeedEvent(i.speedEvents);
+			i.judgeLineDisappearEvents = normalizeLineEvent(i.judgeLineDisappearEvents);
+			i.judgeLineMoveEvents = normalizeLineEvent(i.judgeLineMoveEvents);
+			i.judgeLineRotateEvents = normalizeLineEvent(i.judgeLineRotateEvents);
 			addRealTime(i.speedEvents, i.bpm);
 			addRealTime(i.judgeLineDisappearEvents, i.bpm);
 			addRealTime(i.judgeLineMoveEvents, i.bpm);
@@ -421,6 +421,14 @@ class HitManager {
 			} else list.splice(i--, 1);
 		}
 	}
+	/**
+	 * @param {'mouse'|'keyboard'|'touch'} type 
+	 */
+	clearByType(type) {
+		for (const i of this.list) {
+			if (i.type === type) this.deactivate(type, i.id);
+		}
+	}
 }
 //qwq
 class Chart {
@@ -486,14 +494,25 @@ class LineEvent {
 	}
 }
 //规范判定线事件
-function arrangeLineEvent(events = []) {
+function normalizeLineEvent(events = []) {
 	const oldEvents = events.map(i => new LineEvent(i)); //深拷贝
-	if (oldEvents.length === 0) {
-		//如果没有事件，添加一个默认事件(以后添加warning)
-		return [new LineEvent({ startTime: 1 - 1e6, endTime: 1e9 })];
-	}
-	const newEvents = [new LineEvent(Object.assign(oldEvents[0], { startTime: 1 - 1e6 }))]; //以1-1e6开头
-	oldEvents.push(new LineEvent(Object.assign(oldEvents[oldEvents.length - 1], { endTime: 1e9 }))); //以1e9结尾
+	if (!oldEvents.length) return [new LineEvent({ startTime: -999999, endTime: 1e9 })]; //如果没有事件，添加一个默认事件(以后添加warning)
+	const newEvents = [new LineEvent({
+		startTime: -999999,
+		endTime: 0,
+		start: oldEvents[0].start,
+		end: oldEvents[0].start,
+		start2: oldEvents[0].start2,
+		end2: oldEvents[0].start2
+	})]; //以1-1e6开头
+	oldEvents.push(new LineEvent({
+		startTime: oldEvents[oldEvents.length - 1].endTime,
+		endTime: 1e9,
+		start: oldEvents[oldEvents.length - 1].end,
+		end: oldEvents[oldEvents.length - 1].end,
+		start2: oldEvents[oldEvents.length - 1].end2,
+		end2: oldEvents[oldEvents.length - 1].end2
+	})); //以1e9结尾
 	for (const i2 of oldEvents) { //保证时间连续性
 		if (i2.startTime > i2.endTime) continue;
 		const i1 = newEvents[newEvents.length - 1];
@@ -532,7 +551,7 @@ function arrangeLineEvent(events = []) {
 	return newEvents2;
 }
 //规范speedEvents
-function arrangeSpeedEvent(events = []) {
+function normalizeSpeedEvent(events = []) {
 	const newEvents = [];
 	for (const i2 of events) {
 		const i1 = newEvents[newEvents.length - 1];
