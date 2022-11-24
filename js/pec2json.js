@@ -344,7 +344,7 @@ function parse(pec, filename) {
  * @param {LineEvent} le
  */
 const pushLineEvent = (ls, le) => {
-	const { startTime, endTime, start, end, easingType, easingLeft, easingRight } = le;
+	const { startTime, endTime, start, end, easingType = 1, easingLeft = 0, easingRight = 1 } = le;
 	const delta = (end - start) / (endTime - startTime);
 	//插入之前考虑事件时间的相互关系
 	for (let i = ls.length - 1; i >= 0; i--) {
@@ -368,54 +368,36 @@ const pushLineEvent = (ls, le) => {
 	//插入新事件
 	if (easingType === 1 || start === end) ls.push({ startTime, endTime, start, end, delta });
 	else { //暂未考虑开始时间大于结束时间的情况
-		const t1 = end - start;
-		let x1 = 0;
-		let x2 = 0;
+		const eHead = tween[easingType](easingLeft);
+		const eTail = tween[easingType](easingRight);
+		const eSpeed = (easingRight - easingLeft) / (endTime - startTime);
+		const eDelta = (eTail - eHead) / (end - start);
+		let v1 = 0;
+		let v2 = 0;
 		for (let j = startTime; j < endTime; j++) {
-			x1 = x2;
-			x2 = tween[easingType]((j + 1 - startTime) / (endTime - startTime) * (easingRight - easingLeft) + easingLeft);
-			ls.push({ startTime: j, endTime: j + 1, start: start + x1 * t1, end: start + x2 * t1, delta: (x2 - x1) * t1 });
+			v1 = v2;
+			v2 = (tween[easingType]((j + 1 - startTime) * eSpeed + easingLeft) - eHead) / eDelta;
+			ls.push({ startTime: j, endTime: j + 1, start: start + v1, end: start + v2, delta: v2 - v1 });
 		}
 	}
 };
 /**
- * @typedef {Object} SpeedEvent
- * @property {number} startTime
- * @property {number} endTime
- * @property {number} start
- * @property {number} end
- * 
- * @typedef {Object} ElSpeedEvent
- * @property {number} time
- * @property {number} value
- * 
- * @param {ElSpeedEvent[]} ls
- * @param {SpeedEvent} le
+ * @param {LineEvent[]} le
  */
-const pushSpeedEvent = (ls, le) => {
-	const { startTime, endTime, start, end } = le;
-	//插入之前考虑事件时间的相互关系
-	for (let i = ls.length - 1; i >= 0; i--) {
-		const e = ls[i];
-		if (e.time < startTime) { //相离：补全空隙
-			ls.length = i + 1;
-			break;
-		}
-		if (e.time === startTime) { //相切：直接截断
-			ls.length = i;
-			break;
-		}
-	}
-	//插入新事件
-	if (start === end) ls.push({ time: startTime, value: start });
-	else { //暂未考虑开始时间大于结束时间的情况
-		const t1 = end - start;
-		ls.push({ time: startTime, value: start });
-		for (let j = startTime; j < endTime; j++) {
-			const x = (j + 1 - startTime) / (endTime - startTime);
-			ls.push({ time: j + 1, value: start + x * t1 });
+const toSpeedEvent = le => {
+	const result = [];
+	for (const i of le) {
+		const { startTime, endTime, start, end } = i;
+		result.push({ time: startTime, value: start });
+		if (start !== end) { //暂未考虑开始时间大于结束时间的情况
+			const t1 = (end - start) / (endTime - startTime);
+			for (let j = startTime; j < endTime; j++) {
+				const x = j + 1 - startTime;
+				result.push({ time: j + 1, value: start + x * t1 });
+			}
 		}
 	}
+	return result;
 }
 /**
  * @param {LineEvent[]} e 
@@ -455,31 +437,33 @@ const combineXYEvents = (xe, ye) => {
 	}
 	return le;
 }
-class LineRPE {
-	constructor(bpm) {
-		this.bpm = 120;
-		this.numOfNotes = 0;
-		this.numOfNotesAbove = 0;
-		this.numOfNotesBelow = 0;
-		this.speedEvents = [];
-		this.notes = [];
-		this.notesAbove = [];
-		this.notesBelow = [];
-		this.alphaEvents = [];
-		this.moveEvents = [];
+/**
+ * @param {LineEvent[][]} es
+ */
+const combineMultiEvents = es => {
+	const le = [];
+	const splits = [];
+	for (const e of es) {
+		for (const i of e) splits.push(i.startTime, i.endTime);
+	}
+	splits.sort((a, b) => a - b);
+	for (let i = 0; i < splits.length - 1; i++) {
+		const startTime = splits[i];
+		const endTime = splits[i + 1];
+		if (startTime === endTime) continue;
+		const start = es.reduce((i, e) => i + getEventsValue(e, startTime, false), 0);
+		const end = es.reduce((i, e) => i + getEventsValue(e, endTime, true), 0);
+		le.push({ startTime, endTime, start, end, delta: (end - start) / (endTime - startTime) });
+	}
+	return le;
+}
+class EventLayer {
+	constructor() {
 		this.moveXEvents = [];
 		this.moveYEvents = [];
 		this.rotateEvents = [];
-		if (!isNaN(bpm)) this.bpm = bpm;
-	}
-	pushNote(type, time, positionX, holdTime, speed, isAbove, isFake) {
-		this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake });
-	}
-	pushSpeedEvent(startTime, endTime, start, end) {
-		this.speedEvents.push({ startTime, endTime, start, end });
-	}
-	pushAlphaEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
-		this.alphaEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
+		this.alphaEvents = [];
+		this.speedEvents = [];
 	}
 	pushMoveXEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
 		this.moveXEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
@@ -489,6 +473,32 @@ class LineRPE {
 	}
 	pushRotateEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
 		this.rotateEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
+	}
+	pushAlphaEvent(startTime, endTime, start, end, easingType, easingLeft, easingRight) {
+		this.alphaEvents.push({ startTime, endTime, start, end, easingType, easingLeft, easingRight });
+	}
+	pushSpeedEvent(startTime, endTime, start, end) {
+		this.speedEvents.push({ startTime, endTime, start, end });
+	}
+}
+class LineRPE {
+	constructor(bpm) {
+		this.bpm = 120;
+		this.notes = [];
+		this.notesAbove = [];
+		this.notesBelow = [];
+		this.eventLayers = [];
+		this.eventLayers2 = [];
+		this.moveEvents = [];
+		this.moveXEvents = [];
+		this.moveYEvents = [];
+		this.rotateEvents = [];
+		this.alphaEvents = [];
+		this.speedEvents = [];
+		if (!isNaN(bpm)) this.bpm = bpm;
+	}
+	pushNote(type, time, positionX, holdTime, speed, isAbove, isFake) {
+		this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake });
 	}
 	format() {
 		const sortFn = (a, b) => a.time - b.time;
@@ -506,25 +516,41 @@ class LineRPE {
 			judgeLineRotateEvents: []
 		};
 		const pushDisappearEvent = ({ startTime, endTime, start, end }) => {
-			result.judgeLineDisappearEvents.push({ startTime, endTime, start, end, start2: 0, end2: 0 });
+			const v1 = Math.max(0, start / 255);
+			const v2 = Math.max(0, end / 255);
+			result.judgeLineDisappearEvents.push({ startTime, endTime, start: v1, end: v2, start2: 0, end2: 0 });
 		};
 		const pushMoveEvent = ({ startTime, endTime, start, end, start2, end2 }) => {
-			result.judgeLineMoveEvents.push({ startTime, endTime, start, end, start2, end2 });
+			const v1 = (start + 675) / 1350;
+			const v2 = (end + 675) / 1350;
+			const v3 = (start2 + 450) / 900;
+			const v4 = (end2 + 450) / 900;
+			result.judgeLineMoveEvents.push({ startTime, endTime, start: v1, end: v2, start2: v3, end2: v4 });
 		};
 		const pushRotateEvent = ({ startTime, endTime, start, end }) => {
-			result.judgeLineRotateEvents.push({ startTime, endTime, start, end, start2: 0, end2: 0 });
+			const v1 = -start;
+			const v2 = -end;
+			result.judgeLineRotateEvents.push({ startTime, endTime, start: v1, end: v2, start2: 0, end2: 0 });
 		};
 		//处理LineEvent
-		const moveXEvents = [];
-		const moveYEvents = [];
-		const rotateEvents = [];
-		const alphaEvents = [];
-		const speedEvents = [];
-		for (const i of this.moveXEvents.sort(sortFn2)) pushLineEvent(moveXEvents, i);
-		for (const i of this.moveYEvents.sort(sortFn2)) pushLineEvent(moveYEvents, i);
-		for (const i of this.rotateEvents.sort(sortFn2)) pushLineEvent(rotateEvents, i);
-		for (const i of this.alphaEvents.sort(sortFn2)) pushLineEvent(alphaEvents, i);
-		for (const i of this.speedEvents.sort(sortFn2)) pushSpeedEvent(speedEvents, i);
+		for (const e of this.eventLayers) {
+			const moveXEvents = [];
+			const moveYEvents = [];
+			const rotateEvents = [];
+			const alphaEvents = [];
+			const speedEvents = [];
+			for (const i of e.moveXEvents.sort(sortFn2)) pushLineEvent(moveXEvents, i);
+			for (const i of e.moveYEvents.sort(sortFn2)) pushLineEvent(moveYEvents, i);
+			for (const i of e.rotateEvents.sort(sortFn2)) pushLineEvent(rotateEvents, i);
+			for (const i of e.alphaEvents.sort(sortFn2)) pushLineEvent(alphaEvents, i);
+			for (const i of e.speedEvents.sort(sortFn2)) pushLineEvent(speedEvents, i);
+			this.eventLayers2.push({ moveXEvents, moveYEvents, rotateEvents, alphaEvents, speedEvents });
+		}
+		const speedEvents = toSpeedEvent(combineMultiEvents(this.eventLayers2.map(i => i.speedEvents)));
+		const moveXEvents = combineMultiEvents(this.eventLayers2.map(i => i.moveXEvents));
+		const moveYEvents = combineMultiEvents(this.eventLayers2.map(i => i.moveYEvents));
+		const rotateEvents = combineMultiEvents(this.eventLayers2.map(i => i.rotateEvents));
+		const alphaEvents = combineMultiEvents(this.eventLayers2.map(i => i.alphaEvents));
 		for (const i of combineXYEvents(moveXEvents, moveYEvents)) pushMoveEvent(i);
 		for (const i of rotateEvents) pushRotateEvent(i);
 		for (const i of alphaEvents) pushDisappearEvent(i);
@@ -533,7 +559,7 @@ class LineRPE {
 		for (let i = 0; i < speedEvents.length; i++) {
 			const startTime = Math.max(speedEvents[i].time, 0);
 			const endTime = i < speedEvents.length - 1 ? speedEvents[i + 1].time : 1e9;
-			const value = speedEvents[i].value;
+			const value = speedEvents[i].value * 11 / 45;
 			const floorPosition = fpos;
 			fpos += (endTime - startTime) * value / this.bpm * 1.875;
 			fpos = Math.fround(fpos);
@@ -578,7 +604,6 @@ class LineRPE {
 
 function parseRPE(pec, filename) {
 	const data = JSON.parse(pec);
-	// console.log(data, filename); //qwq
 	const meta = data.META;
 	if (!meta && !meta.RPEVersion) throw new Error('Invalid rpe file');
 	const result = { formatVersion: 3, offset: 0, numOfNotes: 0, judgeLineList: [] };
@@ -593,6 +618,25 @@ function parseRPE(pec, filename) {
 	info.Charter = meta.charter;
 	info.Level = meta.level;
 	result.offset = meta.offset / 1e3;
+	//判定线贴图
+	const line = [];
+	data.judgeLineList.forEach((i, index) => {
+		const texture = String(i.Texture).replace(/\0/g, '');
+		if (texture === 'line.png') return;
+		const extended = i.extended || {};
+		let scaleX = extended.scaleXEvents ? extended.scaleXEvents[extended.scaleXEvents.length - 1].end : 1;
+		let scaleY = extended.scaleYEvents ? extended.scaleYEvents[extended.scaleYEvents.length - 1].end : 1;
+		line.push({
+			Chart: filename,
+			LineId: index,
+			Image: texture,
+			Scale: scaleY,
+			Aspect: scaleX / scaleY,
+			UseBackgroundDim: 0,
+			UseLineColor: 1,
+			UseLineScale: 1,
+		});
+	});
 	//bpm变速
 	const bpmList = new BpmList(data.BPMList[0].bpm);
 	for (const i of data.BPMList) i.time = i.startTime[0] + i.startTime[1] / i.startTime[2];
@@ -602,7 +646,7 @@ function parseRPE(pec, filename) {
 	});
 	console.log(data.judgeLineList);
 	for (const i of data.judgeLineList) {
-		const linePec = new LineRPE(bpmList.baseBpm);
+		const lineRPE = new LineRPE(bpmList.baseBpm);
 		if (i.notes) {
 			for (const note of i.notes) {
 				if (note.above !== 1 && note.above !== 2) warnings.push(`检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
@@ -615,57 +659,50 @@ function parseRPE(pec, filename) {
 				const holdTime = bpmList.calc(note.endTime[0] + note.endTime[1] / note.endTime[2]) - time;
 				const speed = note.speed;
 				const positionX = note.positionX / 75.375;
-				linePec.pushNote(type, time, positionX, holdTime, speed, note.above === 1, note.isFake !== 0);
+				lineRPE.pushNote(type, time, positionX, holdTime, speed, note.above === 1, note.isFake !== 0);
 			}
 		}
-		if (i.eventLayers.length !== 1) warnings.push(`未适配多事件层(可能无法正常显示)\n来自${filename}`);
-		const events = i.eventLayers[0];
-		for (const j of events.speedEvents) {
-			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
-			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
-			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
-			const start = j.start * 11 / 45;
-			const end = j.end * 11 / 45;
-			linePec.pushSpeedEvent(startTime, endTime, start, end);
+		for (const e of i.eventLayers) {
+			if (!e) continue; //有可能是null
+			const layer = new EventLayer;
+			for (const j of (e.moveXEvents || [])) {
+				if (j.linkgroup !== undefined && j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+				const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+				const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+				layer.pushMoveXEvent(startTime, endTime, j.start, j.end, j.easingType, j.easingLeft, j.easingRight);
+			}
+			for (const j of (e.moveYEvents || [])) {
+				if (j.linkgroup !== undefined && j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+				const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+				const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+				layer.pushMoveYEvent(startTime, endTime, j.start, j.end, j.easingType, j.easingLeft, j.easingRight);
+			}
+			for (const j of (e.rotateEvents || [])) {
+				if (j.linkgroup !== undefined && j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+				const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+				const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+				layer.pushRotateEvent(startTime, endTime, j.start, j.end, j.easingType, j.easingLeft, j.easingRight);
+			}
+			for (const j of (e.alphaEvents || [])) {
+				if (j.linkgroup !== undefined && j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+				const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+				const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+				layer.pushAlphaEvent(startTime, endTime, j.start, j.end, j.easingType, j.easingLeft, j.easingRight);
+			}
+			for (const j of (e.speedEvents || [])) {
+				if (j.linkgroup !== undefined && j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
+				const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
+				const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
+				layer.pushSpeedEvent(startTime, endTime, j.start, j.end);
+			}
+			lineRPE.eventLayers.push(layer);
 		}
-		for (const j of events.moveXEvents) {
-			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
-			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
-			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
-			const start = (j.start + 675) / 1350;
-			const end = (j.end + 675) / 1350;
-			linePec.pushMoveXEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
-		}
-		for (const j of events.moveYEvents) {
-			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
-			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
-			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
-			const start = (j.start + 450) / 900;
-			const end = (j.end + 450) / 900;
-			linePec.pushMoveYEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
-		}
-		for (const j of events.rotateEvents) {
-			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
-			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
-			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
-			const start = -j.start;
-			const end = -j.end;
-			linePec.pushRotateEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
-		}
-		for (const j of events.alphaEvents) {
-			if (j.linkgroup !== 0) warnings.push(`未适配linkgroup(可能无法正常显示)\n位于:"${JSON.stringify(j)}\n来自${filename}`);
-			const startTime = bpmList.calc(j.startTime[0] + j.startTime[1] / j.startTime[2]);
-			const endTime = bpmList.calc(j.endTime[0] + j.endTime[1] / j.endTime[2]);
-			const start = Math.max(j.start / 255, 0);
-			const end = Math.max(j.end / 255, 0);
-			linePec.pushAlphaEvent(startTime, endTime, start, end, j.easingType, j.easingLeft, j.easingRight);
-		}
-		const judgeLine = linePec.format();
+		const judgeLine = lineRPE.format();
 		result.judgeLineList.push(judgeLine);
 		result.numOfNotes += judgeLine.numOfNotes;
 	}
 	warnings.push(`RPE谱面适配建设中...\n检测到RPE版本:${meta.RPEVersion}\n来自${filename}`);
-	return { data: JSON.stringify(result), messages: warnings, info: info };
+	return { data: JSON.stringify(result), messages: warnings, info: info, line: line };
 }
 //读取info.txt
 function info(text) {

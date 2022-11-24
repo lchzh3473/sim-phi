@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b10'], 1611795955, 1669208946];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b11'], 1611795955, 1669287274];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -375,6 +375,7 @@ function resizeStage() {
 			case 'chart':
 				if (data.msg) data.msg.forEach(v => msgHandler.sendWarning(v));
 				if (data.info) chartInfoData.push(data.info);
+				if (data.line) chartLineData.push(...data.line);
 				charts.set(data.name, data.data);
 				chartsMD5.set(data.name, data.md5);
 				selectchart.appendChild(createOption(data.name, data.name));

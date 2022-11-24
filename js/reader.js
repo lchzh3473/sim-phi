@@ -103,7 +103,7 @@ export function readZip(result, {
 				}).catch(async () => { //rpe
 					const rpeData = Pec.parseRPE(data, i.name);
 					const jsonData = await chart123(rpeData.data);
-					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: rpeData.messages, info: rpeData.info };
+					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: rpeData.messages, info: rpeData.info, line: rpeData.line };
 				});
 			} catch (e) {
 				return new Promise(() => { //plain
