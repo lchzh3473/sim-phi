@@ -117,23 +117,9 @@ export function readZip(result, {
 		}).catch(error => ({ type: 'error', name: i.name, data: error }));
 	};
 	const tl = urls['jszip'].reverse()[0];
-	// 踩坑：worker实际上优化了性能，性能对比应该用zip测试而不是普通文件
-	// if (!self._zip_reader) {
-	// 	let total = 0;
-	// 	loadJS(tl).then(() => loadJS('js/reader-zip.js')).then(() => {
-	// 		self._zip_reader = new ZipReader(isJSZip, async msg => {
-	// 			/** @type {{data:{name:string,path:string,buffer:ArrayBuffer},total:number}} */
-	// 			const data = msg.data;
-	// 			total = data.total;
-	// 			const result = await it(data.data);
-	// 			return onread(result,total);
-	// 		});
-	// 		self._zip_reader.postMessage(result);
-	// 	});
-	// } else self._zip_reader.postMessage(result);
 	if (!self._zip_worker) {
 		onloadstart();
-		const worker = new Worker(`js/worker-zip.js#${tl}`); //以后考虑indexedDB存储url
+		const worker = new Worker(`worker/zip.js#${tl}`); //以后考虑indexedDB存储url
 		let total = 0;
 		worker.addEventListener('message', async msg => {
 			/** @type {{data:{name:string,path:string,buffer:ArrayBuffer},total:number}} */

@@ -30,6 +30,40 @@ body {
 	background-color: #000;
 }
 
+#stage i {
+	font-family: icomoon;
+	font-style: normal;
+	color: #fff;
+	font-size: 4vmin;
+	pointer-events: none;
+	opacity: 0.6;
+	line-height: initial;
+}
+
+#stage i.tl {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+#stage i.tr {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+#stage i.bl {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+}
+
+#stage i.br {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+}
+
 #mask {
 	color: gray;
 	font-family: Custom, Consolas, Menlo, monospace;

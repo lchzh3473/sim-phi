@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b11'], 1611795955, 1669287274];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b12'], 1611795955, 1669554066];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -440,7 +440,9 @@ const specialClick = {
 	}, () => {
 		btnPlay.click();
 		btnPlay.click();
-	}, () => void 0, () => {
+	}, () => {
+		showPoint.click();
+	}, () => {
 		full.toggle().catch(() => {
 			app.isFull = !app.isFull;
 			resizeStage();
@@ -1316,23 +1318,31 @@ function qwqdraw1(now) {
 	if (qwqIn.second < 3) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
 		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween.easeOutSine(6 - qwqIn.second * 2);
+		const name = inputName.value || inputName.placeholder;
+		const artist = inputArtist.value || inputArtist.placeholder;
+		const illustrator = `Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`;
+		const charter = `Level designed by ${inputCharter.value || inputCharter.placeholder}`;
 		ctxos.textAlign = 'center';
 		//曲名
 		ctxos.textBaseline = 'alphabetic';
 		ctxos.font = `${lineScale * 1.1}px Custom,Noto Sans SC`;
-		const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(inputName.value || inputName.placeholder, app.wlen, app.hlen * 0.75);
-		//曲绘和谱师
+		const dxsnm = ctxos.measureText(name).width;
+		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
+		ctxos.fillText(name, app.wlen, app.hlen * 0.75);
+		//曲师、曲绘和谱师
 		ctxos.textBaseline = 'top';
 		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
-		const dxi = ctxos.measureText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`).width;
-		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxi*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(`Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`, app.wlen, app.hlen * 1.25 + lineScale * 0.15);
+		const dxa = ctxos.measureText(artist).width;
+		if (dxa > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxa*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
+		ctxos.fillText(artist, app.wlen, app.hlen * 0.75 + lineScale * 0.85);
 		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
-		const dxc = ctxos.measureText(`Level designed by ${inputCharter.value || inputCharter.placeholder}`).width;
-		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${(lineScale) * 0.55/dxc*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(`Level designed by ${inputCharter.value || inputCharter.placeholder}`, app.wlen, app.hlen * 1.25 + lineScale * 1.0);
+		const dxi = ctxos.measureText(illustrator).width;
+		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxi*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
+		ctxos.fillText(illustrator, app.wlen, app.hlen * 1.25 + lineScale * 0.15);
+		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
+		const dxc = ctxos.measureText(charter).width;
+		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxc*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
+		ctxos.fillText(charter, app.wlen, app.hlen * 1.25 + lineScale * 1.0);
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(1, 0, 0, 1, app.wlen, app.hlen);
@@ -1348,6 +1358,10 @@ function qwqdraw1(now) {
 	ctxos.font = `${lineScale * 0.95}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'right';
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
+	if (app.playMode !== 1) {
+		ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
+		ctxos.fillText(stat.accStr, canvasos.width - lineScale * 0.65, lineScale * 2.05);
+	}
 	if (stat.combo > 2) {
 		ctxos.textAlign = 'center';
 		ctxos.font = `${lineScale * 1.32}px Custom,Noto Sans SC`;
@@ -1365,12 +1379,11 @@ function qwqdraw1(now) {
 	const dxlvl = ctxos.measureText(levelText).width;
 	if (dxlvl > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(app.wlen - lineScale )}px Custom,Noto Sans SC`;
 	ctxos.fillText(levelText, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
-	ctxos.drawImage(res['SongsNameBar'], lineScale * 0.53, canvasos.height - lineScale * 1.22, lineScale * 0.119, lineScale * 0.612);
 	ctxos.textAlign = 'left';
 	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
 	if (dxsnm > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxsnm*(app.wlen - lineScale )}px Custom,Noto Sans SC`;
-	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.85, canvasos.height - lineScale * 0.66);
+	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.65, canvasos.height - lineScale * 0.66);
 	ctxos.resetTransform();
 	//绘制时间和帧率以及note打击数
 	if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
@@ -1532,6 +1545,7 @@ function range(num) {
 	if (num > 1) return 1;
 	return num;
 }
+class NoteRender {}
 //绘制Note
 function drawNote(note, realTime, type) {
 	const HL = note.isMulti && app.multiHint;

@@ -4,9 +4,12 @@
 		"target": "ESNext"
 	},
 	"include": [
-		"js/*","./script.js","utils/main.js"
+		"js/*",
+		"./script.js",
+		"utils/main.js"
 	],
 	"exclude": [
-		"**/*-min.*","**/* copy.*"
+		"**/*-min.*",
+		"**/* copy.*"
 	]
 }

@@ -32,7 +32,7 @@ class Stat {
 	}
 	get accNum() {
 		const a = (this.perfect + this.good * 0.65) / this.all;
-		return isFinite(a) ? a : 0;
+		return isFinite(a) ? a : 1;
 	}
 	get accStr() {
 		return (100 * this.accNum).toFixed(2) + '%';
