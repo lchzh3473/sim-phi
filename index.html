@@ -7,7 +7,7 @@
 	<title>(っ °Д °;)っ</title>
 	<link rel="manifest" href="./manifest.json">
 	<link rel="stylesheet" href="/utils/style.css">
-	<link rel="stylesheet" href="style.css?v=142212">
+	<link rel="stylesheet" href="style.css?v=142213">
 	<script>
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').then(() => { console.log('Service Worker Registered'); });
@@ -23,7 +23,7 @@
 	</script>
 	<script>if (!window.Promise) location.href = '/412.html';</script>
 	<script src="/utils/main.js"></script>
-	<script type="module" src="script.js?v=142212"></script>
+	<script type="module" src="script.js?v=142213"></script>
 </head>
 
 <body>
@@ -40,10 +40,10 @@
 					<label id="uploader-dir">上传文件夹</label>
 				</div>
 			</div>
-			<!-- <input type="button" value="缓存" onclick="location.reload(true)"> -->
 			<input type="button" id="legacy" class="hide" value="Legacy" onclick="location.replace('/sim-phi-legacy')">
 			<input type="button" id="demo" class="hide" value="Demo">
 			<input type="button" value="重置" onclick="location.reload(true)">
+			<input type="button" id="btn-more" value="更多设置">
 			<div id="select" class="disabled">
 				<div>谱面：<select id="select-chart" style="width:6em"></select></div>
 				<div>音乐：<select id="select-bgm" style="width:6em"></select></div>
@@ -154,13 +154,24 @@
 			</div>
 			<div id="cover-dark" class="fade"></div>
 			<div id="cover-view" class="fade">
-				<div id="view-nav">
+				<div id="view-nav" class="view-nav">
 					<a id="use">模拟器使用说明</a>
 					<a id="msg">信息</a>
 				</div>
-				<div id="view-content">
+				<div id="view-content" class="view-content">
 					<iframe id="view-doc" src="" frameborder="0"></iframe>
 					<div id="view-msg"></div>
+				</div>
+			</div>
+			<div id="cover-config" class="fade">
+				<div class="view-nav">
+					<p>更多设置</p>
+				</div>
+				<div class="view-content">
+					<div id="view-config">
+						<div><input type="checkbox" id="showAcc"><label for="showAcc">显示Acc</label></div>
+						<div><input type="checkbox" id="showStat"><label for="showStat">显示统计</label></div><br>
+					</div>
 				</div>
 			</div>
 		</div>

@@ -4,6 +4,9 @@ class Stat {
 		this.level = 0;
 		this.noteRank = [0, 0, 0, 0, 0, 0, 0, 0];
 		this.combos = [0, 0, 0, 0, 0];
+		this.cumDisp = 0;
+		this.curDisp = 0;
+		this.numDisp = 0;
 		this.maxcombo = 0;
 		this.combo = 0;
 	}
@@ -35,7 +38,15 @@ class Stat {
 		return isFinite(a) ? a : 1;
 	}
 	get accStr() {
-		return (100 * this.accNum).toFixed(2) + '%';
+		return (100 * this.accNum).toFixed(2) + '\uff05';
+	}
+	get avgDispStr() {
+		const a = Math.trunc(this.cumDisp / this.numDisp * 1e3) || 0;
+		return `${a>0?'+':''}${a.toFixed(0)}ms`;
+	}
+	get curDispStr() {
+		const a = Math.trunc(this.curDisp * 1e3);
+		return `${a>0?'+':''}${a.toFixed(0)}ms`;
 	}
 	get lineStatus() {
 		if (this.bad) return 0;
@@ -92,6 +103,9 @@ class Stat {
 		this.maxcombo = 0;
 		this.noteRank = [0, 0, 0, 0, 0, 0, 0, 0]; //4:PM,5:PE,1:PL,7:GE,3:GL,6:BE,2:BL
 		this.combos = [0, 0, 0, 0, 0]; //不同种类note实时连击次数
+		this.cumDisp = 0;
+		this.curDisp = 0;
+		this.numDisp = 0;
 		this.data = {};
 		if (speed === '' && localStorage.getItem('phi')) {
 			localStorage.setItem(key, localStorage.getItem('phi'));
@@ -117,6 +131,11 @@ class Stat {
 		if (qwq[4]) energy++;
 		if (this.lineStatus !== 1) energy = 0;
 	}
+	addDisp(disp) {
+		this.curDisp = disp;
+		this.cumDisp += disp;
+		this.numDisp++;
+	}
 }
 class Renderer {
 	constructor(stage) {
@@ -129,8 +148,6 @@ class Renderer {
 		this.stage.appendChild(this.canvas);
 		this.canvas.style.cssText = ';position:absolute;top:0px;left:0px;right:0px;bottom:0px';
 		this.isFull = false;
-		const resizeObserver = new ResizeObserver(() => this.resizeCanvas());
-		resizeObserver.observe(this.stage);
 		console.log('Hello, Phi\x67ros Simulator!');
 		//qwq
 		this.speed = 1;
@@ -144,7 +161,6 @@ class Renderer {
 		this.noteScale = 1; //note缩放设定值
 		this.noteScaleRatio = 8e3; //note缩放比率，由noteScale计算而来
 		this.brightness = 0.6;
-		this.aspectRatio = 1.777778;
 		// this.songName = '';
 		// this.chartLevel = '';
 		// this.illustrator = '';
@@ -186,24 +202,24 @@ class Renderer {
 		// this.hlen2 = 0;
 		// this.transformView(1, 1, 0, 0);
 		this.resizeCanvas();
+		this.width = this.stage.clientWidth;
+		this.height = this.stage.clientHeight;
 	}
 	init(options) {
 		/*const _this = this;
 		Object.assign(_this, options);*/
 	}
 	//config
-	setAspectRatio(num) {
-		this.aspectRatio = Number(num);
-		this.resizeCanvas();
-	}
 	setNoteScale(num) {
-		this.noteScale = Number(num);
-		this.resizeCanvas();
+		this.noteScale = Number(num) || 1;
+		this.noteScaleRatio = this.canvasos.width * this.noteScale / 8080; //note、特效缩放
 	}
 	resizeCanvas() {
-		const { stage, canvas, canvasos } = this;
-		const width = stage.clientWidth;
-		const height = stage.clientHeight;
+		const { clientWidth: width, clientHeight: height } = this.stage;
+		if (this.width === width && this.height === height) return;
+		this.width = width;
+		this.height = height;
+		const { canvas, canvasos } = this;
 		canvas.style.cssText += `;width:${width}px;height:${height}px`; //只有inset还是会溢出
 		canvas.width = width * devicePixelRatio;
 		canvas.height = height * devicePixelRatio;
@@ -212,7 +228,7 @@ class Renderer {
 		this.wlen = canvasos.width / 2;
 		this.hlen = canvasos.height / 2;
 		this.mirrorView();
-		this.noteScaleRatio = canvasos.width * (this.noteScale || 1) / 8080; //note、特效缩放
+		this.setNoteScale(this.noteScale);
 		this.lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //判定线、文字缩放
 	}
 	mirrorView(code = this._mirrorType) {
@@ -424,7 +440,7 @@ class HitManager {
 	/**
 	 * @param {'mouse'|'keyboard'|'touch'} type 
 	 */
-	clearByType(type) {
+	clear(type) {
 		for (const i of this.list) {
 			if (i.type === type) this.deactivate(type, i.id);
 		}

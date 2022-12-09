@@ -129,7 +129,8 @@ body {
 	z-index: 200;
 }
 
-#cover-view {
+#cover-view,
+#cover-config {
 	position: fixed;
 	width: 85vmin;
 	height: 85vh;
@@ -148,7 +149,8 @@ body {
 }
 
 #view-doc,
-#view-msg {
+#view-msg,
+#view-config {
 	width: 95%;
 	height: 99%;
 	padding: 1px 0 0 0;
@@ -156,7 +158,7 @@ body {
 	overflow: scroll;
 }
 
-#view-nav {
+.view-nav {
 	display: flex;
 	flex-direction: row;
 	flex-wrap: wrap;
@@ -165,26 +167,28 @@ body {
 	align-items: stretch;
 }
 
-#view-nav a {
+.view-nav a,
+.view-nav p {
 	background-color: #89a7f3;
 	color: #f0f1fe;
 	flex-grow: 1;
 	text-align: center;
 	border: 1px solid gray;
 	border-radius: 2vmin 2vmin 0 0;
+	margin: 0;
 	padding: 0.5vmin;
 	font-size: calc(12px + 1vmin);
 	transition-property: color, background-color;
 	transition-duration: 0.2s;
 }
 
-#view-nav a:hover,
-#view-nav a.active {
+.view-nav a:hover,
+.view-nav a.active {
 	background-color: #f0f1fe;
 	color: #89a7f3;
 }
 
-#view-content {
+.view-content {
 	background-color: #f0f1fe;
 	border: 1px solid gray;
 	border-radius: 0 0 2vmin 2vmin;

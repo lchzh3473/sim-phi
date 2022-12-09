@@ -33,13 +33,19 @@ export class Timer {
 export const frameTimer = { //计算fps
 	tick: 0,
 	time: performance.now(),
-	fps: '',
+	fps: 0,
 	addTick(fr = 10) {
 		if (++this.tick >= fr) {
 			this.tick = 0;
-			this.fps = (1e3 * fr / (-this.time + (this.time = performance.now()))).toFixed(0);
+			this.fps = 1e3 * fr / (-this.time + (this.time = performance.now()));
 		}
 		return this.fps;
+	},
+	get fpsStr() {
+		return this.fps.toFixed(0);
+	},
+	get disp() {
+		return 0.5 / frameTimer.fps || 0;
 	}
 }
 //全屏相关

@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b12'], 1611795955, 1669554066];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b13'], 1611795955, 1670589834];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -30,6 +30,7 @@ for (const i of $('view-nav').children) {
 $('cover-dark').addEventListener('click', () => {
 	$('cover-dark').classList.add('fade');
 	$('cover-view').classList.add('fade');
+	$('cover-config').classList.add('fade');
 });
 $('qwq').addEventListener('click', () => {
 	$('cover-dark').classList.remove('fade');
@@ -40,6 +41,10 @@ $('msg-out').addEventListener('click', () => {
 	$('cover-dark').classList.remove('fade');
 	$('cover-view').classList.remove('fade');
 	$('msg').click();
+});
+$('btn-more').addEventListener('click', () => {
+	$('cover-dark').classList.remove('fade');
+	$('cover-config').classList.remove('fade');
 });
 const msgHandler = {
 	nodeText: $('msg-out'),
@@ -105,8 +110,7 @@ $('select-note-scale').addEventListener('change', evt => {
 	app.setNoteScale(evt.target.value);
 });
 $('select-aspect-ratio').addEventListener('change', evt => {
-	app.setAspectRatio(evt.target.value);
-	resizeStage();
+	stage.resize(evt.target.value);
 });
 $('select-background-dim').addEventListener('change', evt => {
 	app.brightness = Number(evt.target.value);
@@ -195,6 +199,8 @@ $('select-volume').addEventListener('change', evt => {
 });
 const inputOffset = $('input-offset');
 const showPoint = $('showPoint');
+const showAcc = $('showAcc');
+const showStat = $('showStat');
 const lineColor = $('lineColor');
 $('autoplay').addEventListener('change', evt => {
 	app.playMode = evt.target.checked ? 1 : 0;
@@ -240,7 +246,7 @@ async function checkSupport() {
 		if (!check()) return true;
 		return msgHandler.sendError(errmsg1, errmsg3, true);
 	};
-	await Utils.addFont('Mina', { alt: 'Custom' });
+	await Utils.addFont('Titillium Web', { alt: 'Custom' });
 	//兼容性检测
 	msgHandler.sendMessage('检查浏览器兼容性...');
 	const isMobile = navigator.standalone !== undefined || navigator.platform.indexOf('Linux') > -1 && navigator.maxTouchPoints === 5;
@@ -258,7 +264,7 @@ async function checkSupport() {
 selectbg.onchange = () => {
 	app.bgImage = bgs.get(selectbg.value);
 	app.bgImageBlur = bgsBlur.get(selectbg.value);
-	resizeStage();
+	stage.resize();
 }
 //自动填写歌曲信息
 selectchart.addEventListener('change', adjustInfo);
@@ -286,8 +292,7 @@ function adjustInfo() {
 			}
 			if (isFinite(i.AspectRatio = parseFloat(i.AspectRatio))) {
 				$('select-aspect-ratio').value = i.AspectRatio;
-				app.setAspectRatio(i.AspectRatio);
-				resizeStage(); //qwq
+				stage.resize(i.AspectRatio); //qwq
 			}
 			if (isFinite(i.ScaleRatio = parseFloat(i.ScaleRatio))) { //Legacy
 				$('select-note-scale').value = 8080 / i.ScaleRatio;
@@ -308,19 +313,23 @@ function adjustInfo() {
 		}
 	}
 }
-self.addEventListener('resize', resizeStage);
+const stage = {
+	aspectRatio: 0,
+	resize(ratio) {
+		if (ratio) this.aspectRatio = Number(ratio) || 16 / 9;
+		const stageWidth = Math.min(854, document.documentElement.clientWidth * 0.8);
+		const stageHeight = stageWidth / this.aspectRatio;
+		if (app.isFull) app.stage.style.cssText = ';position:fixed;top:0;left:0;bottom:0;right:0';
+		else app.stage.style.cssText = `;width:${stageWidth.toFixed()}px;height:${stageHeight.toFixed()}px`;
+	}
+};
+stage.resize(1.777778); //qwq
+self.addEventListener('resize', () => stage.resize());
 document.addEventListener(full.onchange, () => {
-	hitManager.clearByType('keyboard');
+	hitManager.clear('keyboard');
 	app.isFull = full.check();
-	resizeStage();
+	stage.resize();
 });
-$('select-aspect-ratio').dispatchEvent(new Event('change')); //qwq
-function resizeStage() {
-	const stageWidth = Math.min(854, document.documentElement.clientWidth * 0.8);
-	const stageHeight = stageWidth / (app.aspectRatio || 16 / 9);
-	if (app.isFull) app.stage.style.cssText = ';position:fixed;top:0;left:0;bottom:0;right:0';
-	else app.stage.style.cssText = `;width:${stageWidth.toFixed()}px;height:${stageHeight.toFixed()}px`;
-}
 //uploader
 {
 	let uploader_done = 0;
@@ -441,11 +450,11 @@ const specialClick = {
 		btnPlay.click();
 		btnPlay.click();
 	}, () => {
-		showPoint.click();
+		showStat.click();
 	}, () => {
 		full.toggle().catch(() => {
 			app.isFull = !app.isFull;
-			resizeStage();
+			stage.resize();
 		});
 	}],
 	click(id) {
@@ -500,18 +509,19 @@ const judgeManager = {
 		const { list } = this;
 		list.length = 0;
 		if (app.playMode === 1) {
+			const dispTime = Math.min(frameTimer.disp, 0.04);
 			for (const i of notes) {
 				if (i.scored) continue;
 				const deltaTime = i.realTime - realTime;
 				if (i.type === 1) {
-					if (deltaTime < 0.0) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
+					if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
 				} else if (i.type === 2) {
-					if (deltaTime < 0.2) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
+					if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
 				} else if (i.type === 3) {
 					if (i.holdTapTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
-					else if (deltaTime < 0.0) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
+					else if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
 				} else if (i.type === 4) {
-					if (deltaTime < 0.2) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 3);
+					if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 3);
 				}
 			}
 		} else if (!isPaused) {
@@ -654,6 +664,7 @@ const judgeManager = {
 						noteJudge.status = 6; //console.log('Bad', i.name);
 						noteJudge.badtime = performance.now();
 					} else {
+						stat.addDisp(Math.max(deltaTime2, (-1 - noteJudge.frameCount) * 0.04 || 0));
 						audio.play(res['HitSong0'], { gainrate: app.soundVolume });
 						if (deltaTime2 > 0.08) {
 							noteJudge.holdStatus = 7; //console.log('Good(Early)', i.name);
@@ -817,7 +828,7 @@ self.addEventListener('keyup', function(evt) {
 	evt.preventDefault();
 	if (evt.key !== 'Shift') hitManager.deactivate('keyboard', evt.code);
 }, false);
-self.addEventListener('blur', () => hitManager.clearByType('keyboard'));
+self.addEventListener('blur', () => hitManager.clear('keyboard'));
 //适配移动设备
 const passive = { passive: false }; //warning
 canvas.addEventListener('touchstart', function(evt) {
@@ -945,7 +956,6 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 });
 //必要组件
 let stopDrawing;
-const comboColor = ['#fff', '#0ac3ff', '#f0ed69', '#a0e9fd', '#fe4365'];
 let curTime = 0;
 let curTimestamp = 0;
 let timeBgm = 0;
@@ -1078,6 +1088,7 @@ let fucktemp2 = false;
 function loop() {
 	const { lineScale } = app;
 	const now = performance.now();
+	app.resizeCanvas();
 	//计算时间
 	if (qwqOut.second < 0.67) {
 		calcqwq(now);
@@ -1319,7 +1330,7 @@ function qwqdraw1(now) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
 		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween.easeOutSine(6 - qwqIn.second * 2);
 		const name = inputName.value || inputName.placeholder;
-		const artist = inputArtist.value || inputArtist.placeholder;
+		const artist = inputArtist.value;
 		const illustrator = `Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`;
 		const charter = `Level designed by ${inputCharter.value || inputCharter.placeholder}`;
 		ctxos.textAlign = 'center';
@@ -1358,7 +1369,7 @@ function qwqdraw1(now) {
 	ctxos.font = `${lineScale * 0.95}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'right';
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
-	if (app.playMode !== 1) {
+	if (showAcc.checked) {
 		ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
 		ctxos.fillText(stat.accStr, canvasos.width - lineScale * 0.65, lineScale * 2.05);
 	}
@@ -1393,12 +1404,27 @@ function qwqdraw1(now) {
 	ctxos.textAlign = 'left';
 	ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
 	ctxos.textAlign = 'right';
-	ctxos.fillText(frameTimer.fps, canvasos.width - lineScale * 0.05, lineScale * 0.5);
-	ctxos.textBaseline = 'alphabetic';
-	if (showPoint.checked) stat.combos.forEach((val, idx) => {
-		ctxos.fillStyle = comboColor[idx];
-		ctxos.fillText(val, lineScale * (idx + 1) * 1.1, canvasos.height - lineScale * 0.1);
-	});
+	ctxos.fillText(frameTimer.fpsStr, canvasos.width - lineScale * 0.05, lineScale * 0.5);
+	if (showStat.checked) {
+		ctxos.textBaseline = 'middle';
+		ctxos.textAlign = 'right';
+		[stat.noteRank[6], stat.noteRank[7], stat.noteRank[5], stat.noteRank[4], stat.noteRank[1], stat.noteRank[3], stat.noteRank[2]].forEach((val, idx) => {
+			const comboColor = ['#fe7b93', '#0ac3ff', 'lime', '#f0ed69', 'lime', '#0ac3ff', '#999'];
+			ctxos.fillStyle = comboColor[idx];
+			ctxos.fillText(val, canvasos.width - lineScale * 0.05, canvasos.height / 2 + lineScale * (idx - 3) * 0.5);
+		});
+		ctxos.fillStyle = '#fff';
+		ctxos.textAlign = 'left';
+		ctxos.fillText(`DSP:  ${stat.curDispStr}`, lineScale * 0.05, canvasos.height / 2 - lineScale * 0.25);
+		ctxos.fillText(`AVG:  ${stat.avgDispStr}`, lineScale * 0.05, canvasos.height / 2 + lineScale * 0.25);
+		ctxos.textBaseline = 'alphabetic';
+		ctxos.textAlign = 'center';
+		stat.combos.forEach((val, idx) => {
+			const comboColor = ['#fff', '#0ac3ff', '#f0ed69', '#a0e9fd', '#fe4365'];
+			ctxos.fillStyle = comboColor[idx];
+			ctxos.fillText(val, lineScale * (idx + 0.55) * 1.1, canvasos.height - lineScale * 0.1);
+		});
+	}
 	//判定线函数，undefined/0:默认,1:非,2:恒成立
 	function drawLine(bool) {
 		ctxos.globalAlpha = 1;

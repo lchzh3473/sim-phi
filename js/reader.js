@@ -67,19 +67,20 @@ export function readZip(result, {
 	 * @returns {Promise<ReaderData>}
 	 */
 	const it = async i => {
-		if (i.name === 'line.csv') {
+		const { name, path } = splitPath(i.name);
+		if (name === 'line.csv') {
 			const data = await string(i.buffer);
-			const chartLine = csv2array(data, true);
+			const chartLine = joinPathInfo(csv2array(data, true), path);
 			return { type: 'line', data: chartLine };
 		}
-		if (i.name === 'info.csv') {
+		if (name === 'info.csv') {
 			const data = await string(i.buffer);
-			const chartInfo = csv2array(data, true);
+			const chartInfo = joinPathInfo(csv2array(data, true), path);
 			return { type: 'info', data: chartInfo };
 		}
-		if (i.name === 'Settings.txt' || i.name === 'info.txt') {
+		if (name === 'Settings.txt' || name === 'info.txt') {
 			const data = await string(i.buffer);
-			const chartInfo = Pec.info(data);
+			const chartInfo = joinPathInfo(Pec.info(data), path);
 			return { type: 'info', data: chartInfo };
 		}
 		return new Promise(() => { //binary
@@ -101,9 +102,10 @@ export function readZip(result, {
 					const jsonData = await chart123(data);
 					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
 				}).catch(async () => { //rpe
-					const rpeData = Pec.parseRPE(data, i.name);
+					const rpeData = Pec.parseRPE(data, i.name, path); //qwq
 					const jsonData = await chart123(rpeData.data);
-					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: rpeData.messages, info: rpeData.info, line: rpeData.line };
+					const { messages: msg, info, line } = rpeData;
+					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg, info, line };
 				});
 			} catch (e) {
 				return new Promise(() => { //plain
@@ -131,6 +133,23 @@ export function readZip(result, {
 		self._zip_worker = worker;
 	}
 	self._zip_worker.postMessage(result, [result.buffer]);
+}
+
+function splitPath(i) {
+	const j = i.lastIndexOf('/');
+	const name = i.slice(j + 1);
+	const path = ~j ? i.slice(0, j) : '';
+	return { name, path };
+}
+
+function joinPathInfo(info, path) {
+	if (!path) return info;
+	for (const i of info) {
+		if (i.Chart) i.Chart = `${path}/${i.Chart}`;
+		if (i.Music) i.Music = `${path}/${i.Music}`;
+		if (i.Image) i.Image = `${path}/${i.Image}`;
+	}
+	return info;
 }
 //test
 function chart123(text) {
