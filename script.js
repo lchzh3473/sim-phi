@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b13'], 1611795955, 1670589834];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b14'], 1611795955, 1670848976];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -207,6 +207,9 @@ $('autoplay').addEventListener('change', evt => {
 });
 $('autoplay').dispatchEvent(new Event('change'));
 const showTransition = $('showTransition');
+$('lowRes').addEventListener('change', evt => {
+	app.setLowResFactor(evt.target.checked ? 0.5 : 1);
+});
 const bgs = new Map;
 const bgsBlur = new Map;
 const bgms = new Map;
@@ -325,11 +328,6 @@ const stage = {
 };
 stage.resize(1.777778); //qwq
 self.addEventListener('resize', () => stage.resize());
-document.addEventListener(full.onchange, () => {
-	hitManager.clear('keyboard');
-	app.isFull = full.check();
-	stage.resize();
-});
 //uploader
 {
 	let uploader_done = 0;
@@ -441,6 +439,12 @@ $('demo').addEventListener('click', function(evt) {
 	}
 });
 //qwq end
+const exitFull = () => {
+	document.removeEventListener(full.onchange, exitFull);
+	hitManager.clear('keyboard'); //esc退出全屏只有onchange事件能检测到
+	app.isFull = full.check();
+	stage.resize();
+}
 //hit start
 const specialClick = {
 	time: [0, 0, 0, 0],
@@ -451,11 +455,22 @@ const specialClick = {
 		btnPlay.click();
 	}, () => {
 		showStat.click();
-	}, () => {
-		full.toggle().catch(() => {
-			app.isFull = !app.isFull;
+	}, async () => {
+		const isFull = app.isFull;
+		try {
+			await full.toggle();
+			if (!(app.isFull = full.check())) return;
+			document.addEventListener(full.onchange, exitFull);
+			if (!$('lockOri').checked) return;
+			await screen.orientation.lock('landscape');
+		} catch (e) {
+			console.warn(e); //qwq
+			app.isFull = !isFull;
+			$('lockOri').checked = false;
+			$('lockOri').parentElement.classList.add('disabled');
+		} finally {
 			stage.resize();
-		});
+		}
 	}],
 	click(id) {
 		const now = performance.now();
@@ -797,7 +812,7 @@ canvas.addEventListener('mousedown', function(evt) {
 	specialClick.qwq(x, y);
 });
 self.addEventListener('mousemove', function(evt) {
-	evt.preventDefault(); //同时按住多个键时，只有最后一个键的move事件会触发
+	//同时按住多个键时，只有最后一个键的move事件会触发
 	const idx = evt.buttons;
 	const { x, y } = getPos(evt);
 	for (let i = 1; i < 32; i <<= 1) {
@@ -806,7 +821,7 @@ self.addEventListener('mousemove', function(evt) {
 	}
 });
 self.addEventListener('mouseup', function(evt) {
-	evt.preventDefault();
+	// 踩坑：对move和up进行preventDefault会影响input元素交互
 	const idx = evt.button;
 	if (idx === 1) hitManager.deactivate('mouse', 4);
 	else if (idx === 2) hitManager.deactivate('mouse', 2);

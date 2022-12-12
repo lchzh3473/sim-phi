@@ -7,7 +7,7 @@
 	<title>(っ °Д °;)っ</title>
 	<link rel="manifest" href="./manifest.json">
 	<link rel="stylesheet" href="/utils/style.css">
-	<link rel="stylesheet" href="style.css?v=142213">
+	<link rel="stylesheet" href="style.css?v=142214">
 	<script>
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').then(() => { console.log('Service Worker Registered'); });
@@ -23,7 +23,7 @@
 	</script>
 	<script>if (!window.Promise) location.href = '/412.html';</script>
 	<script src="/utils/main.js"></script>
-	<script type="module" src="script.js?v=142213"></script>
+	<script type="module" src="script.js?v=142214"></script>
 </head>
 
 <body>
@@ -119,9 +119,7 @@
 				<div><input type="checkbox" id="feedback" checked><label for="feedback">触摸反馈</label></div>
 				<div><input type="checkbox" id="imageBlur" checked><label for="imageBlur">背景模糊</label></div>
 				<div><input type="checkbox" id="highLight" checked><label for="highLight">多押高亮</label></div><br>
-				<div><input type="checkbox" id="showCE2"><label for="showCE2">Early/Late特效</label></div>
-				<div><input type="checkbox" id="lineColor" checked><label for="lineColor">FC/AP指示器</label></div><br>
-				<div><input type="checkbox" id="showPoint"><label for="showPoint">显示定位点</label></div>
+				<div><input type="checkbox" id="lineColor" checked><label for="lineColor">FC/AP指示器</label></div>
 				<div class="disabled-when-playing"><input type="checkbox" id="autoplay" checked><label for="autoplay">自动演示</label></div>
 				<div class="disabled-when-playing"><input type="checkbox" id="showTransition" checked><label for="showTransition">过渡动画</label></div><br>
 				<div class="">谱面镜像：<select id="select-flip" style="width:4em">
@@ -169,8 +167,12 @@
 				</div>
 				<div class="view-content">
 					<div id="view-config">
+						<div><input type="checkbox" id="showCE2"><label for="showCE2">Early/Late特效</label></div>
+						<div><input type="checkbox" id="showPoint"><label for="showPoint">显示定位点</label></div>
 						<div><input type="checkbox" id="showAcc"><label for="showAcc">显示Acc</label></div>
-						<div><input type="checkbox" id="showStat"><label for="showStat">显示统计</label></div><br>
+						<div><input type="checkbox" id="showStat"><label for="showStat">显示统计</label></div>
+						<div><input type="checkbox" id="lowRes"><label for="lowRes">低分辨率</label></div>
+						<div><input type="checkbox" id="lockOri" checked><label for="lockOri">横屏锁定</label></div><br>
 					</div>
 				</div>
 			</div>

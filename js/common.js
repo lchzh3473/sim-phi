@@ -64,14 +64,14 @@ export const full = {
 			document.addEventListener(this.onerror, onerror);
 		})
 		if (this.element) {
-			if (document.exitFullscreen) return document.exitFullscreen() || onFullscreen();
-			if (document.webkitExitFullscreen) return document.webkitExitFullscreen() || onFullscreen();
-			if (document.mozCancelFullScreen) return document.mozCancelFullScreen() || onFullscreen();
+			if (document.exitFullscreen) return document.exitFullscreen(), onFullscreen();
+			if (document.webkitExitFullscreen) return document.webkitExitFullscreen(), onFullscreen();
+			if (document.mozCancelFullScreen) return document.mozCancelFullScreen(), onFullscreen();
 		} else {
 			if (!(elem instanceof HTMLElement)) elem = document.body;
-			if (elem.requestFullscreen) return elem.requestFullscreen() || onFullscreen();
-			if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen() || onFullscreen();
-			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen() || onFullscreen();
+			if (elem.requestFullscreen) return elem.requestFullscreen(), onFullscreen();
+			if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen(), onFullscreen();
+			if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen(), onFullscreen();
 		}
 	},
 	check(elem) {

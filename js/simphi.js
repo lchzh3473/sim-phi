@@ -196,14 +196,8 @@ class Renderer {
 		this.reverseholds = [];
 		this.tapholds = [];
 		//qwq2
-		this.wlen = 0;
-		this.hlen = 0;
-		// this.wlen2 = 0;
-		// this.hlen2 = 0;
-		// this.transformView(1, 1, 0, 0);
+		this._setLowResFactor(1);
 		this.resizeCanvas();
-		this.width = this.stage.clientWidth;
-		this.height = this.stage.clientHeight;
 	}
 	init(options) {
 		/*const _this = this;
@@ -214,22 +208,34 @@ class Renderer {
 		this.noteScale = Number(num) || 1;
 		this.noteScaleRatio = this.canvasos.width * this.noteScale / 8080; //note、特效缩放
 	}
-	resizeCanvas() {
-		const { clientWidth: width, clientHeight: height } = this.stage;
-		if (this.width === width && this.height === height) return;
-		this.width = width;
-		this.height = height;
-		const { canvas, canvasos } = this;
-		canvas.style.cssText += `;width:${width}px;height:${height}px`; //只有inset还是会溢出
-		canvas.width = width * devicePixelRatio;
-		canvas.height = height * devicePixelRatio;
-		canvasos.width = Math.min(width, height * 16 / 9) * devicePixelRatio;
-		canvasos.height = height * devicePixelRatio;
+	_setLowResFactor(num) {
+		this.lowResFactor = num * self.devicePixelRatio;
+	}
+	setLowResFactor(num) {
+		this._setLowResFactor(Number(num) || 1);
+		this._resizeCanvas();
+	}
+	_resizeCanvas() {
+		const { canvas, canvasos, width, height } = this;
+		const widthLowRes = width * this.lowResFactor;
+		const heightLowRes = height * this.lowResFactor;
+		canvas.width = widthLowRes;
+		canvas.height = heightLowRes;
+		canvasos.width = Math.min(widthLowRes, heightLowRes * 16 / 9);
+		canvasos.height = heightLowRes;
 		this.wlen = canvasos.width / 2;
 		this.hlen = canvasos.height / 2;
 		this.mirrorView();
 		this.setNoteScale(this.noteScale);
 		this.lineScale = canvasos.width > canvasos.height * 0.75 ? canvasos.height / 18.75 : canvasos.width / 14.0625; //判定线、文字缩放
+	}
+	resizeCanvas() {
+		const { clientWidth: width, clientHeight: height } = this.stage;
+		if (this.width === width && this.height === height) return;
+		this.width = width;
+		this.height = height;
+		this.canvas.style.cssText += `;width:${width}px;height:${height}px`; //只有inset还是会溢出
+		this._resizeCanvas();
 	}
 	mirrorView(code = this._mirrorType) {
 		const n = this._mirrorType = 3 & code;

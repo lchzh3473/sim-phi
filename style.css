@@ -158,6 +158,11 @@ body {
 	overflow: scroll;
 }
 
+#view-config>div {
+	/* display: inline-block; */
+	padding-block: 0.5em;
+}
+
 .view-nav {
 	display: flex;
 	flex-direction: row;
