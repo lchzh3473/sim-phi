@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b14'], 1611795955, 1670848976];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b15'], 1611795955, 1672690614];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -890,7 +890,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	canvas.classList.add('fade');
 	let loadedNum = 0;
 	let errorNum = 0;
-	const pth = atob('aHR0cHM6Ly9sY2h6aDM0NzMuZ2l0aHViLmlvL2Fzc2V0cy8=');
+	const pth = atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS8=');
 	const erc = str => pth + str;
 	msgHandler.sendMessage('初始化...');
 	if (await checkSupport()) return;

@@ -26,10 +26,6 @@ body {
 	line-height: 0;
 }
 
-#stage canvas {
-	background-color: #000;
-}
-
 #stage i {
 	font-family: icomoon;
 	font-style: normal;
@@ -77,12 +73,6 @@ body {
 	line-height: 1.5em;
 }
 
-/* .upload {
-	width: 80vw;
-	max-width: 500px;
-	display: inline-flex;
-	justify-content: center;
-} */
 #uploader {
 	display: inline-block;
 	position: relative;
