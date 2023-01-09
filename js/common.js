@@ -95,6 +95,37 @@ export const full = {
 		return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || false;
 	}
 };
+export const orientation = {
+	checkSupport() {
+		const s = screen.orientation;
+		if (!s) return Promise.resolve(false);
+		return new Promise(async resolve => {
+			try {
+				await s.lock(s.type);
+				resolve(s.unlock());
+			} catch (e) {
+				if (e.name == 'SecurityError') resolve(true);
+				else if (e.name == 'NotSupportedError') resolve(false);
+				else throw e;
+			}
+		});
+	},
+	lockLandscape() {
+		const s = screen.orientation;
+		if (!s) return Promise.reject();
+		return s.lock('landscape-primary');
+	},
+	lockPortrait() {
+		const s = screen.orientation;
+		if (!s) return Promise.reject();
+		return s.lock('portrait-primary');
+	},
+	unlock() {
+		const s = screen.orientation;
+		if (!s) return Promise.reject();
+		return s.unlock();
+	}
+};
 export const audio = {
 	/** @type {AudioContext} */
 	_actx: null,

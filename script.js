@@ -1,7 +1,7 @@
 import simphi from './js/simphi.js';
-import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str } from './js/common.js';
+import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b15'], 1611795955, 1672690614];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b16'], 1611795955, 1673236420];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -262,6 +262,11 @@ async function checkSupport() {
 	const oggCompatible = !!(new Audio).canPlayType('audio/ogg');
 	if (!await loadPlugin('ogg格式兼容', '/lib/oggmented-bundle.js', () => !oggCompatible && isUndefined('oggmented'))) return -4;
 	audio.init(oggCompatible ? self.AudioContext || self.webkitAudioContext : oggmented.OggmentedAudioContext); //兼容Safari
+	const orientSupported = await orientation.checkSupport();
+	if (!orientSupported) {
+		$('lockOri').checked = false;
+		$('lockOri').parentElement.classList.add('disabled');
+	}
 }
 //qwq
 selectbg.onchange = () => {
@@ -462,12 +467,10 @@ const specialClick = {
 			if (!(app.isFull = full.check())) return;
 			document.addEventListener(full.onchange, exitFull);
 			if (!$('lockOri').checked) return;
-			await screen.orientation.lock('landscape');
+			await orientation.lockLandscape();
 		} catch (e) {
 			console.warn(e); //qwq
 			app.isFull = !isFull;
-			$('lockOri').checked = false;
-			$('lockOri').parentElement.classList.add('disabled');
 		} finally {
 			stage.resize();
 		}
@@ -890,59 +893,41 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	canvas.classList.add('fade');
 	let loadedNum = 0;
 	let errorNum = 0;
-	const pth = atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS8=');
-	const erc = str => pth + str;
 	msgHandler.sendMessage('初始化...');
 	if (await checkSupport()) return;
+	const res0 = {};
+	await fetch(atob('Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24')).then(i => i.json()).then(i => {
+		for (const j in i.image || {}) res0[j] = i.image[j];
+		for (const j in i.audio || {}) res0[j] = i.audio[j];
+	});
 	//加载资源
-	await Promise.all(Object.entries({
-		JudgeLine: 'e4449d09',
-		ProgressBar: '2b148fdc',
-		SongsNameBar: 'ef6de8f4',
-		HitFXRaw: 'cccc5e34',
-		Tap: '81bde67a',
-		TapHL: '482c09c5',
-		Drag: '6d691074',
-		DragHL: '6d019101',
-		HoldHead: '46ec64aa',
-		HoldHeadHL: '9c17cca6',
-		Hold: '2df2e2f5',
-		HoldHL: '688037ea',
-		HoldEnd: 'bc6f2355',
-		Flick: 'e71c01ac',
-		FlickHL: 'cb2ee377',
-		LevelOver1: '428b99e8',
-		LevelOver3: '518c5e08',
-		LevelOver4: 'c909ace8',
-		LevelOver5: '66e9fa71',
-		Rank: '667e65d8',
-		HitSong0: '2b17105e',
-		HitSong1: 'cc89b9a8',
-		HitSong2: 'db03a4cc',
-		LevelOver0_v1: '6052f621',
-		LevelOver1_v1: '385d9d06',
-		LevelOver2_v1: 'fe04b765',
-		LevelOver3_v1: '56d2fea3',
-	}).map(([name, src], _i, arr) => new Promise(resolve => {
-		const xhr = new XMLHttpRequest();
-		xhr.open('get', src = erc(src), true);
-		xhr.responseType = 'arraybuffer';
-		xhr.send();
-		xhr.onloadend = async () => {
-			if (!xhr.response || !xhr.response.byteLength) {
-				msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(src,location)}`, true);
+	await Promise.all(Object.entries(res0).map(([name, src], _i, arr) => new Promise(resolve => {
+		const [url, ext] = src.split('|');
+		fetch(url, { referrerPolicy: 'no-referrer' }).then(a => a.blob()).then(async blob => {
+			const img = await createImageBitmap(blob);
+			if (ext && ext[0] === 'm') {
+				const data = decode(img, Number(ext.slice(1))).result;
+				res[name] = await audio.decode(data);
+
+				function decode(img, clip = 0) {
+					const canvas = document.createElement('canvas');
+					canvas.width = img.width - clip * 2;
+					canvas.height = img.height - clip * 2;
+					const ctx = canvas.getContext('2d');
+					ctx.drawImage(img, -clip, -clip);
+					const id = ctx.getImageData(0, 0, canvas.width, canvas.width);
+					const ab = new Uint8Array(id.data.length / 4 * 3);
+					for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
+					const size = new DataView(ab.buffer, 0, 4).getUint32(0);
+					return { result: ab.buffer.slice(4, size + 4) };
+				}
 			} else {
-				// console.log(xhr.response)
-				const a = new DataView(xhr.response, 0, 8);
-				const header1 = a.getUint32(0);
-				const header2 = a.getUint32(4);
-				if (header1 === 0x4f676753) res[name] = await audio.decode(xhr.response);
-				else if (header1 === 0x89504e47 && header2 === 0x0d0a1a0a) res[name] = await createImageBitmap(new Blob([xhr.response]));
-				else msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(src,location)}`, true);
+				res[name] = await createImageBitmap(img, 0, 0, img.width, img.height /* , { imageOrientation: 'flipY' } */ );
 			}
 			msgHandler.sendMessage(`加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`);
-			resolve();
-		};
+		}).catch(() => {
+			msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url,location)}`, true);
+		}).finally(resolve);
 	})));
 	if (errorNum) return msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
 	res['NoImageBlack'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(0), 1, 1));
@@ -1309,10 +1294,10 @@ function qwqdraw1(now) {
 			}
 		}
 		//绘制note
-		for (const i of app.flicks) drawNote(i, timeChart, 4);
-		for (const i of app.taps) drawNote(i, timeChart, 1);
-		for (const i of app.drags) drawNote(i, timeChart, 2);
-		for (const i of app.reverseholds) drawNote(i, timeChart, 3);
+		for (const i of app.flicks) drawFlick(i);
+		for (const i of app.taps) drawTap(i);
+		for (const i of app.drags) drawDrag(i);
+		for (const i of app.reverseholds) drawHold(i, timeChart);
 	}
 	//绘制背景
 	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
@@ -1586,44 +1571,82 @@ function range(num) {
 	if (num > 1) return 1;
 	return num;
 }
-class NoteRender {}
+class NoteRender {
+	constructor() {
+		this.urlMap = new Map();
+	}
+	init(pack = {}) {
+		this.res = {
+			Tap: pack['Tap'],
+			TapHL: pack['TapHL'],
+			Drag: pack['Drag'],
+			DragHL: pack['DragHL'],
+			HoldHead: pack['HoldHead'],
+			HoldHeadHL: pack['HoldHeadHL'],
+			Hold: pack['Hold'],
+			HoldHL: pack['HoldHL'],
+			HoldEnd: pack['HoldEnd'],
+			Flick: pack['Flick'],
+			FlickHL: pack['FlickHL'],
+		};
+	}
+	async load() {} //todo
+}
 //绘制Note
-function drawNote(note, realTime, type) {
+function drawTap(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
-	if (!note.visible) return;
-	if (note.type !== 3 && note.scored && !note.badtime) return;
-	if (note.type === 3 && note.realTime + note.realHoldTime < realTime) return; //qwq
+	if (!note.visible || note.scored && !note.badtime) return;
 	ctxos.globalAlpha = note.alpha;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
-	if (type === 3) {
-		const baseLength = app.scaleY / nsr * note.speed * app.speed;
-		const holdLength = baseLength * note.realHoldTime;
-		if (note.realTime > realTime) {
-			if (HL) {
-				ctxos.drawImage(res['HoldHeadHL'], -res['HoldHeadHL'].width * 1.026 * 0.5, 0, res['HoldHeadHL'].width * 1.026, res['HoldHeadHL'].height * 1.026);
-				ctxos.drawImage(res['HoldHL'], -res['HoldHL'].width * 1.026 * 0.5, -holdLength, res['HoldHL'].width * 1.026, holdLength);
-			} else {
-				ctxos.drawImage(res['HoldHead'], -res['HoldHead'].width * 0.5, 0);
-				ctxos.drawImage(res['Hold'], -res['Hold'].width * 0.5, -holdLength, res['Hold'].width, holdLength);
-			}
-			ctxos.drawImage(res['HoldEnd'], -res['HoldEnd'].width * 0.5, -holdLength - res['HoldEnd'].height);
+	if (note.badtime) ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
+	else if (HL) ctxos.drawImage(res['TapHL'], -res['TapHL'].width * 0.5, -res['TapHL'].height * 0.5);
+	else ctxos.drawImage(res['Tap'], -res['Tap'].width * 0.5, -res['Tap'].height * 0.5);
+}
+
+function drawDrag(note) {
+	const HL = note.isMulti && app.multiHint;
+	const nsr = app.noteScaleRatio;
+	if (!note.visible || note.scored && !note.badtime) return;
+	ctxos.globalAlpha = note.alpha;
+	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
+	if (note.badtime);
+	else if (HL) ctxos.drawImage(res['DragHL'], -res['DragHL'].width * 0.5, -res['DragHL'].height * 0.5);
+	else ctxos.drawImage(res['Drag'], -res['Drag'].width * 0.5, -res['Drag'].height * 0.5);
+}
+
+function drawHold(note, realTime) {
+	const HL = note.isMulti && app.multiHint;
+	const nsr = app.noteScaleRatio;
+	if (!note.visible || note.realTime + note.realHoldTime < realTime) return; //qwq
+	ctxos.globalAlpha = note.alpha;
+	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
+	const baseLength = app.scaleY / nsr * note.speed * app.speed;
+	const holdLength = baseLength * note.realHoldTime;
+	if (note.realTime > realTime) {
+		if (HL) {
+			ctxos.drawImage(res['HoldHeadHL'], -res['HoldHeadHL'].width * 1.026 * 0.5, 0, res['HoldHeadHL'].width * 1.026, res['HoldHeadHL'].height * 1.026);
+			ctxos.drawImage(res['HoldHL'], -res['HoldHL'].width * 1.026 * 0.5, -holdLength, res['HoldHL'].width * 1.026, holdLength);
 		} else {
-			if (HL) ctxos.drawImage(res['HoldHL'], -res['HoldHL'].width * 1.026 * 0.5, -holdLength, res['HoldHL'].width * 1.026, holdLength - baseLength * (realTime - note.realTime));
-			else ctxos.drawImage(res['Hold'], -res['Hold'].width * 0.5, -holdLength, res['Hold'].width, holdLength - baseLength * (realTime - note.realTime));
-			ctxos.drawImage(res['HoldEnd'], -res['HoldEnd'].width * 0.5, -holdLength - res['HoldEnd'].height);
+			ctxos.drawImage(res['HoldHead'], -res['HoldHead'].width * 0.5, 0);
+			ctxos.drawImage(res['Hold'], -res['Hold'].width * 0.5, -holdLength, res['Hold'].width, holdLength);
 		}
-	} else if (note.badtime) {
-		if (type === 1) ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
-	} else if (HL) {
-		if (type === 1) ctxos.drawImage(res['TapHL'], -res['TapHL'].width * 0.5, -res['TapHL'].height * 0.5);
-		else if (type === 2) ctxos.drawImage(res['DragHL'], -res['DragHL'].width * 0.5, -res['DragHL'].height * 0.5);
-		else if (type === 4) ctxos.drawImage(res['FlickHL'], -res['FlickHL'].width * 0.5, -res['FlickHL'].height * 0.5);
 	} else {
-		if (type === 1) ctxos.drawImage(res['Tap'], -res['Tap'].width * 0.5, -res['Tap'].height * 0.5);
-		else if (type === 2) ctxos.drawImage(res['Drag'], -res['Drag'].width * 0.5, -res['Drag'].height * 0.5);
-		else if (type === 4) ctxos.drawImage(res['Flick'], -res['Flick'].width * 0.5, -res['Flick'].height * 0.5);
+		if (HL) ctxos.drawImage(res['HoldHL'], -res['HoldHL'].width * 1.026 * 0.5, -holdLength, res['HoldHL'].width * 1.026, holdLength - baseLength * (realTime - note.realTime));
+		else ctxos.drawImage(res['Hold'], -res['Hold'].width * 0.5, -holdLength, res['Hold'].width, holdLength - baseLength * (realTime - note.realTime));
 	}
+	ctxos.drawImage(res['HoldEnd'], -res['HoldEnd'].width * 0.5, -holdLength - res['HoldEnd'].height);
+}
+
+function drawFlick(note) {
+	const HL = note.isMulti && app.multiHint;
+	const nsr = app.noteScaleRatio;
+	if (!note.visible || note.scored && !note.badtime) return;
+	ctxos.globalAlpha = note.alpha;
+	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
+	if (note.badtime);
+	else if (HL) ctxos.drawImage(res['FlickHL'], -res['FlickHL'].width * 0.5, -res['FlickHL'].height * 0.5);
+	else ctxos.drawImage(res['Flick'], -res['Flick'].width * 0.5, -res['Flick'].height * 0.5);
 }
 //调节画面尺寸和全屏相关(返回source播放aegleseeker会出现迷之error)
 function adjustSize(source, dest, scale) {
@@ -1748,3 +1771,6 @@ function hex2rgba(color) {
 function rgba2hex(...rgba) {
 	return '#' + rgba.map(i => ('00' + Math.round(Number(i) * 255 || 0).toString(16)).slice(-2)).join('');
 }
+//debug
+self.app = app;
+self.res = res;
