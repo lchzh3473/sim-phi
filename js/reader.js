@@ -1,4 +1,4 @@
-import { urls, audio, csv2array } from './common.js';
+import { urls, csv2array } from './common.js';
 import Pec from './pec2json.js';
 export const uploader = {
 	// files: [],
@@ -43,13 +43,20 @@ export const uploader = {
  * @typedef {object} ReaderOptions
  * @property {()=>void} onloadstart
  * @property {(param1:ReaderData,param2:number)=>void} onread
+ * @property {(param1:ArrayBuffer)=>Promise<AudioBuffer>} createAudioBuffer
  * 
  * @param {DataType} result 
  * @param {ReaderOptions} options 
  */
 export function readZip(result, {
+	createAudioBuffer = async arraybuffer => {
+		/** @type {AudioContext} */
+		const actx = new(window.AudioContext || window.webkitAudioContext);
+		await actx.close();
+		return actx.decodeAudioData(arraybuffer);
+	},
 	onloadstart = () => void 0,
-	onread = () => void 0
+	onread = () => void 0,
 }) {
 	const string = async i => {
 		const labels = ['utf-8', 'gbk', 'big5', 'shift_jis'];
@@ -86,7 +93,7 @@ export function readZip(result, {
 		return new Promise(() => { //binary
 			throw new Error('Just make it a promise');
 		}).catch(async () => { //audio
-			const audioData = await audio.decode(i.buffer.slice());
+			const audioData = await createAudioBuffer(i.buffer.slice());
 			return { type: 'audio', name: i.name, data: audioData };
 		}).catch(async () => { //image
 			const data = new Blob([i.buffer]);

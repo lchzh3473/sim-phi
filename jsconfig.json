@@ -1,15 +1,24 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
-		"target": "ESNext"
+		"module": "ESNext",
+		"target": "ESNext",
+		"baseUrl": ".",
+		"paths": {
+			"/utils/*": [
+				"utils/*"
+			],
+			"js/*": [
+				"js/*"
+			],
+		},
 	},
 	"include": [
 		"js/*",
-		"./script.js",
-		"utils/main.js"
+		"utils/*",
+		"./script.js"
 	],
 	"exclude": [
 		"**/*-min.*",
 		"**/* copy.*"
-	]
+	],
 }

@@ -1,7 +1,9 @@
 import simphi from './js/simphi.js';
-import { full, Timer, getConstructorName, urls, isUndefined, loadJS, audio, frameTimer, time2Str, orientation } from './js/common.js';
+import { audio } from '/utils/aup.js';
+import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b16'], 1611795955, 1673236420];
+import InterAct from '/utils/interact.js';
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b17'], 1611795955, 1675417462];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -254,7 +256,13 @@ async function checkSupport() {
 	msgHandler.sendMessage('检查浏览器兼容性...');
 	const isMobile = navigator.standalone !== undefined || navigator.platform.indexOf('Linux') > -1 && navigator.maxTouchPoints === 5;
 	if (isMobile) $('uploader-select').style.display = 'none';
-	if (navigator.userAgent.indexOf('MiuiBrowser') > -1) msgHandler.sendWarning('检测到小米浏览器，可能存在切后台声音消失的问题');
+	if (navigator.userAgent.indexOf('MiuiBrowser') > -1) {
+		//实测 v17.1.8 问题仍然存在，v17.4.80113 问题已修复
+		const version = navigator.userAgent.match(/MiuiBrowser\/(\d+\.\d+)/);
+		const text = '检测到小米浏览器且版本低于17.4，可能存在切后台声音消失的问题';
+		if (version && version[1] >= 17.4);
+		else msgHandler.sendWarning(text);
+	}
 	if (!await loadPlugin('ImageBitmap兼容', urls.bitmap, () => isUndefined('createImageBitmap'))) return -1;
 	if (!await loadPlugin('StackBlur', urls.blur, () => isUndefined('StackBlur'))) return -2;
 	if (!await loadPlugin('md5', urls.md5, () => isUndefined('md5'))) return -3;
@@ -357,8 +365,9 @@ self.addEventListener('resize', () => stage.resize());
 			buffer: evt.target.result,
 			path: i.webkitRelativePath || i.name
 		}, {
+			createAudioBuffer() { return audio.decode(...arguments) },
 			onloadstart: () => msgHandler.sendMessage('加载zip组件...'),
-			onread: handleFile
+			onread: handleFile,
 		});
 	}
 	/** 
@@ -590,6 +599,15 @@ const judgeManager = {
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 2);
 					note.scored = true;
+				} else { //eat sound
+					for (const judgeEvent of list) {
+						if (judgeEvent.type === 3) continue; //跳过Move判定
+						if (getJudgeOffset(judgeEvent, note) > width) continue;
+						if (judgeEvent.type === 1) {
+							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
+							continue;
+						}
+					}
 				}
 			} else if (note.type === 4) { //Flick音符
 				if (note.status !== 4) {
@@ -630,6 +648,15 @@ const judgeManager = {
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 4);
 					note.scored = true;
+				} else { //eat sound
+					for (const judgeEvent of list) {
+						if (judgeEvent.type === 3) continue; //跳过Move判定
+						if (getJudgeOffset(judgeEvent, note) > width) continue;
+						if (judgeEvent.type === 1) {
+							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
+							continue;
+						}
+					}
 				}
 			} else { //Hold音符
 				if (note.type === 3 && note.holdTapTime) { //是否触发头判
@@ -804,77 +831,72 @@ class HitEvent2 {
 		return new HitEvent2(offsetX, offsetY, '#ff4612', 'Late');
 	}
 }
+const interact = new InterAct(canvas);
 //适配PC鼠标
-canvas.addEventListener('mousedown', function(evt) {
-	evt.preventDefault();
-	const idx = evt.button;
-	const { x, y } = getPos(evt);
-	if (idx === 1) hitManager.activate('mouse', 4, x, y);
-	else if (idx === 2) hitManager.activate('mouse', 2, x, y);
-	else hitManager.activate('mouse', 1 << idx, x, y);
-	specialClick.qwq(x, y);
-});
-self.addEventListener('mousemove', function(evt) {
-	//同时按住多个键时，只有最后一个键的move事件会触发
-	const idx = evt.buttons;
-	const { x, y } = getPos(evt);
-	for (let i = 1; i < 32; i <<= 1) {
-		if (idx & i) hitManager.moving('mouse', i, x, y);
-		else hitManager.deactivate('mouse', i);
+interact.setMouseEvent({
+	mousedownCallback(evt) {
+		const idx = evt.button;
+		const { x, y } = getPos(evt);
+		if (idx === 1) hitManager.activate('mouse', 4, x, y);
+		else if (idx === 2) hitManager.activate('mouse', 2, x, y);
+		else hitManager.activate('mouse', 1 << idx, x, y);
+		specialClick.qwq(x, y);
+	},
+	mousemoveCallback(evt) {
+		const idx = evt.buttons;
+		const { x, y } = getPos(evt);
+		for (let i = 1; i < 32; i <<= 1) {
+			// 同时按住多个键时，只有最后一个键的move事件会触发
+			if (idx & i) hitManager.moving('mouse', i, x, y);
+			else hitManager.deactivate('mouse', i);
+		}
+	},
+	mouseupCallback(evt) {
+		const idx = evt.button;
+		if (idx === 1) hitManager.deactivate('mouse', 4);
+		else if (idx === 2) hitManager.deactivate('mouse', 2);
+		else hitManager.deactivate('mouse', 1 << idx);
 	}
 });
-self.addEventListener('mouseup', function(evt) {
-	// 踩坑：对move和up进行preventDefault会影响input元素交互
-	const idx = evt.button;
-	if (idx === 1) hitManager.deactivate('mouse', 4);
-	else if (idx === 2) hitManager.deactivate('mouse', 2);
-	else hitManager.deactivate('mouse', 1 << idx);
-});
-// canvas.addEventListener('mouseout', function(evt) {});
 //适配键盘(喵喵喵?)
-self.addEventListener('keydown', function(evt) {
-	if (document.activeElement.classList.value === 'input') return;
-	if (btnPlay.value !== '停止') return;
-	evt.preventDefault();
-	if (evt.key === 'Shift') btnPause.click();
-	else if (hitManager.list.find(i => i.type === 'keyboard' && i.id === evt.code)); //按住一个键时，会触发多次keydown事件
-	else hitManager.activate('keyboard', evt.code, NaN, NaN);
-}, false);
-self.addEventListener('keyup', function(evt) {
-	if (document.activeElement.classList.value === 'input') return;
-	if (btnPlay.value !== '停止') return;
-	evt.preventDefault();
-	if (evt.key !== 'Shift') hitManager.deactivate('keyboard', evt.code);
-}, false);
+interact.setKeyboardEvent({
+	keydownCallback(evt) {
+		if (btnPlay.value !== '停止') return;
+		if (evt.key === 'Shift') btnPause.click();
+		else if (hitManager.list.find(i => i.type === 'keyboard' && i.id === evt.code)); //按住一个键时，会触发多次keydown事件
+		else hitManager.activate('keyboard', evt.code, NaN, NaN);
+	},
+	keyupCallback(evt) {
+		if (btnPlay.value !== '停止') return;
+		if (evt.key !== 'Shift') hitManager.deactivate('keyboard', evt.code);
+	}
+});
 self.addEventListener('blur', () => hitManager.clear('keyboard'));
 //适配移动设备
-const passive = { passive: false }; //warning
-canvas.addEventListener('touchstart', function(evt) {
-	evt.preventDefault();
-	for (const i of evt.changedTouches) {
-		const { x, y } = getPos(i);
-		hitManager.activate('touch', i.identifier, x, y);
-		specialClick.qwq(x, y);
-	}
-}, passive);
-canvas.addEventListener('touchmove', function(evt) {
-	evt.preventDefault();
-	for (const i of evt.changedTouches) {
-		const { x, y } = getPos(i);
-		hitManager.moving('touch', i.identifier, x, y);
-	}
-}, passive);
-canvas.addEventListener('touchend', function(evt) {
-	evt.preventDefault();
-	for (const i of evt.changedTouches) {
-		hitManager.deactivate('touch', i.identifier);
-	}
-});
-canvas.addEventListener('touchcancel', function(evt) {
-	evt.preventDefault();
-	// if (!isPaused) btnPause.click();
-	for (const i of evt.changedTouches) {
-		hitManager.deactivate('touch', i.identifier);
+interact.setTouchEvent({
+	touchstartCallback(evt) {
+		for (const i of evt.changedTouches) {
+			const { x, y } = getPos(i);
+			hitManager.activate('touch', i.identifier, x, y);
+			specialClick.qwq(x, y);
+		}
+	},
+	touchmoveCallback(evt) {
+		for (const i of evt.changedTouches) {
+			const { x, y } = getPos(i);
+			hitManager.moving('touch', i.identifier, x, y);
+		}
+	},
+	touchendCallback(evt) {
+		for (const i of evt.changedTouches) {
+			hitManager.deactivate('touch', i.identifier);
+		}
+	},
+	touchcancelCallback(evt) {
+		// if (!isPaused) btnPause.click();
+		for (const i of evt.changedTouches) {
+			hitManager.deactivate('touch', i.identifier);
+		}
 	}
 });
 /** @param {MouseEvent|Touch} obj */
@@ -896,7 +918,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	msgHandler.sendMessage('初始化...');
 	if (await checkSupport()) return;
 	const res0 = {};
-	await fetch(atob('Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24')).then(i => i.json()).then(i => {
+	await fetch(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).then(i => i.json()).then(i => {
 		for (const j in i.image || {}) res0[j] = i.image[j];
 		for (const j in i.audio || {}) res0[j] = i.audio[j];
 	});
@@ -908,24 +930,12 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 			if (ext && ext[0] === 'm') {
 				const data = decode(img, Number(ext.slice(1))).result;
 				res[name] = await audio.decode(data);
-
-				function decode(img, clip = 0) {
-					const canvas = document.createElement('canvas');
-					canvas.width = img.width - clip * 2;
-					canvas.height = img.height - clip * 2;
-					const ctx = canvas.getContext('2d');
-					ctx.drawImage(img, -clip, -clip);
-					const id = ctx.getImageData(0, 0, canvas.width, canvas.width);
-					const ab = new Uint8Array(id.data.length / 4 * 3);
-					for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
-					const size = new DataView(ab.buffer, 0, 4).getUint32(0);
-					return { result: ab.buffer.slice(4, size + 4) };
-				}
 			} else {
 				res[name] = await createImageBitmap(img, 0, 0, img.width, img.height /* , { imageOrientation: 'flipY' } */ );
 			}
 			msgHandler.sendMessage(`加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`);
-		}).catch(() => {
+		}).catch(err => {
+			console.error(err);
 			msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url,location)}`, true);
 		}).finally(resolve);
 	})));
@@ -953,6 +963,19 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	$('uploader').classList.remove('disabled');
 	$('select').classList.remove('disabled');
 	btnPause.classList.add('disabled');
+
+	function decode(img, clip = 0) {
+		const canvas = document.createElement('canvas');
+		canvas.width = img.width - clip * 2;
+		canvas.height = img.height - clip * 2;
+		const ctx = canvas.getContext('2d');
+		ctx.drawImage(img, -clip, -clip);
+		const id = ctx.getImageData(0, 0, canvas.width, canvas.width);
+		const ab = new Uint8Array(id.data.length / 4 * 3);
+		for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
+		const size = new DataView(ab.buffer, 0, 4).getUint32(0);
+		return { result: ab.buffer.slice(4, size + 4) };
+	}
 });
 //必要组件
 let stopDrawing;
@@ -1774,3 +1797,4 @@ function rgba2hex(...rgba) {
 //debug
 self.app = app;
 self.res = res;
+self.audio = audio;
