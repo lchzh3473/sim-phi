@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import InterAct from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b17'], 1611795955, 1675417462];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b18'], 1611795955, 1675547193];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -506,7 +506,7 @@ class JudgeEvent {
 		this.type = type | 0; //1-Tap,2-Hold/Drag,3-Move
 		this.judged = false; //是否被判定
 		this.event = event; //flick专用回调
-		this.blockTime = Infinity; //被drag/flick阻挡的时间
+		this.preventBad = false; //是否阻止判定为Bad
 	}
 }
 /**
@@ -582,14 +582,17 @@ const judgeManager = {
 				stat.addCombo(2, note.type);
 				note.scored = true;
 			} else if (note.type === 2) { //Drag音符
+				if (deltaTime > 0) {
+					for (const judgeEvent of list) {
+						if (judgeEvent.type !== 1) continue; //跳过非Tap判定
+						if (getJudgeOffset(judgeEvent, note) > width) continue;
+						judgeEvent.preventBad = true;
+					}
+				}
 				if (note.status !== 4) {
 					for (const judgeEvent of list) {
-						if (judgeEvent.type === 3) continue; //跳过Move判定
+						if (judgeEvent.type !== 2) continue; //跳过非Drag判定
 						if (getJudgeOffset(judgeEvent, note) > width) continue;
-						if (judgeEvent.type === 1) {
-							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
-							continue;
-						}
 						// console.log('Perfect', i.name);
 						note.status = 4;
 						break;
@@ -599,26 +602,19 @@ const judgeManager = {
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 2);
 					note.scored = true;
-				} else { //eat sound
-					for (const judgeEvent of list) {
-						if (judgeEvent.type === 3) continue; //跳过Move判定
-						if (getJudgeOffset(judgeEvent, note) > width) continue;
-						if (judgeEvent.type === 1) {
-							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
-							continue;
-						}
-					}
 				}
 			} else if (note.type === 4) { //Flick音符
+				if (deltaTime > 0) {
+					for (const judgeEvent of list) {
+						if (judgeEvent.type !== 1) continue; //跳过非Tap判定
+						if (getJudgeOffset(judgeEvent, note) > width) continue;
+						judgeEvent.preventBad = true;
+					}
+				}
 				if (note.status !== 4) {
 					for (const judgeEvent of list) {
-						if (note.status === 4) break;
-						if (judgeEvent.type === 2) continue; //跳过Hold判定
+						if (judgeEvent.type !== 3) continue; //跳过非Move判定
 						if (getJudgeOffset(judgeEvent, note) > width) continue;
-						if (judgeEvent.type === 1) {
-							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
-							continue;
-						}
 						let distance = getJudgeDistance(judgeEvent, note);
 						let noteJudge = note;
 						let nearcomp = false;
@@ -648,15 +644,6 @@ const judgeManager = {
 					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 4);
 					note.scored = true;
-				} else { //eat sound
-					for (const judgeEvent of list) {
-						if (judgeEvent.type === 3) continue; //跳过Move判定
-						if (getJudgeOffset(judgeEvent, note) > width) continue;
-						if (judgeEvent.type === 1) {
-							if (deltaTime > 0) judgeEvent.blockTime = note.realTime; //阻挡其后的Tap判定
-							continue;
-						}
-					}
 				}
 			} else { //Hold音符
 				if (note.type === 3 && note.holdTapTime) { //是否触发头判
@@ -683,7 +670,6 @@ const judgeManager = {
 						continue;
 					}
 					if (judgeEvent.type !== 1) continue; //跳过非Tap判定
-					if (judgeEvent.blockTime < note.realTime) continue; //跳过被阻挡的Tap判定
 					if (judgeEvent.judged) continue; //跳过已触发的判定
 					if (getJudgeOffset(judgeEvent, note) > width) continue;
 					let deltaTime2 = deltaTime;
@@ -706,6 +692,7 @@ const judgeManager = {
 						}
 					}
 					if (deltaTime2 > 0.16) {
+						if (judgeEvent.preventBad) continue;
 						noteJudge.status = 6; //console.log('Bad', i.name);
 						noteJudge.badtime = performance.now();
 					} else {
@@ -929,6 +916,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 			const img = await createImageBitmap(blob);
 			if (ext && ext[0] === 'm') {
 				const data = decode(img, Number(ext.slice(1))).result;
+				// 小米浏览器出现问题：decode出来的数据部分被有损压缩导致资源加载失败
 				res[name] = await audio.decode(data);
 			} else {
 				res[name] = await createImageBitmap(img, 0, 0, img.width, img.height /* , { imageOrientation: 'flipY' } */ );
