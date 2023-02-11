@@ -187,6 +187,7 @@ class Renderer {
 		this.bgImage = null;
 		this.bgImageBlur = null;
 		this.bgMusic = null;
+		this.bgVideo = null;
 		this.lines = [];
 		this.notes = [];
 		this.taps = [];
@@ -268,11 +269,14 @@ class Renderer {
 		this.reverseholds.length = 0;
 		this.tapholds.length = 0;
 		const chartNew = new Chart(chart);
+		let maxTime = 0;
 		//添加realTime
 		const addRealTime = (events, bpm) => {
 			for (const i of events) {
 				i.startRealTime = i.startTime / bpm * 1.875;
 				i.endRealTime = i.endTime / bpm * 1.875;
+				if (i.startTime > 1 - 1e6 && i.startRealTime > maxTime) maxTime = i.startRealTime;
+				if (i.endTime < 1e9 && i.endRealTime > maxTime) maxTime = i.endRealTime;
 			}
 		}
 		//向Renderer添加Note
@@ -348,6 +352,7 @@ class Renderer {
 			}
 		}
 		this.chart = chartNew;
+		console.log(maxTime);
 	}
 }
 class HitEvent {

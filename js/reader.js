@@ -92,9 +92,23 @@ export function readZip(result, {
 		}
 		return new Promise(() => { //binary
 			throw new Error('Just make it a promise');
+		}).catch(async () => { //video
+			const videoElement = document.createElement('video');
+			videoElement.src = URL.createObjectURL(new Blob([i.buffer]));
+			videoElement.preload = 'metadata';
+			await new Promise((resolve, reject) => {
+				videoElement.onloadedmetadata = resolve;
+				videoElement.onerror = reject;
+			});
+			const { videoWidth: width, videoHeight: height } = videoElement;
+			const data = {
+				audio: await createAudioBuffer(i.buffer.slice()),
+				video: width && height ? videoElement : null
+			}
+			return { type: 'media', name: i.name, data };
 		}).catch(async () => { //audio
-			const audioData = await createAudioBuffer(i.buffer.slice());
-			return { type: 'audio', name: i.name, data: audioData };
+			const data = { audio: await createAudioBuffer(i.buffer.slice()), video: null };
+			return { type: 'media', name: i.name, data };
 		}).catch(async () => { //image
 			const data = new Blob([i.buffer]);
 			const imageData = await createImageBitmap(data);

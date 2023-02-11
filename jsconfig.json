@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"module": "ESNext",
+		"module": "CommonJS",
 		"target": "ESNext",
 		"baseUrl": ".",
 		"paths": {
@@ -15,6 +15,7 @@
 	"include": [
 		"js/*",
 		"utils/*",
+		"worker/*",
 		"./script.js"
 	],
 	"exclude": [
