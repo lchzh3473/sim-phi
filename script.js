@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import InterAct from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b20'], 1611795955, 1676259656];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b21'], 1611795955, 1676689251];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -1161,8 +1161,7 @@ function loop() {
 	ctx.fillStyle = '#ccc';
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = 'right';
-	ctx.textBaseline = 'middle';
-	ctx.fillText(`Phi\x67ros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.2);
+	ctx.fillText(`Phi\x67ros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
 	stopDrawing = requestAnimationFrame(loop); //回调更新动画
 }
 
@@ -1310,10 +1309,9 @@ function qwqdraw1(now) {
 		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
 		ctxos.font = `bold ${noteScaleRatio*(256+128* (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Custom,Noto Sans SC`;
 		ctxos.textAlign = 'center';
-		ctxos.textBaseline = 'middle';
 		ctxos.fillStyle = i.color;
 		ctxos.globalAlpha = 1 - tick; //不透明度
-		ctxos.fillText(i.text, 0, -noteScaleRatio * 192);
+		ctxos.fillText(i.text, 0, -noteScaleRatio * 128);
 	};
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	ctxos.globalCompositeOperation = 'destination-over'; //由后往前绘制
@@ -1326,13 +1324,12 @@ function qwqdraw1(now) {
 		if (showPoint.checked) { //绘制定位点
 			ctxos.font = `${lineScale}px Custom,Noto Sans SC`;
 			ctxos.textAlign = 'center';
-			ctxos.textBaseline = 'bottom';
 			for (const i of app.notes) {
 				if (!i.visible) continue;
 				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
 				ctxos.fillStyle = 'cyan';
 				ctxos.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
-				ctxos.fillText(i.name, 0, -lineScale * 0.1);
+				ctxos.fillText(i.name, 0, -lineScale * 0.3);
 				ctxos.globalAlpha = 1;
 				ctxos.fillStyle = 'lime';
 				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
@@ -1341,7 +1338,7 @@ function qwqdraw1(now) {
 				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
 				ctxos.fillStyle = 'yellow';
 				ctxos.globalAlpha = (i.alpha + 0.5) / 1.5;
-				ctxos.fillText(i.lineId, 0, -lineScale * 0.1);
+				ctxos.fillText(i.lineId, 0, -lineScale * 0.3);
 				ctxos.globalAlpha = 1;
 				ctxos.fillStyle = 'violet';
 				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
@@ -1394,25 +1391,23 @@ function qwqdraw1(now) {
 		const charter = `Level designed by ${inputCharter.value || inputCharter.placeholder}`;
 		ctxos.textAlign = 'center';
 		//曲名
-		ctxos.textBaseline = 'alphabetic';
 		ctxos.font = `${lineScale * 1.1}px Custom,Noto Sans SC`;
 		const dxsnm = ctxos.measureText(name).width;
 		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
 		ctxos.fillText(name, app.wlen, app.hlen * 0.75);
 		//曲师、曲绘和谱师
-		ctxos.textBaseline = 'top';
 		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
 		const dxa = ctxos.measureText(artist).width;
 		if (dxa > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxa*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(artist, app.wlen, app.hlen * 0.75 + lineScale * 0.85);
+		ctxos.fillText(artist, app.wlen, app.hlen * 0.75 + lineScale * 1.25);
 		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
 		const dxi = ctxos.measureText(illustrator).width;
 		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxi*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(illustrator, app.wlen, app.hlen * 1.25 + lineScale * 0.15);
+		ctxos.fillText(illustrator, app.wlen, app.hlen * 1.25 + lineScale * 0.55);
 		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
 		const dxc = ctxos.measureText(charter).width;
 		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxc*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(charter, app.wlen, app.hlen * 1.25 + lineScale * 1.0);
+		ctxos.fillText(charter, app.wlen, app.hlen * 1.25 + lineScale * 1.4);
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(1, 0, 0, 1, app.wlen, app.hlen);
@@ -1424,7 +1419,6 @@ function qwqdraw1(now) {
 	//绘制分数和combo以及暂停按钮
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
-	ctxos.textBaseline = 'alphabetic';
 	ctxos.font = `${lineScale * 0.95}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'right';
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
@@ -1443,7 +1437,6 @@ function qwqdraw1(now) {
 	//绘制曲名和等级
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween.easeOutSine(qwqIn.second * 1.5)) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
-	ctxos.textBaseline = 'alphabetic';
 	ctxos.textAlign = 'right';
 	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
 	const dxlvl = ctxos.measureText(levelText).width;
@@ -1458,25 +1451,22 @@ function qwqdraw1(now) {
 	//绘制时间和帧率以及note打击数
 	if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
 	else ctxos.globalAlpha = 1 - tween.easeOutSine(qwqOut.second * 1.5);
-	ctxos.textBaseline = 'middle';
 	ctxos.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'left';
-	ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.5);
+	ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${scfg()}`, lineScale * 0.05, lineScale * 0.6);
 	ctxos.textAlign = 'right';
-	ctxos.fillText(frameTimer.fpsStr, canvasos.width - lineScale * 0.05, lineScale * 0.5);
+	ctxos.fillText(frameTimer.fpsStr, canvasos.width - lineScale * 0.05, lineScale * 0.6);
 	if (showStat.checked) {
-		ctxos.textBaseline = 'middle';
 		ctxos.textAlign = 'right';
 		[stat.noteRank[6], stat.noteRank[7], stat.noteRank[5], stat.noteRank[4], stat.noteRank[1], stat.noteRank[3], stat.noteRank[2]].forEach((val, idx) => {
 			const comboColor = ['#fe7b93', '#0ac3ff', 'lime', '#f0ed69', 'lime', '#0ac3ff', '#999'];
 			ctxos.fillStyle = comboColor[idx];
-			ctxos.fillText(val, canvasos.width - lineScale * 0.05, canvasos.height / 2 + lineScale * (idx - 3) * 0.5);
+			ctxos.fillText(val, canvasos.width - lineScale * 0.05, canvasos.height / 2 + lineScale * (idx - 2.8) * 0.5);
 		});
 		ctxos.fillStyle = '#fff';
 		ctxos.textAlign = 'left';
-		ctxos.fillText(`DSP:  ${stat.curDispStr}`, lineScale * 0.05, canvasos.height / 2 - lineScale * 0.25);
-		ctxos.fillText(`AVG:  ${stat.avgDispStr}`, lineScale * 0.05, canvasos.height / 2 + lineScale * 0.25);
-		ctxos.textBaseline = 'alphabetic';
+		ctxos.fillText(`DSP:  ${stat.curDispStr}`, lineScale * 0.05, canvasos.height / 2 - lineScale * 0.15);
+		ctxos.fillText(`AVG:  ${stat.avgDispStr}`, lineScale * 0.05, canvasos.height / 2 + lineScale * 0.35);
 		ctxos.textAlign = 'center';
 		stat.combos.forEach((val, idx) => {
 			const comboColor = ['#fff', '#0ac3ff', '#f0ed69', '#a0e9fd', '#fe4365'];
@@ -1553,16 +1543,15 @@ function qwqdraw3(statData) {
 	ctxos.drawImage(res['LevelOver5'], 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
 	//曲名和等级
 	ctxos.fillStyle = '#fff';
-	ctxos.textBaseline = 'middle';
 	ctxos.textAlign = 'left';
 	ctxos.font = '80px Custom,Noto Sans SC';
 	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
 	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Custom,Noto Sans SC`;
-	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 145);
+	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 160);
 	ctxos.font = '30px Custom,Noto Sans SC';
 	const dxlvl = ctxos.measureText(levelText).width;
 	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Custom,Noto Sans SC`;
-	ctxos.fillText(levelText, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 208);
+	ctxos.fillText(levelText, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 212);
 	ctxos.font = '30px Custom,Noto Sans SC';
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
@@ -1573,35 +1562,35 @@ function qwqdraw3(statData) {
 	//各种数据
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
-	ctxos.fillText(statData.newBestStr, 898, 428);
+	ctxos.fillText(statData.newBestStr, 898, 433);
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'center';
-	ctxos.fillText(statData.scoreBest, 1180, 428);
+	ctxos.fillText(statData.scoreBest, 1180, 433);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = 'right';
-	ctxos.fillText(statData.scoreDelta, 1414, 428);
+	ctxos.fillText(statData.scoreDelta, 1414, 433);
 	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
 	ctxos.textAlign = 'left';
-	ctxos.fillText(stat.accStr, 352, 545);
-	ctxos.fillText(stat.maxcombo, 1528, 545);
+	ctxos.fillText(stat.accStr, 352, 550);
+	ctxos.fillText(stat.maxcombo, 1528, 550);
 	ctxos.fillStyle = statData.textAboveColor;
-	ctxos.fillText(app.speed === 1 ? '' : statData.textAboveStr.replace('{SPEED}', app.speed.toFixed(2)), 383 + Math.min(dxlvl, 750), 208);
+	ctxos.fillText(app.speed === 1 ? '' : statData.textAboveStr.replace('{SPEED}', app.speed.toFixed(2)), 383 + Math.min(dxlvl, 750), 212);
 	ctxos.fillStyle = statData.textBelowColor;
-	ctxos.fillText(statData.textBelowStr, 1355, 590);
+	ctxos.fillText(statData.textBelowStr, 1355, 595);
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'center';
 	ctxos.font = '86px Custom,Noto Sans SC';
 	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
-	ctxos.fillText(stat.scoreStr, 1075, 554);
+	ctxos.fillText(stat.scoreStr, 1075, 569);
 	ctxos.font = '26px Custom,Noto Sans SC';
 	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
-	ctxos.fillText(stat.perfect, 891, 645);
+	ctxos.fillText(stat.perfect, 891, 650);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
-	ctxos.fillText(stat.good, 1043, 645);
+	ctxos.fillText(stat.good, 1043, 650);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
-	ctxos.fillText(stat.noteRank[6], 1196, 645);
+	ctxos.fillText(stat.noteRank[6], 1196, 650);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
-	ctxos.fillText(stat.noteRank[2], 1349, 645);
+	ctxos.fillText(stat.noteRank[2], 1349, 650);
 	ctxos.font = '22px Custom,Noto Sans SC';
 	const qwq4 = range((qwq[3] > 0 ? qwqEnd.second - qwq[3] : 0.2 - qwqEnd.second - qwq[3]) * 5.00);
 	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
@@ -1612,11 +1601,11 @@ function qwqdraw3(statData) {
 	ctxos.fill(new Path2D('M993,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z'));
 	ctxos.fillStyle = '#fff';
 	ctxos.globalAlpha = range((qwqEnd.second - 0.97) * 2.50) * qwq4;
-	ctxos.fillText('Early: ' + stat.noteRank[5], 891, 755);
-	ctxos.fillText('Late: ' + stat.noteRank[1], 891, 788);
+	ctxos.fillText('Early: ' + stat.noteRank[5], 891, 759);
+	ctxos.fillText('Late: ' + stat.noteRank[1], 891, 792);
 	ctxos.globalAlpha = range((qwqEnd.second - 1.17) * 2.50) * qwq4;
-	ctxos.fillText('Early: ' + stat.noteRank[7], 1043, 755);
-	ctxos.fillText('Late: ' + stat.noteRank[3], 1043, 788);
+	ctxos.fillText('Early: ' + stat.noteRank[7], 1043, 759);
+	ctxos.fillText('Late: ' + stat.noteRank[3], 1043, 792);
 	ctxos.resetTransform();
 	ctxos.globalCompositeOperation = 'destination-over';
 	ctxos.globalAlpha = 1;
