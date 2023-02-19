@@ -143,7 +143,7 @@ class Renderer {
 		this.stage = stage;
 		this.canvas = document.createElement('canvas');
 		this.ctx = this.canvas.getContext('2d'); //游戏界面(alpha:false会出现兼容问题)
-		this.canvasos = document.createElement('canvas'); //绘制游戏主界面
+		this.canvasos = self.OffscreenCanvas ? new OffscreenCanvas(0, 0) : document.createElement('canvas'); //绘制游戏主界面
 		this.ctxos = this.canvasos.getContext('2d');
 		this.stage.appendChild(this.canvas);
 		this.canvas.style.cssText = ';position:absolute;top:0px;left:0px;right:0px;bottom:0px';

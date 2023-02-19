@@ -330,7 +330,7 @@ function parse(pec, filename) {
 	return { data: JSON.stringify(result), messages: warnings };
 }
 /**
- * @typedef {Object} LineEvent
+ * @typedef {object} LineEvent
  * @property {number} startTime
  * @property {number} endTime
  * @property {number} start

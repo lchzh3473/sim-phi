@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import InterAct from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b21'], 1611795955, 1676689251];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b22'], 1611795955, 1676821835];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -603,7 +603,7 @@ const judgeManager = {
 					}
 				} else if (deltaTime < 0) {
 					audio.play(res['HitSong1'], { gainrate: app.soundVolume });
-					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
+					hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 2);
 					note.scored = true;
 				}
@@ -645,16 +645,16 @@ const judgeManager = {
 					}
 				} else if (deltaTime < 0) {
 					audio.play(res['HitSong2'], { gainrate: app.soundVolume });
-					hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
+					hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 4);
 					note.scored = true;
 				}
 			} else { //Hold音符
 				if (note.type === 3 && note.holdTapTime) { //是否触发头判
 					if ((performance.now() - note.holdTapTime) * note.holdTime >= 1.6e4 * note.realHoldTime) { //间隔时间与bpm成反比
-						if (note.holdStatus % 4 === 0) hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
-						else if (note.holdStatus % 4 === 1) hitEvents1.push(HitEvent1.perfect(note.projectX, note.projectY));
-						else if (note.holdStatus % 4 === 3) hitEvents1.push(HitEvent1.good(note.projectX, note.projectY));
+						if (note.holdStatus % 4 === 0) hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
+						else if (note.holdStatus % 4 === 1) hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
+						else if (note.holdStatus % 4 === 3) hitEvents1.add(HitEvent1.good(note.projectX, note.projectY));
 						note.holdTapTime = performance.now();
 					}
 					if (deltaTime + note.realHoldTime < 0.2) {
@@ -704,23 +704,23 @@ const judgeManager = {
 						audio.play(res['HitSong0'], { gainrate: app.soundVolume });
 						if (deltaTime2 > 0.08) {
 							noteJudge.holdStatus = 7; //console.log('Good(Early)', i.name);
-							hitEvents1.push(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.push(HitEvent2.early(noteJudge.projectX, noteJudge.projectY));
+							hitEvents1.add(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));
+							hitEvents2.add(HitEvent2.early(noteJudge.projectX, noteJudge.projectY));
 						} else if (deltaTime2 > 0.04) {
 							noteJudge.holdStatus = 5; //console.log('Perfect(Early)', i.name);
-							hitEvents1.push(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.push(HitEvent2.early(noteJudge.projectX, noteJudge.projectY));
+							hitEvents1.add(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
+							hitEvents2.add(HitEvent2.early(noteJudge.projectX, noteJudge.projectY));
 						} else if (deltaTime2 > -0.04 || noteJudge.frameCount < 1) {
 							noteJudge.holdStatus = 4; //console.log('Perfect(Max)', i.name);
-							hitEvents1.push(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
+							hitEvents1.add(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
 						} else if (deltaTime2 > -0.08 || noteJudge.frameCount < 2) {
 							noteJudge.holdStatus = 1; //console.log('Perfect(Late)', i.name);
-							hitEvents1.push(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.push(HitEvent2.late(noteJudge.projectX, noteJudge.projectY));
+							hitEvents1.add(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
+							hitEvents2.add(HitEvent2.late(noteJudge.projectX, noteJudge.projectY));
 						} else {
 							noteJudge.holdStatus = 3; //console.log('Good(Late)', i.name);
-							hitEvents1.push(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.push(HitEvent2.late(noteJudge.projectX, noteJudge.projectY));
+							hitEvents1.add(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));
+							hitEvents2.add(HitEvent2.late(noteJudge.projectX, noteJudge.projectY));
 						}
 						if (noteJudge.type === 1) noteJudge.status = noteJudge.holdStatus;
 					}
@@ -745,27 +745,67 @@ const judgeManager = {
 	}
 };
 class HitEvents extends Array {
+	constructor({ updateCallback, iterateCallback } = {}) {
+		super();
+		this.update = this.defilter.bind(this, updateCallback);
+		this.animate = this.iterate.bind(this, iterateCallback);
+	}
 	/**	@param {(value)=>boolean} predicate */
 	defilter(predicate) {
 		let i = this.length;
-		while (i--) {
-			if (predicate(this[i])) this.splice(i, 1);
-		}
+		while (i--) predicate(this[i]) && this.splice(i, 1);
 		return this;
 	}
-	anim(func) {
-		for (const i of this) func(i);
+	/**	@param {(item)=>any} callback */
+	iterate(callback) {
+		for (const i of this) callback(i); //qwq
 	}
-	add(v) {
-		this[this.length] = v;
+	add(value) {
+		this[this.length] = value;
 	}
 	clear() {
 		this.length = 0;
 	}
 }
-const hitEvents0 = new HitEvents(); //存放点击特效
-const hitEvents1 = new HitEvents(); //存放点击特效
-const hitEvents2 = new HitEvents(); //存放点击特效
+const hitEvents0 = new HitEvents({ //存放点击特效
+	updateCallback: i => ++i.time > 0,
+	iterateCallback: i => {
+		ctxos.globalAlpha = 0.85;
+		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
+		ctxos.fillStyle = i.color;
+		ctxos.beginPath();
+		ctxos.arc(0, 0, app.lineScale * 0.5, 0, 2 * Math.PI);
+		ctxos.fill();
+	}
+});
+const hitEvents1 = new HitEvents({ //存放点击特效
+	updateCallback: i => nowTime_ms >= i.time + i.duration,
+	iterateCallback: i => {
+		const tick = (nowTime_ms - i.time) / i.duration;
+		ctxos.globalAlpha = 1;
+		ctxos.setTransform(app.noteScaleRatio * 6, 0, 0, app.noteScaleRatio * 6, i.offsetX, i.offsetY); //缩放
+		ctxos.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //停留约0.5秒
+		ctxos.fillStyle = i.color;
+		ctxos.globalAlpha = 1 - tick; //不透明度
+		const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //方块大小
+		for (const j of i.rand) {
+			const ds = j[0] * (9 * tick / (8 * tick + 1)); //打击点距离
+			ctxos.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
+		}
+	}
+});
+const hitEvents2 = new HitEvents({ //存放点击特效
+	updateCallback: i => nowTime_ms >= i.time + i.duration,
+	iterateCallback: i => {
+		const tick = (nowTime_ms - i.time) / i.duration;
+		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
+		ctxos.font = `bold ${app.noteScaleRatio * (256 + 128 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Custom,Noto Sans SC`;
+		ctxos.textAlign = 'center';
+		ctxos.fillStyle = i.color;
+		ctxos.globalAlpha = 1 - tick; //不透明度
+		ctxos.fillText(i.text, 0, -app.noteScaleRatio * 128);
+	}
+});
 class HitEvent0 {
 	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX);
@@ -993,12 +1033,13 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	}
 });
 //必要组件
-let stopDrawing;
-let curTime = 0;
-let curTimestamp = 0;
-let timeBgm = 0;
-let timeChart = 0;
-let duration = 0;
+let stopDrawing = 0;
+let nowTime_ms = 0; //当前绝对时间(ms)
+let curTime = 0; //最近一次暂停的音乐时间(s)
+let curTime_ms = 0; //最近一次播放的绝对时间(ms)
+let timeBgm = 0; //当前音乐时间(s)
+let timeChart = 0; //当前谱面时间(s)
+let duration = 0; //音乐时长(s)
 let isInEnd = false; //开头过渡动画
 let isOutStart = false; //结尾过渡动画
 let isOutEnd = false; //临时变量
@@ -1089,7 +1130,7 @@ btnPlay.addEventListener('click', async function() {
 		qwqOut.reset();
 		qwqEnd.reset();
 		curTime = 0;
-		curTimestamp = 0;
+		curTime_ms = 0;
 		duration = 0;
 		this.value = '播放';
 	}
@@ -1124,7 +1165,7 @@ inputOffset.addEventListener('input', function() {
 function playBgm(data, offset) {
 	isPaused = false;
 	if (!offset) offset = 0;
-	curTimestamp = performance.now();
+	curTime_ms = performance.now();
 	audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: 1 });
 }
 /** @param {HTMLVideoElement} data */
@@ -1140,12 +1181,12 @@ let fucktemp2 = false;
 //作图
 function loop() {
 	const { lineScale } = app;
-	const now = performance.now();
+	nowTime_ms = performance.now();
 	app.resizeCanvas();
 	//计算时间
 	if (qwqOut.second < 0.67) {
-		calcqwq(now);
-		qwqdraw1(now);
+		calcqwq();
+		qwqdraw1();
 	} else if (!fucktemp) qwqdraw2();
 	if (fucktemp2) qwqdraw3(fucktemp2);
 	ctx.globalAlpha = 1;
@@ -1165,14 +1206,14 @@ function loop() {
 	stopDrawing = requestAnimationFrame(loop); //回调更新动画
 }
 
-function calcqwq(now) {
+function calcqwq() {
 	frameTimer.addTick(); //计算fps
 	if (!isInEnd && qwqIn.second >= 3) {
 		isInEnd = true;
 		playBgm(app.bgMusic);
 		if (app.bgVideo) playVideo(app.bgVideo);
 	}
-	if (!isPaused && isInEnd && !isOutStart) timeBgm = (now - curTimestamp) / 1e3 + curTime;
+	if (!isPaused && isInEnd && !isOutStart) timeBgm = curTime + (nowTime_ms - curTime_ms) / 1e3;
 	if (timeBgm >= duration) isOutStart = true;
 	if (showTransition.checked && isOutStart && !isOutEnd) {
 		isOutEnd = true;
@@ -1253,14 +1294,14 @@ function calcqwq(now) {
 		}
 	}
 	//更新打击特效和触摸点动画
-	hitEvents0.defilter(i => i.time++ > 0);
-	hitEvents1.defilter(i => now >= i.time + i.duration);
-	hitEvents2.defilter(i => now >= i.time + i.duration);
+	hitEvents0.update();
+	hitEvents1.update();
+	hitEvents2.update();
 	for (const i of hitManager.list) {
 		if (i.type === 'keyboard') continue;
-		if (!i.isTapped) hitEvents0.push(HitEvent0.tap(i.offsetX, i.offsetY));
-		else if (i.isMoving) hitEvents0.push(HitEvent0.move(i.offsetX, i.offsetY)); //qwq
-		else if (i.isActive) hitEvents0.push(HitEvent0.hold(i.offsetX, i.offsetY));
+		if (!i.isTapped) hitEvents0.add(HitEvent0.tap(i.offsetX, i.offsetY));
+		else if (i.isMoving) hitEvents0.add(HitEvent0.move(i.offsetX, i.offsetY)); //qwq
+		else if (i.isActive) hitEvents0.add(HitEvent0.hold(i.offsetX, i.offsetY));
 	}
 	//触发判定和播放打击音效
 	if (isInEnd) {
@@ -1280,46 +1321,15 @@ function calcqwq(now) {
 	}
 }
 
-function qwqdraw1(now) {
+function qwqdraw1() {
 	const { lineScale, noteScaleRatio } = app;
-	const anim0 = i => { //绘制打击特效0
-		ctxos.globalAlpha = 0.85;
-		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
-		ctxos.fillStyle = i.color;
-		ctxos.beginPath();
-		ctxos.arc(0, 0, lineScale * 0.5, 0, 2 * Math.PI);
-		ctxos.fill();
-		i.time++;
-	};
-	const anim1 = i => { //绘制打击特效1
-		const tick = (now - i.time) / i.duration;
-		ctxos.globalAlpha = 1;
-		ctxos.setTransform(noteScaleRatio * 6, 0, 0, noteScaleRatio * 6, i.offsetX, i.offsetY); //缩放
-		ctxos.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //停留约0.5秒
-		ctxos.fillStyle = i.color;
-		ctxos.globalAlpha = 1 - tick; //不透明度
-		const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //方块大小
-		for (const j of i.rand) {
-			const ds = j[0] * (9 * tick / (8 * tick + 1)); //打击点距离
-			ctxos.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
-		}
-	};
-	const anim2 = i => { //绘制打击特效2
-		const tick = (now - i.time) / i.duration;
-		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
-		ctxos.font = `bold ${noteScaleRatio*(256+128* (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988))}px Custom,Noto Sans SC`;
-		ctxos.textAlign = 'center';
-		ctxos.fillStyle = i.color;
-		ctxos.globalAlpha = 1 - tick; //不透明度
-		ctxos.fillText(i.text, 0, -noteScaleRatio * 128);
-	};
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	ctxos.globalCompositeOperation = 'destination-over'; //由后往前绘制
-	if ($('showCE2').checked) hitEvents2.anim(anim2);
+	if ($('showCE2').checked) hitEvents2.animate(); //绘制打击特效2
 	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
-	hitEvents1.anim(anim1, now);
+	hitEvents1.animate(); //绘制打击特效1
 	if (qwq[4]) ctxos.filter = 'none';
-	if ($('feedback').checked) hitEvents0.anim(anim0);
+	if ($('feedback').checked) hitEvents0.animate(); //绘制打击特效0
 	if (qwqIn.second >= 3 && qwqOut.second === 0) {
 		if (showPoint.checked) { //绘制定位点
 			ctxos.font = `${lineScale}px Custom,Noto Sans SC`;
@@ -1390,24 +1400,11 @@ function qwqdraw1(now) {
 		const illustrator = `Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`;
 		const charter = `Level designed by ${inputCharter.value || inputCharter.placeholder}`;
 		ctxos.textAlign = 'center';
-		//曲名
-		ctxos.font = `${lineScale * 1.1}px Custom,Noto Sans SC`;
-		const dxsnm = ctxos.measureText(name).width;
-		if (dxsnm > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*1.1/dxsnm*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(name, app.wlen, app.hlen * 0.75);
-		//曲师、曲绘和谱师
-		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
-		const dxa = ctxos.measureText(artist).width;
-		if (dxa > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxa*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(artist, app.wlen, app.hlen * 0.75 + lineScale * 1.25);
-		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
-		const dxi = ctxos.measureText(illustrator).width;
-		if (dxi > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxi*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(illustrator, app.wlen, app.hlen * 1.25 + lineScale * 0.55);
-		ctxos.font = `${lineScale * 0.55}px Custom,Noto Sans SC`;
-		const dxc = ctxos.measureText(charter).width;
-		if (dxc > canvasos.width - lineScale * 1.5) ctxos.font = `${lineScale*0.55/dxc*(canvasos.width-lineScale*1.5)}px Custom,Noto Sans SC`;
-		ctxos.fillText(charter, app.wlen, app.hlen * 1.25 + lineScale * 1.4);
+		//曲名、曲师、曲绘和谱师
+		fillTextNode(name, app.wlen, app.hlen * 0.75, lineScale * 1.1, canvasos.width - lineScale * 1.5);
+		fillTextNode(artist, app.wlen, app.hlen * 0.75 + lineScale * 1.25, lineScale * 0.55, canvasos.width - lineScale * 1.5);
+		fillTextNode(illustrator, app.wlen, app.hlen * 1.25 + lineScale * 0.55, lineScale * 0.55, canvasos.width - lineScale * 1.5);
+		fillTextNode(charter, app.wlen, app.hlen * 1.25 + lineScale * 1.4, lineScale * 0.55, canvasos.width - lineScale * 1.5);
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(1, 0, 0, 1, app.wlen, app.hlen);
@@ -1416,7 +1413,7 @@ function qwqdraw1(now) {
 		if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween.easeOutSine(6 - qwqIn.second * 2);
 		ctxos.drawImage(lineColor.checked ? res['JudgeLineMP'] : res['JudgeLine'], -imgW / 2, -imgH / 2, imgW, imgH);
 	}
-	//绘制分数和combo以及暂停按钮
+	//绘制分数和combo
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.font = `${lineScale * 0.95}px Custom,Noto Sans SC`;
@@ -1438,15 +1435,9 @@ function qwqdraw1(now) {
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween.easeOutSine(qwqIn.second * 1.5)) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textAlign = 'right';
-	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
-	const dxlvl = ctxos.measureText(levelText).width;
-	if (dxlvl > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxlvl*(app.wlen - lineScale )}px Custom,Noto Sans SC`;
-	ctxos.fillText(levelText, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66);
+	fillTextNode(levelText, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
 	ctxos.textAlign = 'left';
-	ctxos.font = `${lineScale * 0.63}px Custom,Noto Sans SC`;
-	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-	if (dxsnm > app.wlen - lineScale) ctxos.font = `${(lineScale) * 0.63/dxsnm*(app.wlen - lineScale )}px Custom,Noto Sans SC`;
-	ctxos.fillText(inputName.value || inputName.placeholder, lineScale * 0.65, canvasos.height - lineScale * 0.66);
+	fillTextNode(inputName.value || inputName.placeholder, lineScale * 0.65, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
 	ctxos.resetTransform();
 	//绘制时间和帧率以及note打击数
 	if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
@@ -1489,6 +1480,14 @@ function qwqdraw1(now) {
 			}
 		}
 	}
+}
+
+function fillTextNode(text, x, y, size, maxWidth) {
+	ctxos.font = `${size}px Custom,Noto Sans SC`;
+	const dx = ctxos.measureText(text).width;
+	if (dx > maxWidth) ctxos.font = `${size / dx * maxWidth}px Custom,Noto Sans SC`;
+	ctxos.fillText(text, x, y);
+	return dx;
 }
 
 function qwqdraw2() {
@@ -1544,14 +1543,8 @@ function qwqdraw3(statData) {
 	//曲名和等级
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'left';
-	ctxos.font = '80px Custom,Noto Sans SC';
-	const dxsnm = ctxos.measureText(inputName.value || inputName.placeholder).width;
-	if (dxsnm > 1500) ctxos.font = `${80/dxsnm*1500}px Custom,Noto Sans SC`;
-	ctxos.fillText(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 160);
-	ctxos.font = '30px Custom,Noto Sans SC';
-	const dxlvl = ctxos.measureText(levelText).width;
-	if (dxlvl > 750) ctxos.font = `${30/dxlvl*750}px Custom,Noto Sans SC`;
-	ctxos.fillText(levelText, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 212);
+	fillTextNode(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 160, 80, 1500);
+	const lw = fillTextNode(levelText, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 212, 30, 750);
 	ctxos.font = '30px Custom,Noto Sans SC';
 	//Rank图标
 	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
@@ -1574,7 +1567,7 @@ function qwqdraw3(statData) {
 	ctxos.fillText(stat.accStr, 352, 550);
 	ctxos.fillText(stat.maxcombo, 1528, 550);
 	ctxos.fillStyle = statData.textAboveColor;
-	ctxos.fillText(app.speed === 1 ? '' : statData.textAboveStr.replace('{SPEED}', app.speed.toFixed(2)), 383 + Math.min(dxlvl, 750), 212);
+	ctxos.fillText(app.speed === 1 ? '' : statData.textAboveStr.replace('{SPEED}', app.speed.toFixed(2)), 383 + Math.min(lw, 750), 212);
 	ctxos.fillStyle = statData.textBelowColor;
 	ctxos.fillText(statData.textBelowStr, 1355, 595);
 	ctxos.fillStyle = '#fff';
