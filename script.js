@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import InterAct from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b22'], 1611795955, 1676821835];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b23'], 1611795955, 1677033279];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -326,6 +326,7 @@ function adjustInfo() {
 				$('select-background-dim').value = i.BackgroundDim;
 				app.brightness = Number(i.BackgroundDim);
 			}
+			if (isFinite(i.Offset = parseFloat(i.Offset))) inputOffset.value = i.Offset;
 		}
 	}
 }
@@ -1121,7 +1122,7 @@ btnPlay.addEventListener('click', async function() {
 		for (const i of $$$('.disabled-when-playing')) i.classList.remove('disabled');
 		btnPause.classList.add('disabled');
 		//清除原有数据
-		fucktemp = false;
+		fucktemp1 = false;
 		fucktemp2 = false;
 		hitEvents0.clear();
 		hitEvents1.clear();
@@ -1176,10 +1177,29 @@ function playVideo(data, offset) {
 	data.muted = true;
 	return data.play();
 }
-let fucktemp = false;
+// class CanvasText {
+// 	constructor() {
+// 		/** @type {HTMLCanvasElement} */
+// 		this.canvas = self.OffscreenCanvas ? new OffscreenCanvas(300, 100) : document.createElement('canvas');
+// 		this.ctx = this.canvas.getContext('2d');
+// 		this.ctx.textAlign = 'center';
+// 		this.ctx.font = '30px sans-serif';
+// 		this.ctx.fillStyle = '#000';
+// 		this.ctx.strokeStyle = '#fff';
+// 		this.ctx.lineWidth = 2;
+// 	}
+// 	/** @param {string} text */
+// 	setText(text) {
+// 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+// 		this.ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
+// 		this.ctx.strokeText(text, this.canvas.width / 2, this.canvas.height / 2);
+// 	}
+// }
+let fucktemp1 = false;
 let fucktemp2 = false;
 //作图
 function loop() {
+	frameTimer.addTick(); //计算fps
 	const { lineScale } = app;
 	nowTime_ms = performance.now();
 	app.resizeCanvas();
@@ -1187,11 +1207,11 @@ function loop() {
 	if (qwqOut.second < 0.67) {
 		calcqwq();
 		qwqdraw1();
-	} else if (!fucktemp) qwqdraw2();
+	} else if (!fucktemp1) qwqdraw2();
 	if (fucktemp2) qwqdraw3(fucktemp2);
 	ctx.globalAlpha = 1;
-	if ($('imageBlur').checked) ctx.drawImage(app.bgImageBlur, ...adjustSize(app.bgImageBlur, canvas, 1.1));
-	else ctx.drawImage(app.bgImage, ...adjustSize(app.bgImage, canvas, 1.1));
+	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	ctx.drawImage(bgImage, ...adjustSize(bgImage, canvas, 1.1));
 	ctx.fillStyle = '#000';
 	ctx.globalAlpha = 0.4;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1207,7 +1227,6 @@ function loop() {
 }
 
 function calcqwq() {
-	frameTimer.addTick(); //计算fps
 	if (!isInEnd && qwqIn.second >= 3) {
 		isInEnd = true;
 		playBgm(app.bgMusic);
@@ -1219,7 +1238,7 @@ function calcqwq() {
 		isOutEnd = true;
 		qwqOut.play();
 	}
-	timeChart = Math.max(timeBgm - app.chart.offset / app.speed - (Number(inputOffset.value) / 1e3 || 0), 0);
+	timeChart = Math.max(timeBgm - (app.chart.offset + Number(inputOffset.value) / 1e3 || 0) / app.speed, 0);
 	//遍历判定线events和Note
 	for (const line of app.lines) {
 		for (const i of line.judgeLineDisappearEvents) {
@@ -1324,67 +1343,61 @@ function calcqwq() {
 function qwqdraw1() {
 	const { lineScale, noteScaleRatio } = app;
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
-	ctxos.globalCompositeOperation = 'destination-over'; //由后往前绘制
-	if ($('showCE2').checked) hitEvents2.animate(); //绘制打击特效2
-	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
-	hitEvents1.animate(); //绘制打击特效1
-	if (qwq[4]) ctxos.filter = 'none';
-	if ($('feedback').checked) hitEvents0.animate(); //绘制打击特效0
-	if (qwqIn.second >= 3 && qwqOut.second === 0) {
-		if (showPoint.checked) { //绘制定位点
-			ctxos.font = `${lineScale}px Custom,Noto Sans SC`;
-			ctxos.textAlign = 'center';
-			for (const i of app.notes) {
-				if (!i.visible) continue;
-				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
-				ctxos.fillStyle = 'cyan';
-				ctxos.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
-				ctxos.fillText(i.name, 0, -lineScale * 0.3);
-				ctxos.globalAlpha = 1;
-				ctxos.fillStyle = 'lime';
-				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
-			}
-			for (const i of app.lines) {
-				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
-				ctxos.fillStyle = 'yellow';
-				ctxos.globalAlpha = (i.alpha + 0.5) / 1.5;
-				ctxos.fillText(i.lineId, 0, -lineScale * 0.3);
-				ctxos.globalAlpha = 1;
-				ctxos.fillStyle = 'violet';
-				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
-			}
-		}
-		//绘制note
-		for (const i of app.flicks) drawFlick(i);
-		for (const i of app.taps) drawTap(i);
-		for (const i of app.drags) drawDrag(i);
-		for (const i of app.reverseholds) drawHold(i, timeChart);
-	}
 	//绘制背景
+	ctxos.globalAlpha = 1;
+	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
+	if (isInEnd && app.bgVideo) {
+		const { videoWidth: width, videoHeight: height } = app.bgVideo;
+		ctxos.drawImage(app.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
+	}
 	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
-	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1); //绘制判定线(背景前1)
+	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0, lineScale); //绘制判定线(背景后0)
 	if (qwq[4]) ctxos.filter = 'none';
 	ctxos.resetTransform();
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
-	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0); //绘制判定线(背景后0)
+	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1, lineScale); //绘制判定线(背景前1)
 	if (qwq[4]) ctxos.filter = 'none';
-	ctxos.globalAlpha = 1;
 	ctxos.resetTransform();
-	if (isInEnd && app.bgVideo) {
-		const width = app.bgVideo.videoWidth;
-		const height = app.bgVideo.videoHeight;
-		ctxos.drawImage(app.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
+	if (qwqIn.second >= 3 && qwqOut.second === 0) {
+		//绘制note
+		for (const i of app.holds) drawHold(i, timeChart);
+		for (const i of app.dragsReversed) drawDrag(i);
+		for (const i of app.tapsReversed) drawTap(i);
+		for (const i of app.flicksReversed) drawFlick(i);
+		if (showPoint.checked) { //绘制定位点
+			ctxos.font = `${lineScale}px Custom,Noto Sans SC`;
+			ctxos.textAlign = 'center';
+			for (const i of app.linesReversed) {
+				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+				ctxos.globalAlpha = 1;
+				ctxos.fillStyle = 'violet';
+				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+				ctxos.fillStyle = 'yellow';
+				ctxos.globalAlpha = (i.alpha + 0.5) / 1.5;
+				ctxos.fillText(i.lineId, 0, -lineScale * 0.3);
+			}
+			for (const i of app.notesReversed) {
+				if (!i.visible) continue;
+				ctxos.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+				ctxos.globalAlpha = 1;
+				ctxos.fillStyle = 'lime';
+				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
+				ctxos.fillStyle = 'cyan';
+				ctxos.globalAlpha = i.realTime > timeChart ? 1 : 0.5;
+				ctxos.fillText(i.name, 0, -lineScale * 0.3);
+			}
+		}
 	}
-	if ($('imageBlur').checked) {
-		ctxos.drawImage(app.bgImageBlur, ...adjustSize(app.bgImageBlur, canvasos, 1));
-	} else {
-		ctxos.drawImage(app.bgImage, ...adjustSize(app.bgImage, canvasos, 1));
-	}
-	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
-	ctxos.globalCompositeOperation = 'source-over';
+	if ($('feedback').checked) hitEvents0.animate(); //绘制打击特效0
+	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
+	hitEvents1.animate(); //绘制打击特效1
+	if (qwq[4]) ctxos.filter = 'none';
+	if ($('showCE2').checked) hitEvents2.animate(); //绘制打击特效2
+	ctxos.globalAlpha = 1;
 	//绘制进度条
 	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.drawImage(res['ProgressBar'], (qwq[5] ? duration - timeBgm : timeBgm) / duration * 1920 - 1920, 0);
@@ -1465,19 +1478,19 @@ function qwqdraw1() {
 			ctxos.fillText(val, lineScale * (idx + 0.55) * 1.1, canvasos.height - lineScale * 0.1);
 		});
 	}
-	//判定线函数，undefined/0:默认,1:非,2:恒成立
-	function drawLine(bool) {
-		ctxos.globalAlpha = 1;
-		const tw = 1 - tween.easeOutSine(qwqOut.second * 1.5);
-		for (const i of app.lines) {
-			if (bool ^ i.imageD && qwqOut.second < 0.67) {
-				ctxos.globalAlpha = i.alpha;
-				ctxos.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, app.wlen + (i.offsetX - app.wlen) * tw, i.offsetY); //hiahiah
-				const imgS = (i.imageU ? lineScale * 18.75 : canvasos.height) * i.imageS / 1080;
-				const imgW = imgS * i.imageW * i.imageA;
-				const imgH = imgS * i.imageH;
-				ctxos.drawImage(i.imageL[i.imageC && lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
-			}
+}
+//判定线函数，undefined/0:默认,1:非,2:恒成立
+function drawLine(bool, lineScale) {
+	ctxos.globalAlpha = 1;
+	const tw = 1 - tween.easeOutSine(qwqOut.second * 1.5);
+	for (const i of app.linesReversed) {
+		if (bool ^ i.imageD && qwqOut.second < 0.67) {
+			ctxos.globalAlpha = i.alpha;
+			ctxos.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, app.wlen + (i.offsetX - app.wlen) * tw, i.offsetY); //hiahiah
+			const imgS = (i.imageU ? lineScale * 18.75 : canvasos.height) * i.imageS / 1080;
+			const imgW = imgS * i.imageW * i.imageA;
+			const imgH = imgS * i.imageH;
+			ctxos.drawImage(i.imageL[i.imageC && lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
 		}
 	}
 }
@@ -1491,7 +1504,7 @@ function fillTextNode(text, x, y, size, maxWidth) {
 }
 
 function qwqdraw2() {
-	fucktemp = true;
+	fucktemp1 = true;
 	btnPause.click(); //isPaused = true;
 	audio.stop();
 	cancelAnimationFrame(stopDrawing);
@@ -1499,14 +1512,14 @@ function qwqdraw2() {
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.resetTransform();
 	ctxos.globalAlpha = 1;
-	if ($('imageBlur').checked) ctxos.drawImage(app.bgImageBlur, ...adjustSize(app.bgImageBlur, canvasos, 1));
-	else ctxos.drawImage(app.bgImage, ...adjustSize(app.bgImage, canvasos, 1));
+	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 	const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(levelText.slice(0, 2).toLocaleLowerCase());
 	setTimeout(() => {
-		if (!fucktemp) return; //qwq
+		if (!fucktemp1) return; //qwq
 		audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`], { loop: true });
 		qwqEnd.reset();
 		qwqEnd.play();
@@ -1520,8 +1533,8 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalAlpha = 1;
-	if ($('imageBlur').checked) ctxos.drawImage(app.bgImageBlur, ...adjustSize(app.bgImageBlur, canvasos, 1));
-	else ctxos.drawImage(app.bgImage, ...adjustSize(app.bgImage, canvasos, 1));
+	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
@@ -1691,10 +1704,8 @@ function drawFlick(note) {
 }
 //调节画面尺寸和全屏相关(返回source播放aegleseeker会出现迷之error)
 function adjustSize(source, dest, scale) {
-	const sw = source.width;
-	const sh = source.height;
-	const dw = dest.width;
-	const dh = dest.height;
+	const { width: sw, height: sh } = source;
+	const { width: dw, height: dh } = dest;
 	if (dw * sh > dh * sw) return [dw * (1 - scale) / 2, (dh - dw * sh / sw * scale) / 2, dw * scale, dw * sh / sw * scale];
 	return [(dw - dh * sw / sh * scale) / 2, dh * (1 - scale) / 2, dh * sw / sh * scale, dh * scale];
 }
@@ -1812,6 +1823,16 @@ function hex2rgba(color) {
 function rgba2hex(...rgba) {
 	return '#' + rgba.map(i => ('00' + Math.round(Number(i) * 255 || 0).toString(16)).slice(-2)).join('');
 }
+//plugin(phizone)
+inputName.addEventListener('input', function() {
+	if (this.value == '/pz') setTimeout(() => {
+		if (this.value == '/pz') {
+			import('./js/phizone.js').then(({ dialog }) => dialog());
+			this.value = '';
+			this.dispatchEvent(new Event('input'));
+		}
+	}, 1e3);
+});
 //debug
 self.app = app;
 self.res = res;

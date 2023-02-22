@@ -194,7 +194,12 @@ class Renderer {
 		this.drags = [];
 		this.flicks = [];
 		this.holds = [];
-		this.reverseholds = [];
+		this.linesReversed = [];
+		this.notesReversed = [];
+		this.tapsReversed = [];
+		this.dragsReversed = [];
+		this.flicksReversed = [];
+		this.holdsReversed = [];
 		this.tapholds = [];
 		//qwq2
 		this._setLowResFactor(1);
@@ -266,7 +271,6 @@ class Renderer {
 		this.drags.length = 0;
 		this.flicks.length = 0;
 		this.holds.length = 0;
-		this.reverseholds.length = 0;
 		this.tapholds.length = 0;
 		const chartNew = new Chart(chart);
 		let maxTime = 0;
@@ -296,7 +300,6 @@ class Renderer {
 			else if (note.type === 2) this.drags.push(note);
 			else if (note.type === 3) this.holds.push(note);
 			else if (note.type === 4) this.flicks.push(note);
-			if (note.type === 3) this.reverseholds.push(note);
 			if (note.type === 1 || note.type === 3) this.tapholds.push(note);
 		}
 		const sortNote = (a, b) => a.realTime - b.realTime || a.lineId - b.lineId || a.noteId - b.noteId;
@@ -326,7 +329,12 @@ class Renderer {
 		this.drags.sort(sortNote);
 		this.holds.sort(sortNote);
 		this.flicks.sort(sortNote);
-		this.reverseholds.sort(sortNote).reverse();
+		this.notesReversed = this.notes.slice().reverse();
+		this.tapsReversed = this.taps.slice().reverse();
+		this.dragsReversed = this.drags.slice().reverse();
+		this.holdsReversed = this.holds.slice().reverse();
+		this.flicksReversed = this.flicks.slice().reverse();
+		this.linesReversed = this.lines.slice().reverse();
 		this.tapholds.sort(sortNote);
 		//多押标记
 		const timeOfMulti = {};
