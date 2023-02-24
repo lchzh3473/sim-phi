@@ -1,5 +1,5 @@
 let total = 0;
-importScripts(...location.hash.substring(1).split(','));
+importScripts('https://unpkg.com/jszip/dist/jszip.min.js');
 /** @param {{name:string,path:string,buffer:ArrayBuffer}} data */
 function readZip(data) { //JSZip
 	JSZip.loadAsync(data.buffer, { checkCRC32: true, decodeFileName: string }).then(zip => {

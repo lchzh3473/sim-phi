@@ -1,5 +1,8 @@
 import { urls, csv2array } from './common.js';
 import Pec from './pec2json.js';
+/** @type {Worker} */
+let zip_worker = null;
+let zip_total = 0;
 export const uploader = {
 	// files: [],
 	input: Object.assign(document.createElement('input'), {
@@ -139,21 +142,19 @@ export function readZip(result, {
 			}
 		}).catch(error => ({ type: 'error', name: i.name, data: error }));
 	};
-	const tl = urls['jszip'].reverse()[0];
-	if (!self._zip_worker) {
+	if (!zip_worker) {
 		onloadstart();
-		const worker = new Worker(`worker/zip.js#${tl}`); //以后考虑indexedDB存储url
-		let total = 0;
+		const worker = new Worker('worker/zip.js'); //以后考虑indexedDB存储url
 		worker.addEventListener('message', async msg => {
 			/** @type {{data:{name:string,path:string,buffer:ArrayBuffer},total:number}} */
 			const data = msg.data;
-			total = data.total;
+			zip_total = data.total;
 			const result = await it(data.data);
-			return onread(result, total);
+			return onread(result, zip_total);
 		});
-		self._zip_worker = worker;
+		zip_worker = worker;
 	}
-	self._zip_worker.postMessage(result, [result.buffer]);
+	zip_worker.postMessage(result, [result.buffer]);
 }
 
 function splitPath(i) {
