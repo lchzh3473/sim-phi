@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import InterAct from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b24'], 1611795955, 1677237966];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b25'], 1611795955, 1677295116];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);

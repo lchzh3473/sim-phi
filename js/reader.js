@@ -123,7 +123,7 @@ export function readZip(result, {
 				return new Promise(() => { //json
 					throw new Error('Just make it a promise');
 				}).catch(async () => { //chart
-					const jsonData = await chart123(data);
+					const jsonData = await chart123(data, (_, value) => typeof value === 'number' ? Math.fround(value) : value);
 					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
 				}).catch(async () => { //rpe
 					const rpeData = Pec.parseRPE(data, i.name, path); //qwq
@@ -174,8 +174,8 @@ function joinPathInfo(info, path) {
 	return info;
 }
 //test
-function chart123(text) {
-	const chart = JSON.parse(text);
+function chart123(text, reviver) {
+	const chart = typeof reviver === 'function' ? JSON.parse(text, reviver) : JSON.parse(text);
 	if (chart.formatVersion === undefined) throw new Error('Invalid chart file');
 	switch (parseInt(chart.formatVersion)) { //加花括号以避免beautify缩进bug
 		case 1: {
@@ -201,6 +201,29 @@ function chart123(text) {
 			}
 		}
 		case 3473:
+			for (const i of chart.judgeLineList) {
+				if (i.numOfNotes == null) {
+					i.numOfNotes = 0;
+					for (const j of i.notesAbove) {
+						if (j.type === 1) i.numOfNotes++;
+						if (j.type === 2) i.numOfNotes++;
+						if (j.type === 3) i.numOfNotes++;
+						if (j.type === 4) i.numOfNotes++;
+					}
+					for (const j of i.notesBelow) {
+						if (j.type === 1) i.numOfNotes++;
+						if (j.type === 2) i.numOfNotes++;
+						if (j.type === 3) i.numOfNotes++;
+						if (j.type === 4) i.numOfNotes++;
+					}
+				}
+			}
+			if (chart.numOfNotes == null) {
+				chart.numOfNotes = 0;
+				for (const i of chart.judgeLineList) {
+					chart.numOfNotes += i.numOfNotes;
+				}
+			}
 			break;
 		default:
 			throw new Error(`Unsupported formatVersion: ${chart.formatVersion}`);
