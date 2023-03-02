@@ -1,10 +1,13 @@
 import { uploader } from './reader.js';
-const vtext = 'PhiZone API v0.2';
+const vtext = 'PhiZone API v0.3';
 const vprompt = str => prompt(`${vtext}\n${str}`);
 const valert = str => alert(`${vtext}\n${str}`);
 export default async function query(id) {
 	const response = await fetch(`https://api.phi.zone/songs/${id|0}/?query_charts=1`);
-	if (!response.ok) return { charts: [] };
+	if (!response.ok) {
+		if (response.status === 404) return { charts: [] };
+		throw response.status;
+	}
 	const data = await response.json();
 	console.log(data);
 	return {
@@ -25,36 +28,41 @@ export default async function query(id) {
 export async function dialog(num) {
 	const id = num || vprompt('请输入歌曲ID');
 	if (id === '') return valert('未输入歌曲ID，已取消操作');
-	const data = await query(id);
-	console.log(data);
-	const charts = data.charts;
-	if (!charts.length) return valert(`歌曲ID${id}对应的谱面不存在`);
 	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
-	await xhr3(data.song, dstr(data.song), 0, charts.length + 2);
-	await xhr3(data.illustration, dstr(data.illustration), 1, charts.length + 2);
-	charts.forEach(async (i, idx) => {
-		await xhr3(i.chart, dstr(i.chart), idx + 2, charts.length + 2);
-		const encoder = new TextEncoder();
-		const offset = getOffset(i.id);
-		const infoText = `
-			#
-			Name: ${data.name}
-			Song: ${dstr(data.song)}
-			Picture: ${dstr(data.illustration)}
-			Chart: ${dstr(i.chart)}
-			Level: ${i.level}
-			Composer: ${data.composer}
-			Charter: ${i.charter}
-			Illustrator: ${data.illustrator}
-			Offset: ${offset}
-		`;
-		const info = encoder.encode(infoText);
-		uploader.onload({ target: { result: info.buffer } }, { name: 'info.txt' });
-	});
+	try {
+		const data = await query(id);
+		console.log(data);
+		const charts = data.charts;
+		if (!charts.length) return valert(`歌曲ID:${id}对应的谱面不存在`);
+		await xhr3(data.song, dstr(data.song), 0, charts.length + 2);
+		await xhr3(data.illustration, dstr(data.illustration), 1, charts.length + 2);
+		charts.forEach(async (i, idx) => {
+			await xhr3(i.chart, dstr(i.chart), idx + 2, charts.length + 2);
+			const encoder = new TextEncoder();
+			const offset = getOffset(i.id);
+			const infoText = `
+				#
+				Name: ${data.name}
+				Song: ${dstr(data.song)}
+				Picture: ${dstr(data.illustration)}
+				Chart: ${dstr(i.chart)}
+				Level: ${i.level}
+				Composer: ${data.composer}
+				Charter: ${i.charter}
+				Illustrator: ${data.illustrator}
+				Offset: ${offset}
+			`;
+			const info = encoder.encode(infoText);
+			uploader.onload({ target: { result: info.buffer } }, { name: 'info.txt' });
+		});
+	} catch (error) {
+		valert(`无法连接至服务器(错误代码:${error})`);
+	}
 	async function xhr3(url, name, loaded, total) {
-		const result = await new Promise(resolve => xhr2(url, {
+		const result = await new Promise((resolve, reject) => xhr2(url, {
 			onprogress(evt) { uploader.onprogress({ loaded: evt.total * loaded + evt.loaded, total: evt.total * total }) },
-			onload(evt) { resolve(evt.target.response) }
+			onload(evt) { resolve(evt.target.response) },
+			onerror(evt) { reject(evt.target.status) }
 		}));
 		uploader.onload({ target: { result } }, { name });
 	}
@@ -62,12 +70,14 @@ export async function dialog(num) {
 	function xhr2(url, {
 		onprogress = () => void 0,
 		onload = () => void 0,
+		onerror = () => void 0,
 	} = {}) {
 		const xhr = new XMLHttpRequest();
 		xhr.open('get', url, true);
 		xhr.responseType = 'arraybuffer';
 		xhr.onprogress = onprogress;
-		xhr.onload = onload;
+		xhr.onload = ev => xhr.status === 200 ? onload(ev) : onerror(ev);
+		xhr.onerror = onerror;
 		xhr.send();
 	}
 }
@@ -113,6 +123,8 @@ function getOffset(id) {
 	if (id === 108) return 200; //113
 	if (id === 110) return 150; //66
 	if (id === 115) return 200; //122
+	if (id === 119) return 100; //126
 	return 0;
 }
+//debug
 self.dialog = dialog;
