@@ -1,12 +1,12 @@
 import { uploader } from './reader.js';
-const vtext = 'PhiZone API v0.3';
+const vtext = 'PhiZone API v0.4';
 const vprompt = str => prompt(`${vtext}\n${str}`);
 const valert = str => alert(`${vtext}\n${str}`);
-export default async function query(id) {
+async function query(id) {
 	const response = await fetch(`https://api.phi.zone/songs/${id|0}/?query_charts=1`);
 	if (!response.ok) {
 		if (response.status === 404) return { charts: [] };
-		throw response.status;
+		throw `${response.status} ${response.statusText}`;
 	}
 	const data = await response.json();
 	console.log(data);
@@ -27,59 +27,64 @@ export default async function query(id) {
 }
 export async function dialog(num) {
 	const id = num || vprompt('请输入歌曲ID');
-	if (id === '') return valert('未输入歌曲ID，已取消操作');
+	if (id === '' || id === null) return valert('未输入歌曲ID，已取消操作');
 	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
-	try {
-		const data = await query(id);
-		console.log(data);
-		const charts = data.charts;
-		if (!charts.length) return valert(`歌曲ID:${id}对应的谱面不存在`);
-		await xhr3(data.song, dstr(data.song), 0, charts.length + 2);
-		await xhr3(data.illustration, dstr(data.illustration), 1, charts.length + 2);
-		charts.forEach(async (i, idx) => {
-			await xhr3(i.chart, dstr(i.chart), idx + 2, charts.length + 2);
-			const encoder = new TextEncoder();
-			const offset = getOffset(i.id);
-			const infoText = `
-				#
-				Name: ${data.name}
-				Song: ${dstr(data.song)}
-				Picture: ${dstr(data.illustration)}
-				Chart: ${dstr(i.chart)}
-				Level: ${i.level}
-				Composer: ${data.composer}
-				Charter: ${i.charter}
-				Illustrator: ${data.illustrator}
-				Offset: ${offset}
-			`;
-			const info = encoder.encode(infoText);
-			uploader.onload({ target: { result: info.buffer } }, { name: 'info.txt' });
-		});
-	} catch (error) {
-		valert(`无法连接至服务器(错误代码:${error})`);
+	const data = await query(id).catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
+	console.log(data);
+	if (!data) return;
+	const charts = data.charts;
+	if (!charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
+	await xhr3(data.song, dstr(data.song), 0, charts.length + 2);
+	await xhr3(data.illustration, dstr(data.illustration), 1, charts.length + 2);
+	for (let i = 0; i < charts.length; i++) {
+		const chart = charts[i];
+		await xhr3(chart.chart, dstr(chart.chart), i + 2, charts.length + 2);
+		const encoder = new TextEncoder();
+		const offset = getOffset(chart.id);
+		const infoText = `
+			#
+			Name: ${data.name}
+			Song: ${dstr(data.song)}
+			Picture: ${dstr(data.illustration)}
+			Chart: ${dstr(chart.chart)}
+			Level: ${chart.level}
+			Composer: ${data.composer}
+			Charter: ${chart.charter}
+			Illustrator: ${data.illustrator}
+			Offset: ${offset}
+		`;
+		const info = encoder.encode(infoText);
+		uploader.onload({ target: { result: info.buffer } }, { name: 'info.txt' });
 	}
-	async function xhr3(url, name, loaded, total) {
-		const result = await new Promise((resolve, reject) => xhr2(url, {
-			onprogress(evt) { uploader.onprogress({ loaded: evt.total * loaded + evt.loaded, total: evt.total * total }) },
-			onload(evt) { resolve(evt.target.response) },
-			onerror(evt) { reject(evt.target.status) }
-		}));
-		uploader.onload({ target: { result } }, { name });
-	}
+}
+/**
+ * @param {string} url
+ * @typedef {object} XMLHttpRequestCallbacks
+ * @property {(ev:ProgressEvent<XMLHttpRequest>)} onprogress
+ * @property {(ev:ProgressEvent<XMLHttpRequest>)} onload
+ * @property {(ev:ProgressEvent<XMLHttpRequest>)} onerror
+ * @param {XMLHttpRequestCallbacks} param1
+ */
+function xhr2(url, {
+	onprogress = () => void 0,
+	onload = () => void 0,
+	onerror = () => void 0,
+} = {}) {
+	const xhr = new XMLHttpRequest();
+	xhr.open('get', url, true);
+	xhr.responseType = 'arraybuffer';
+	xhr.onprogress = onprogress;
+	xhr.onload = ev => xhr.status === 200 ? onload(ev) : onerror(ev);
+	xhr.onerror = onerror;
+	xhr.send();
+}
 
-	function xhr2(url, {
-		onprogress = () => void 0,
-		onload = () => void 0,
-		onerror = () => void 0,
-	} = {}) {
-		const xhr = new XMLHttpRequest();
-		xhr.open('get', url, true);
-		xhr.responseType = 'arraybuffer';
-		xhr.onprogress = onprogress;
-		xhr.onload = ev => xhr.status === 200 ? onload(ev) : onerror(ev);
-		xhr.onerror = onerror;
-		xhr.send();
-	}
+function xhr3(url, name, loaded, total) {
+	return new Promise(resolve => xhr2(url, {
+		onprogress(evt) { uploader.onprogress({ loaded: evt.total * loaded + evt.loaded, total: evt.total * total }) },
+		onload(evt) { resolve(uploader.onload({ target: { result: evt.target.response } }, { name })) },
+		onerror(evt) { resolve(valert(`资源 '${name}' 加载失败\n错误代码：${evt.target.status} ${evt.target.statusText}`)) }
+	}));
 }
 
 function getOffset(id) {
@@ -124,7 +129,5 @@ function getOffset(id) {
 	if (id === 110) return 150; //66
 	if (id === 115) return 200; //122
 	if (id === 119) return 100; //126
-	return 0;
+	return void 0;
 }
-//debug
-self.dialog = dialog;
