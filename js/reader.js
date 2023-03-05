@@ -1,4 +1,4 @@
-import { urls, csv2array } from './common.js';
+import { csv2array } from './common.js';
 import Pec from './pec2json.js';
 /** @type {Worker} */
 let zip_worker = null;
