@@ -504,6 +504,7 @@ class SpeedEvent {
 		this.endTime = parseInt(event.endTime) || 0;
 		this.value = parseFloat(event.value) || 0;
 		this.floorPosition = parseFloat(event.floorPosition) || 0;
+		this.floorPosition2 = parseFloat(event.floorPosition2) || 0;
 	}
 }
 class Note {

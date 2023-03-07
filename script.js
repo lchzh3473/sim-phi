@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b27'], 1611795955, 1677982645];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b28'], 1611795955, 1678199905];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -99,6 +99,41 @@ const msgHandler = {
 		return false;
 	}
 }
+class Checkbox {
+	constructor(text, checked = false) {
+		this.container = document.createElement('div');
+		this.checkbox = document.createElement('input');
+		this.checkbox.type = 'checkbox';
+		this.checkbox.id = Utils.randomUUID();
+		this.checkbox.checked = checked;
+		this.label = document.createElement('label');
+		this.label.htmlFor = this.checkbox.id;
+		this.label.textContent = text;
+		this.container.appendChild(this.checkbox);
+		this.container.appendChild(this.label);
+	}
+	get checked() {
+		return this.checkbox.checked;
+	}
+	set checked(value) {
+		this.checkbox.checked = value;
+	}
+	appendTo(container) {
+		container.appendChild(this.container);
+		return this;
+	}
+	toggle() {
+		this.checkbox.checked = !this.checkbox.checked;
+	}
+}
+const showCE2 = new Checkbox('Early/Late特效').appendTo($('view-config'));
+const showPoint = new Checkbox('显示定位点').appendTo($('view-config'));
+const showAcc = new Checkbox('显示Acc').appendTo($('view-config'));
+const showStat = new Checkbox('显示统计').appendTo($('view-config'));
+const lowRes = new Checkbox('低分辨率').appendTo($('view-config'));
+const lockOri = new Checkbox('横屏锁定', true).appendTo($('view-config'));
+const enableVP = new Checkbox('???').appendTo($('view-config'));
+const enableFR = new Checkbox('???').appendTo($('view-config'));
 //
 const stat = new simphi.Stat();
 const app = new simphi.Renderer($('stage')); //test
@@ -200,16 +235,13 @@ $('select-volume').addEventListener('change', evt => {
 	btnPause.click();
 });
 const inputOffset = $('input-offset');
-const showPoint = $('showPoint');
-const showAcc = $('showAcc');
-const showStat = $('showStat');
 const lineColor = $('lineColor');
 $('autoplay').addEventListener('change', evt => {
 	app.playMode = evt.target.checked ? 1 : 0;
 });
 $('autoplay').dispatchEvent(new Event('change'));
 const showTransition = $('showTransition');
-$('lowRes').addEventListener('change', evt => {
+lowRes.checkbox.addEventListener('change', evt => {
 	app.setLowResFactor(evt.target.checked ? 0.5 : 1);
 });
 const bgs = new Map;
@@ -272,8 +304,8 @@ async function checkSupport() {
 	audio.init(oggCompatible ? self.AudioContext || self.webkitAudioContext : oggmented.OggmentedAudioContext); //兼容Safari
 	const orientSupported = await orientation.checkSupport();
 	if (!orientSupported) {
-		$('lockOri').checked = false;
-		$('lockOri').parentElement.classList.add('disabled');
+		lockOri.checked = false;
+		lockOri.container.classList.add('disabled');
 	}
 }
 //qwq
@@ -474,14 +506,14 @@ const specialClick = {
 		btnPlay.click();
 		btnPlay.click();
 	}, () => {
-		showStat.click();
+		showStat.toggle();
 	}, async () => {
 		const isFull = app.isFull;
 		try {
 			await full.toggle();
 			if (!(app.isFull = full.check())) return;
 			document.addEventListener(full.onchange, exitFull);
-			if (!$('lockOri').checked) return;
+			if (!lockOri.checked) return;
 			await orientation.lockLandscape();
 		} catch (e) {
 			console.warn(e); //qwq
@@ -1271,7 +1303,7 @@ function calcqwq() {
 		for (const i of line.speedEvents) {
 			if (timeChart < i.startRealTime) break;
 			if (timeChart > i.endRealTime) continue;
-			line.positionY = (timeChart - i.startRealTime) * i.value * app.speed + i.floorPosition;
+			line.positionY = (timeChart - i.startRealTime) * i.value * app.speed + (enableFR.checked ? i.floorPosition2 : i.floorPosition);
 		}
 		for (const i of line.notesAbove) {
 			i.cosr = line.cosr;
@@ -1305,8 +1337,8 @@ function calcqwq() {
 			i.visible = (i.offsetX - app.wlen) ** 2 + (i.offsetY - app.hlen) ** 2 < (app.wlen * 1.23625 + app.hlen + app.scaleY * i.realHoldTime * i.speed * app.speed) ** 2; //Math.hypot实测性能较低
 			if (i.badtime) i.alpha = 1 - range((performance.now() - i.badtime) / 500);
 			else if (i.realTime > timeChart) {
-				if (dy > -1e-3 * app.scaleY) i.alpha = (i.type === 3 && i.speed === 0) ? (showPoint.checked ? 0.45 : 0) : qwq[5] ? Math.max(1 + (timeChart - i.realTime) / 1.5, 0) : 1; //过线前1.5s出现
-				else i.alpha = showPoint.checked ? 0.45 : 0;
+				if (dy <= -1e-3 * app.scaleY || enableVP.checked && realgetY(i) > 2 / 0.6) i.alpha = showPoint.checked ? 0.45 : 0;
+				else i.alpha = (i.type === 3 && i.speed === 0) ? (showPoint.checked ? 0.45 : 0) : qwq[5] ? Math.max(1 + (timeChart - i.realTime) / 1.5, 0) : 1; //过线前1.5s出现
 				//i.frameCount = 0;
 			} else {
 				if (i.type === 3) i.alpha = i.speed === 0 ? (showPoint.checked ? 0.45 : 0) : (i.status % 4 === 2 ? 0.45 : 1);
@@ -1399,7 +1431,7 @@ function qwqdraw1() {
 	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	hitEvents1.animate(); //绘制打击特效1
 	if (qwq[4]) ctxos.filter = 'none';
-	if ($('showCE2').checked) hitEvents2.animate(); //绘制打击特效2
+	if (showCE2.checked) hitEvents2.animate(); //绘制打击特效2
 	ctxos.globalAlpha = 1;
 	//绘制进度条
 	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);

@@ -192,11 +192,15 @@ function chart123(text, reviver) {
 		case 3: {
 			for (const i of chart.judgeLineList) {
 				let y = 0;
+				let y2 = 0; //float32
 				for (const j of i.speedEvents) {
 					if (j.startTime < 0) j.startTime = 0;
 					j.floorPosition = y;
-					y += (j.endTime - j.startTime) * j.value / i.bpm * 1.875;
-					y = Math.fround(y); //float32
+					j.floorPosition2 = y2;
+					y += (j.endTime - j.startTime) / i.bpm * 1.875 * j.value;
+					y2 += Math.fround((j.endTime - j.startTime) / i.bpm * 1.875) * j.value;
+					y = Math.fround(y);
+					y2 = Math.fround(y2);
 				}
 			}
 		}

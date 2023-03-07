@@ -589,7 +589,6 @@ class LineRPE {
 		this.settled = true;
 	}
 	fitFather(stack = [], onwarning = console.warn) {
-		console.log(this.id, stack.map(i => i.id));
 		if (!this.settled) this.preset();
 		if (stack.includes(this)) {
 			onwarning(`检测到循环继承：${stack.concat(this).map(i => i.id).join('->')}(对应的father将被视为-1)`);
@@ -599,12 +598,11 @@ class LineRPE {
 		if (this.father) {
 			this.father.fitFather(stack.concat(this), onwarning);
 			if (!this.father) return;
-			mergeFather(this, this.father);
+			if (!this.merged) mergeFather(this, this.father);
+			this.merged = true;
 		}
 	}
 	format({ onwarning = console.warn } = {}) {
-		console.log(this.id);
-		//todo:father
 		this.fitFather([], onwarning);
 		const result = {
 			bpm: this.bpm,
