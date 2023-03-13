@@ -294,7 +294,7 @@ class Renderer {
 			note.lineId = lineId;
 			note.noteId = noteId;
 			note.isAbove = isAbove;
-			note.name = `${lineId}${isAbove ? '+' : '-'}${noteId}${' tdhf'.split('')[note.type]}`;
+			note.name = `${lineId}${isAbove ? '+' : '-'}${noteId}${'?tdhf'[note.type]}`;
 			this.notes.push(note);
 			if (note.type === 1) this.taps.push(note);
 			else if (note.type === 2) this.drags.push(note);

@@ -1,9 +1,9 @@
 import simphi from './js/simphi.js';
 import { audio } from '/utils/aup.js';
-import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation } from './js/common.js';
+import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b28'], 1611795955, 1678199905];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b29'], 1611795955, 1678715536];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -132,6 +132,7 @@ const showAcc = new Checkbox('显示Acc').appendTo($('view-config'));
 const showStat = new Checkbox('显示统计').appendTo($('view-config'));
 const lowRes = new Checkbox('低分辨率').appendTo($('view-config'));
 const lockOri = new Checkbox('横屏锁定', true).appendTo($('view-config'));
+const maxFrame = new Checkbox('限制帧率').appendTo($('view-config'));
 const enableVP = new Checkbox('???').appendTo($('view-config'));
 const enableFR = new Checkbox('???').appendTo($('view-config'));
 //
@@ -435,9 +436,11 @@ self.addEventListener('resize', () => stage.resize());
 				if (data.msg) data.msg.forEach(v => msgHandler.sendWarning(v));
 				if (data.info) chartInfoData.push(data.info);
 				if (data.line) chartLineData.push(...data.line);
-				charts.set(data.name, data.data);
-				chartsMD5.set(data.name, data.md5);
-				selectchart.appendChild(createOption(data.name, data.name));
+				let basename = data.name;
+				while (charts.has(basename)) basename += '_'; //qwq
+				charts.set(basename, data.data);
+				chartsMD5.set(basename, data.md5);
+				selectchart.appendChild(createOption(basename, data.name));
 				break;
 			default:
 				console.error(data.data);
@@ -451,7 +454,7 @@ self.addEventListener('resize', () => stage.resize());
 		 * @param {string} innerhtml 
 		 * @param {string} value 
 		 */
-		function createOption(innerhtml, value) {
+		function createOption(value, innerhtml) {
 			const option = document.createElement('option');
 			const isHidden = /(^|\/)\./.test(innerhtml);
 			option.innerHTML = isHidden ? '' : innerhtml;
@@ -1067,7 +1070,24 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	}
 });
 //必要组件
-let stopDrawing = 0;
+const frameAnimater = new FrameAnimater();
+frameAnimater.setCallback(loop);
+(function() {
+	const input = document.createElement('input');
+	Object.assign(input, { type: 'number', min: 25, max: 1000, value: 60 });
+	input.style.cssText += ';width:50px;margin-left:10px';
+	input.addEventListener('change', function() {
+		if (this.value < 25) this.value = 25;
+		if (this.value > 1000) this.value = 1000;
+		frameAnimater.setFrameRate(this.value);
+	});
+	maxFrame.container.appendChild(input);
+	maxFrame.checkbox.addEventListener('change', function() {
+		input.classList.toggle('disabled', !this.checked);
+		frameAnimater.setFrameRate(this.checked ? input.value : 0);
+	});
+	maxFrame.checkbox.dispatchEvent(new Event('change'));
+})();
 let nowTime_ms = 0; //当前绝对时间(ms)
 let curTime = 0; //最近一次暂停的音乐时间(s)
 let curTime_ms = 0; //最近一次播放的绝对时间(ms)
@@ -1140,18 +1160,18 @@ btnPlay.addEventListener('click', async function() {
 		isOutEnd = false;
 		isPaused = false;
 		timeBgm = 0;
-		if (!showTransition.checked) qwqIn.addTime(3000);
+		if (!showTransition.checked) qwqIn.addTime(3e3);
 		canvas.classList.remove('fade');
 		$('mask').classList.add('fade');
 		btnPause.classList.remove('disabled');
 		for (const i of $$$('.disabled-when-playing')) i.classList.add('disabled');
-		loop();
+		frameAnimater.start();
 		qwqIn.play();
 		interact.activate();
 	} else {
 		interact.deactive();
 		audio.stop();
-		cancelAnimationFrame(stopDrawing);
+		frameAnimater.stop();
 		canvas.classList.add('fade');
 		$('mask').classList.remove('fade');
 		for (const i of $$$('.disabled-when-playing')) i.classList.remove('disabled');
@@ -1258,7 +1278,6 @@ function loop() {
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = 'right';
 	ctx.fillText(`Phi\x67ros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
-	stopDrawing = requestAnimationFrame(loop); //回调更新动画
 }
 
 function calcqwq() {
@@ -1542,7 +1561,7 @@ function qwqdraw2() {
 	fucktemp1 = true;
 	btnPause.click(); //isPaused = true;
 	audio.stop();
-	cancelAnimationFrame(stopDrawing);
+	frameAnimater.stop();
 	btnPause.classList.add('disabled');
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.resetTransform();
@@ -1560,7 +1579,7 @@ function qwqdraw2() {
 		qwqEnd.play();
 		stat.level = Number(levelText.match(/\d+$/));
 		fucktemp2 = stat.getData(app.playMode === 1, selectspeed.value);
-	}, 1000);
+	}, 1e3);
 }
 
 function qwqdraw3(statData) {
@@ -1873,3 +1892,4 @@ self.app = app;
 self.res = res;
 self.audio = audio;
 self.msgHandler = msgHandler;
+self.frameAnimater = frameAnimater;

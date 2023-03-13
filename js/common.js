@@ -42,10 +42,47 @@ export const frameTimer = { //计算fps
 		return this.fps;
 	},
 	get fpsStr() {
-		return this.fps.toFixed(0);
+		const fps = this.fps;
+		if (fps < 10) return fps.toPrecision(2);
+		return fps.toFixed(0);
 	},
 	get disp() {
 		return 0.5 / frameTimer.fps || 0;
+	}
+}
+export class FrameAnimater {
+	constructor() {
+		this.callback = () => {};
+		this.lastTime = 0;
+		this.interval = Number.EPSILON;
+		this.id = null;
+		this._animate = this._animate.bind(this);
+	}
+	_animate() {
+		this.id = requestAnimationFrame(this._animate); //回调更新动画
+		var nowTime = performance.now();
+		var elapsed = nowTime - this.lastTime;
+		if (elapsed > this.interval) {
+			this.lastTime = nowTime - (elapsed % this.interval);
+			this.callback(nowTime);
+		}
+	}
+	start() {
+		if (this.id) return;
+		this.lastTime = performance.now();
+		this.id = requestAnimationFrame(this._animate);
+	}
+	stop() {
+		cancelAnimationFrame(this.id);
+		this.id = null;
+	}
+	setCallback(callback) {
+		if (typeof callback !== 'function') throw new TypeError('callback is not a function');
+		this.callback = callback;
+	}
+	setFrameRate(frameRate) {
+		this.interval = Math.abs(1e3 / frameRate);
+		if (!isFinite(this.interval)) this.interval = Number.EPSILON;
 	}
 }
 //全屏相关
