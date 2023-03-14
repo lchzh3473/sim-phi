@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b29'], 1611795955, 1678715536];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b30'], 1611795955, 1678780223];
 const $ = query => document.getElementById(query);
 const $$ = query => document.body.querySelector(query);
 const $$$ = query => document.body.querySelectorAll(query);
@@ -320,7 +320,7 @@ selectchart.addEventListener('change', adjustInfo);
 
 function adjustInfo() {
 	for (const i of chartInfoData) {
-		if (selectchart.value === i.Chart) {
+		if (selectchart.value.trim() === i.Chart) {
 			if (i.Name) inputName.value = i.Name;
 			if (i.Musician) inputArtist.value = i.Musician; //Alternative
 			if (i.Composer) inputArtist.value = i.Composer; //Alternative
@@ -437,7 +437,7 @@ self.addEventListener('resize', () => stage.resize());
 				if (data.info) chartInfoData.push(data.info);
 				if (data.line) chartLineData.push(...data.line);
 				let basename = data.name;
-				while (charts.has(basename)) basename += '_'; //qwq
+				while (charts.has(basename)) basename += '\n'; //qwq
 				charts.set(basename, data.data);
 				chartsMD5.set(basename, data.md5);
 				selectchart.appendChild(createOption(basename, data.name));
@@ -466,33 +466,40 @@ self.addEventListener('resize', () => stage.resize());
 }
 //qwq[water,demo,democlick]
 const qwq = [true, false, 3, 0, 0, 0];
-eval(atob('IWZ1bmN0aW9uKCl7Y29uc3QgdD1uZXcgRGF0ZTtpZigxIT10LmdldERhdGUoKXx8MyE9dC5nZXRNb250aCgpKXJldHVybjtjb25zdCBuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpO24udHlwZT0idGV4dC9qYXZhc2NyaXB0IixuLnNyYz0iLi9yLW1pbi5qcyIsZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoImhlYWQiKVswXS5hcHBlbmRDaGlsZChuKX0oKTs'));
-$$('.title').addEventListener('click', function() {
-	if (!--qwq[2]) $((new URLSearchParams(location.search)).has('test') ? 'demo' : 'legacy').classList.remove('hide');
-});
-$('demo').addEventListener('click', function(evt) {
-	evt.target.classList.add('hide');
-	const qwq = img => uploader.onload({ target: decode(img) }, { name: 'demo.zip' });
-	const xhr = new XMLHttpRequest();
-	xhr.open('get', 'src/demo.webp', true); //避免gitee的404
-	xhr.responseType = 'blob';
-	xhr.onprogress = evt => uploader.onprogress(evt);
-	xhr.onload = () => createImageBitmap(xhr.response).then(qwq);
-	xhr.send();
+(() => {
+	eval(atob('IWZ1bmN0aW9uKCl7Y29uc3QgdD1uZXcgRGF0ZTtpZigxIT10LmdldERhdGUoKXx8MyE9dC5nZXRNb250aCgpKXJldHVybjtjb25zdCBuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpO24udHlwZT0idGV4dC9qYXZhc2NyaXB0IixuLnNyYz0iLi9yLW1pbi5qcyIsZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoImhlYWQiKVswXS5hcHBlbmRDaGlsZChuKX0oKTs'));
+	const id = setInterval(function() {
+		const small = $$('.title>small');
+		if (!small) return;
+		clearInterval(id);
+		small.addEventListener('click', function() {
+			if (!--qwq[2]) $((new URLSearchParams(location.search)).has('test') ? 'demo' : 'legacy').classList.remove('hide');
+		});
+		$('demo').addEventListener('click', function(evt) {
+			evt.target.classList.add('hide');
+			const qwq = img => uploader.onload({ target: decode(img) }, { name: 'demo.zip' });
+			const xhr = new XMLHttpRequest();
+			xhr.open('get', 'src/demo.webp', true); //避免gitee的404
+			xhr.responseType = 'blob';
+			xhr.onprogress = evt => uploader.onprogress(evt);
+			xhr.onload = () => createImageBitmap(xhr.response).then(qwq);
+			xhr.send();
 
-	function decode(img) {
-		const canvas = document.createElement('canvas');
-		canvas.width = img.width;
-		canvas.height = img.height;
-		const ctx = canvas.getContext('2d');
-		ctx.drawImage(img, 0, 0);
-		const id = ctx.getImageData(0, 0, img.width, img.height);
-		const ab = new Uint8Array(id.data.length / 4 * 3);
-		for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
-		const size = new DataView(ab.buffer, 0, 4).getUint32(0);
-		return { result: ab.buffer.slice(4, size + 4) };
-	}
-});
+			function decode(img) {
+				const canvas = document.createElement('canvas');
+				canvas.width = img.width;
+				canvas.height = img.height;
+				const ctx = canvas.getContext('2d');
+				ctx.drawImage(img, 0, 0);
+				const id = ctx.getImageData(0, 0, img.width, img.height);
+				const ab = new Uint8Array(id.data.length / 4 * 3);
+				for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
+				const size = new DataView(ab.buffer, 0, 4).getUint32(0);
+				return { result: ab.buffer.slice(4, size + 4) };
+			}
+		});
+	}, 500);
+})();
 //qwq end
 const exitFull = () => {
 	document.removeEventListener(full.onchange, exitFull);
@@ -1561,7 +1568,7 @@ function qwqdraw2() {
 	fucktemp1 = true;
 	btnPause.click(); //isPaused = true;
 	audio.stop();
-	frameAnimater.stop();
+	// frameAnimater.stop();
 	btnPause.classList.add('disabled');
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.resetTransform();
