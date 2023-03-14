@@ -149,8 +149,7 @@ body {
 }
 
 #view-config>div {
-	/* display: inline-block; */
-	padding-block: 0.5em;
+	padding: 0.5em 0;
 }
 
 .view-nav {

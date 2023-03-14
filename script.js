@@ -4,20 +4,22 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b30'], 1611795955, 1678780223];
-const $ = query => document.getElementById(query);
-const $$ = query => document.body.querySelector(query);
-const $$$ = query => document.body.querySelectorAll(query);
+const $id = query => document.getElementById(query);
+const $$ = query => document.body.querySelectorAll(query);
 const tween = {
 	easeInSine: pos => 1 - Math.cos(pos * Math.PI / 2),
 	easeOutSine: pos => Math.sin(pos * Math.PI / 2),
 	easeOutCubic: pos => 1 + (pos - 1) ** 3,
 }
+const hook = {
+	uploaded: false //qwq
+};
 document.oncontextmenu = e => e.preventDefault(); //qwq
-for (const i of $('view-nav').children) {
+for (const i of $id('view-nav').children) {
 	i.addEventListener('click', function() {
 		for (const j of this.parentElement.children) j.classList.remove('active');
-		const doc = $('view-doc');
-		const msg = $('view-msg');
+		const doc = $id('view-doc');
+		const msg = $id('view-msg');
 		this.classList.add('active');
 		if (i.id === 'msg') {
 			doc.classList.add('hide');
@@ -29,28 +31,28 @@ for (const i of $('view-nav').children) {
 		}
 	});
 }
-$('cover-dark').addEventListener('click', () => {
-	$('cover-dark').classList.add('fade');
-	$('cover-view').classList.add('fade');
-	$('cover-config').classList.add('fade');
+$id('cover-dark').addEventListener('click', () => {
+	$id('cover-dark').classList.add('fade');
+	$id('cover-view').classList.add('fade');
+	$id('cover-config').classList.add('fade');
 });
-$('qwq').addEventListener('click', () => {
-	$('cover-dark').classList.remove('fade');
-	$('cover-view').classList.remove('fade');
-	$('use').click();
+$id('qwq').addEventListener('click', () => {
+	$id('cover-dark').classList.remove('fade');
+	$id('cover-view').classList.remove('fade');
+	$id('use').click();
 });
-$('msg-out').addEventListener('click', () => {
-	$('cover-dark').classList.remove('fade');
-	$('cover-view').classList.remove('fade');
-	$('msg').click();
+$id('msg-out').addEventListener('click', () => {
+	$id('cover-dark').classList.remove('fade');
+	$id('cover-view').classList.remove('fade');
+	$id('msg').click();
 });
-$('btn-more').addEventListener('click', () => {
-	$('cover-dark').classList.remove('fade');
-	$('cover-config').classList.remove('fade');
+$id('btn-more').addEventListener('click', () => {
+	$id('cover-dark').classList.remove('fade');
+	$id('cover-config').classList.remove('fade');
 });
 const msgHandler = {
-	nodeText: $('msg-out'),
-	nodeView: $('view-msg'),
+	nodeText: $id('msg-out'),
+	nodeView: $id('view-msg'),
 	lastMessage: '',
 	msgbox(msg, type, fatal) {
 		const msgbox = document.createElement('div');
@@ -126,42 +128,42 @@ class Checkbox {
 		this.checkbox.checked = !this.checkbox.checked;
 	}
 }
-const showCE2 = new Checkbox('Early/Late特效').appendTo($('view-config'));
-const showPoint = new Checkbox('显示定位点').appendTo($('view-config'));
-const showAcc = new Checkbox('显示Acc').appendTo($('view-config'));
-const showStat = new Checkbox('显示统计').appendTo($('view-config'));
-const lowRes = new Checkbox('低分辨率').appendTo($('view-config'));
-const lockOri = new Checkbox('横屏锁定', true).appendTo($('view-config'));
-const maxFrame = new Checkbox('限制帧率').appendTo($('view-config'));
-const enableVP = new Checkbox('???').appendTo($('view-config'));
-const enableFR = new Checkbox('???').appendTo($('view-config'));
+const showCE2 = new Checkbox('Early/Late特效').appendTo($id('view-config'));
+const showPoint = new Checkbox('显示定位点').appendTo($id('view-config'));
+const showAcc = new Checkbox('显示Acc').appendTo($id('view-config'));
+const showStat = new Checkbox('显示统计').appendTo($id('view-config'));
+const lowRes = new Checkbox('低分辨率').appendTo($id('view-config'));
+const lockOri = new Checkbox('横屏锁定', true).appendTo($id('view-config'));
+const maxFrame = new Checkbox('限制帧率').appendTo($id('view-config'));
+const enableVP = new Checkbox('???').appendTo($id('view-config'));
+const enableFR = new Checkbox('???').appendTo($id('view-config'));
 //
 const stat = new simphi.Stat();
-const app = new simphi.Renderer($('stage')); //test
+const app = new simphi.Renderer($id('stage')); //test
 const { canvas, ctx, canvasos, ctxos } = app;
-const selectbg = $('select-bg');
-const btnPlay = $('btn-play');
-const btnPause = $('btn-pause');
-const selectbgm = $('select-bgm');
-const selectchart = $('select-chart');
-$('select-note-scale').addEventListener('change', evt => {
+const selectbg = $id('select-bg');
+const btnPlay = $id('btn-play');
+const btnPause = $id('btn-pause');
+const selectbgm = $id('select-bgm');
+const selectchart = $id('select-chart');
+$id('select-note-scale').addEventListener('change', evt => {
 	app.setNoteScale(evt.target.value);
 });
-$('select-aspect-ratio').addEventListener('change', evt => {
+$id('select-aspect-ratio').addEventListener('change', evt => {
 	stage.resize(evt.target.value);
 });
-$('select-background-dim').addEventListener('change', evt => {
+$id('select-background-dim').addEventListener('change', evt => {
 	app.brightness = Number(evt.target.value);
 });
-$('highLight').addEventListener('change', evt => {
+$id('highLight').addEventListener('change', evt => {
 	app.multiHint = evt.target.checked;
 });
-$('highLight').dispatchEvent(new Event('change'));
-const selectflip = $('select-flip');
+$id('highLight').dispatchEvent(new Event('change'));
+const selectflip = $id('select-flip');
 selectflip.addEventListener('change', evt => {
 	app.mirrorView(evt.target.value);
 });
-const selectspeed = $('select-speed');
+const selectspeed = $id('select-speed');
 selectspeed.addEventListener('change', evt => {
 	const dict = { Slowest: -9, Slower: -4, '': 0, Faster: 3, Fastest: 5 };
 	app.speed = 2 ** (dict[evt.target.value] / 12);
@@ -186,12 +188,12 @@ const scfg = function() {
 	if (arr.length === 0) return '';
 	return `(${arr.join('+')})`;
 }
-const inputName = $('input-name');
-const inputArtist = $('input-artist');
-const inputCharter = $('input-charter');
-const inputIllustrator = $('input-illustrator');
-const selectDifficulty = $('select-difficulty');
-const selectLevel = $('select-level');
+const inputName = $id('input-name');
+const inputArtist = $id('input-artist');
+const inputCharter = $id('input-charter');
+const inputIllustrator = $id('input-illustrator');
+const selectDifficulty = $id('select-difficulty');
+const selectLevel = $id('select-level');
 let levelText = '';
 const updateLevelText = type => {
 	const table = { SP: [0, 0], EZ: [1, 7], HD: [3, 12], IN: [6, 15], AT: [13, 16] };
@@ -228,20 +230,20 @@ const updateLevelText = type => {
 updateLevelText();
 selectDifficulty.addEventListener('change', updateLevelText.bind(null, 0));
 selectLevel.addEventListener('change', updateLevelText.bind(null, 1));
-$('select-volume').addEventListener('change', evt => {
+$id('select-volume').addEventListener('change', evt => {
 	const volume = Number(evt.target.value);
 	app.musicVolume = Math.min(1, 1 / volume);
 	app.soundVolume = Math.min(1, volume);
 	btnPause.click();
 	btnPause.click();
 });
-const inputOffset = $('input-offset');
-const lineColor = $('lineColor');
-$('autoplay').addEventListener('change', evt => {
+const inputOffset = $id('input-offset');
+const lineColor = $id('lineColor');
+$id('autoplay').addEventListener('change', evt => {
 	app.playMode = evt.target.checked ? 1 : 0;
 });
-$('autoplay').dispatchEvent(new Event('change'));
-const showTransition = $('showTransition');
+$id('autoplay').dispatchEvent(new Event('change'));
+const showTransition = $id('showTransition');
 lowRes.checkbox.addEventListener('change', evt => {
 	app.setLowResFactor(evt.target.checked ? 0.5 : 1);
 });
@@ -288,7 +290,7 @@ async function checkSupport() {
 	//兼容性检测
 	msgHandler.sendMessage('检查浏览器兼容性...');
 	const isMobile = navigator.standalone !== undefined || navigator.platform.indexOf('Linux') > -1 && navigator.maxTouchPoints === 5;
-	if (isMobile) $('uploader-select').style.display = 'none';
+	if (isMobile) $id('uploader-select').style.display = 'none';
 	if (navigator.userAgent.indexOf('MiuiBrowser') > -1) {
 		//实测 v17.1.8 问题仍然存在，v17.4.80113 问题已修复
 		const version = navigator.userAgent.match(/MiuiBrowser\/(\d+\.\d+)/);
@@ -340,23 +342,23 @@ function adjustInfo() {
 				selectbg.dispatchEvent(new Event('change'));
 			}
 			if (isFinite(i.AspectRatio = parseFloat(i.AspectRatio))) {
-				$('select-aspect-ratio').value = i.AspectRatio;
+				$id('select-aspect-ratio').value = i.AspectRatio;
 				stage.resize(i.AspectRatio); //qwq
 			}
 			if (isFinite(i.ScaleRatio = parseFloat(i.ScaleRatio))) { //Legacy
-				$('select-note-scale').value = 8080 / i.ScaleRatio;
+				$id('select-note-scale').value = 8080 / i.ScaleRatio;
 				app.setNoteScale(8080 / i.ScaleRatio);
 			}
 			if (isFinite(i.NoteScale = parseFloat(i.NoteScale))) {
-				$('select-note-scale').value = i.NoteScale;
+				$id('select-note-scale').value = i.NoteScale;
 				app.setNoteScale(i.NoteScale);
 			}
 			if (isFinite(i.GlobalAlpha = parseFloat(i.GlobalAlpha))) { //Legacy
-				$('select-background-dim').value = i.GlobalAlpha;
+				$id('select-background-dim').value = i.GlobalAlpha;
 				app.brightness = Number(i.GlobalAlpha);
 			}
 			if (isFinite(i.BackgroundDim = parseFloat(i.BackgroundDim))) {
-				$('select-background-dim').value = i.BackgroundDim;
+				$id('select-background-dim').value = i.BackgroundDim;
 				app.brightness = Number(i.BackgroundDim);
 			}
 			if (isFinite(i.Offset = parseFloat(i.Offset))) inputOffset.value = i.Offset;
@@ -379,13 +381,13 @@ self.addEventListener('resize', () => stage.resize());
 {
 	let uploader_done = 0;
 	let uploader_total = 0;
-	$('uploader-upload').addEventListener('click', uploader.uploadFile);
-	$('uploader-file').addEventListener('click', uploader.uploadFile);
-	$('uploader-dir').addEventListener('click', uploader.uploadDir);
+	$id('uploader-upload').addEventListener('click', uploader.uploadFile);
+	$id('uploader-file').addEventListener('click', uploader.uploadFile);
+	$id('uploader-dir').addEventListener('click', uploader.uploadDir);
 	/** @type {((_:FileList) => void)} */
 	uploader.onchange = e => {
 		console.log(e.length);
-		if (e.length) $('uploader').classList.add('disabled');
+		if (e.length) $id('uploader').classList.add('disabled');
 	}
 	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
 	uploader.onprogress = function(evt, i) { //显示加载文件进度
@@ -412,6 +414,7 @@ self.addEventListener('resize', () => stage.resize());
 	async function handleFile(data, total) {
 		uploader_total = total;
 		console.log(data);
+		hook.uploaded = true;
 		switch (data.type) {
 			case 'line':
 				chartLineData.push(...data.data);
@@ -448,7 +451,7 @@ self.addEventListener('resize', () => stage.resize());
 		}
 		msgHandler.sendMessage(`读取文件：${++uploader_done}/${uploader_total}`);
 		if (uploader_done !== uploader_total) return;
-		$('uploader').classList.remove('disabled');
+		$id('uploader').classList.remove('disabled');
 		adjustInfo();
 		/**
 		 * @param {string} innerhtml 
@@ -465,41 +468,9 @@ self.addEventListener('resize', () => stage.resize());
 	}
 }
 //qwq[water,demo,democlick]
-const qwq = [true, false, 3, 0, 0, 0];
-(() => {
-	eval(atob('IWZ1bmN0aW9uKCl7Y29uc3QgdD1uZXcgRGF0ZTtpZigxIT10LmdldERhdGUoKXx8MyE9dC5nZXRNb250aCgpKXJldHVybjtjb25zdCBuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpO24udHlwZT0idGV4dC9qYXZhc2NyaXB0IixuLnNyYz0iLi9yLW1pbi5qcyIsZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoImhlYWQiKVswXS5hcHBlbmRDaGlsZChuKX0oKTs'));
-	const id = setInterval(function() {
-		const small = $$('.title>small');
-		if (!small) return;
-		clearInterval(id);
-		small.addEventListener('click', function() {
-			if (!--qwq[2]) $((new URLSearchParams(location.search)).has('test') ? 'demo' : 'legacy').classList.remove('hide');
-		});
-		$('demo').addEventListener('click', function(evt) {
-			evt.target.classList.add('hide');
-			const qwq = img => uploader.onload({ target: decode(img) }, { name: 'demo.zip' });
-			const xhr = new XMLHttpRequest();
-			xhr.open('get', 'src/demo.webp', true); //避免gitee的404
-			xhr.responseType = 'blob';
-			xhr.onprogress = evt => uploader.onprogress(evt);
-			xhr.onload = () => createImageBitmap(xhr.response).then(qwq);
-			xhr.send();
-
-			function decode(img) {
-				const canvas = document.createElement('canvas');
-				canvas.width = img.width;
-				canvas.height = img.height;
-				const ctx = canvas.getContext('2d');
-				ctx.drawImage(img, 0, 0);
-				const id = ctx.getImageData(0, 0, img.width, img.height);
-				const ab = new Uint8Array(id.data.length / 4 * 3);
-				for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
-				const size = new DataView(ab.buffer, 0, 4).getUint32(0);
-				return { result: ab.buffer.slice(4, size + 4) };
-			}
-		});
-	}, 500);
-})();
+const plugins = [];
+const qwq = [null, false, null, 0, 0, 0];
+import('./js/demo.js').then(a => a.default());
 //qwq end
 const exitFull = () => {
 	document.removeEventListener(full.onchange, exitFull);
@@ -647,7 +618,7 @@ const judgeManager = {
 					}
 				} else if (deltaTime < 0) {
 					audio.play(res['HitSong1'], { gainrate: app.soundVolume });
-					hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
+					hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 2);
 					note.scored = true;
 				}
@@ -689,16 +660,16 @@ const judgeManager = {
 					}
 				} else if (deltaTime < 0) {
 					audio.play(res['HitSong2'], { gainrate: app.soundVolume });
-					hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
+					hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
 					stat.addCombo(4, 4);
 					note.scored = true;
 				}
 			} else { //Hold音符
 				if (note.type === 3 && note.holdTapTime) { //是否触发头判
 					if ((performance.now() - note.holdTapTime) * note.holdTime >= 1.6e4 * note.realHoldTime) { //间隔时间与bpm成反比
-						if (note.holdStatus % 4 === 0) hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
-						else if (note.holdStatus % 4 === 1) hitEvents1.add(HitEvent1.perfect(note.projectX, note.projectY));
-						else if (note.holdStatus % 4 === 3) hitEvents1.add(HitEvent1.good(note.projectX, note.projectY));
+						if (note.holdStatus % 4 === 0) hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
+						else if (note.holdStatus % 4 === 1) hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
+						else if (note.holdStatus % 4 === 3) hitImageList.add(HitImage.good(note.projectX, note.projectY));
 						note.holdTapTime = performance.now();
 					}
 					if (deltaTime + note.realHoldTime < 0.2) {
@@ -748,23 +719,23 @@ const judgeManager = {
 						audio.play(res['HitSong0'], { gainrate: app.soundVolume });
 						if (deltaTime2 > 0.08) {
 							noteJudge.holdStatus = 7; //console.log('Good(Early)', i.name);
-							hitEvents1.add(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.add(HitEvent2.early(noteJudge.projectX, noteJudge.projectY));
+							hitImageList.add(HitImage.good(noteJudge.projectX, noteJudge.projectY));
+							hitWordList.add(HitWord.early(noteJudge.projectX, noteJudge.projectY));
 						} else if (deltaTime2 > 0.04) {
 							noteJudge.holdStatus = 5; //console.log('Perfect(Early)', i.name);
-							hitEvents1.add(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.add(HitEvent2.early(noteJudge.projectX, noteJudge.projectY));
+							hitImageList.add(HitImage.perfect(noteJudge.projectX, noteJudge.projectY));
+							hitWordList.add(HitWord.early(noteJudge.projectX, noteJudge.projectY));
 						} else if (deltaTime2 > -0.04 || noteJudge.frameCount < 1) {
 							noteJudge.holdStatus = 4; //console.log('Perfect(Max)', i.name);
-							hitEvents1.add(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
+							hitImageList.add(HitImage.perfect(noteJudge.projectX, noteJudge.projectY));
 						} else if (deltaTime2 > -0.08 || noteJudge.frameCount < 2) {
 							noteJudge.holdStatus = 1; //console.log('Perfect(Late)', i.name);
-							hitEvents1.add(HitEvent1.perfect(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.add(HitEvent2.late(noteJudge.projectX, noteJudge.projectY));
+							hitImageList.add(HitImage.perfect(noteJudge.projectX, noteJudge.projectY));
+							hitWordList.add(HitWord.late(noteJudge.projectX, noteJudge.projectY));
 						} else {
 							noteJudge.holdStatus = 3; //console.log('Good(Late)', i.name);
-							hitEvents1.add(HitEvent1.good(noteJudge.projectX, noteJudge.projectY));
-							hitEvents2.add(HitEvent2.late(noteJudge.projectX, noteJudge.projectY));
+							hitImageList.add(HitImage.good(noteJudge.projectX, noteJudge.projectY));
+							hitWordList.add(HitWord.late(noteJudge.projectX, noteJudge.projectY));
 						}
 						if (noteJudge.type === 1) noteJudge.status = noteJudge.holdStatus;
 					}
@@ -811,7 +782,7 @@ class HitEvents extends Array {
 		this.length = 0;
 	}
 }
-const hitEvents0 = new HitEvents({ //存放点击特效
+const hitFeedbackList = new HitEvents({ //存放点击特效
 	updateCallback: i => ++i.time > 0,
 	iterateCallback: i => {
 		ctxos.globalAlpha = 0.85;
@@ -822,7 +793,7 @@ const hitEvents0 = new HitEvents({ //存放点击特效
 		ctxos.fill();
 	}
 });
-const hitEvents1 = new HitEvents({ //存放点击特效
+const hitImageList = new HitEvents({ //存放点击特效
 	updateCallback: i => nowTime_ms >= i.time + i.duration,
 	iterateCallback: i => {
 		const tick = (nowTime_ms - i.time) / i.duration;
@@ -838,7 +809,7 @@ const hitEvents1 = new HitEvents({ //存放点击特效
 		}
 	}
 });
-const hitEvents2 = new HitEvents({ //存放点击特效
+const hitWordList = new HitEvents({ //存放点击特效
 	updateCallback: i => nowTime_ms >= i.time + i.duration,
 	iterateCallback: i => {
 		const tick = (nowTime_ms - i.time) / i.duration;
@@ -850,7 +821,7 @@ const hitEvents2 = new HitEvents({ //存放点击特效
 		ctxos.fillText(i.text, 0, -app.noteScaleRatio * 128);
 	}
 });
-class HitEvent0 {
+class HitFeedback {
 	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX);
 		this.offsetY = Number(offsetY);
@@ -860,18 +831,18 @@ class HitEvent0 {
 	}
 	static tap(offsetX, offsetY) {
 		//console.log('Tap', offsetX, offsetY);
-		return new HitEvent0(offsetX, offsetY, 'cyan', '');
+		return new HitFeedback(offsetX, offsetY, 'cyan', '');
 	}
 	static hold(offsetX, offsetY) {
 		//console.log('Hold', offsetX, offsetY);
-		return new HitEvent0(offsetX, offsetY, 'lime', '');
+		return new HitFeedback(offsetX, offsetY, 'lime', '');
 	}
 	static move(offsetX, offsetY) {
 		//console.log('Move', offsetX, offsetY);
-		return new HitEvent0(offsetX, offsetY, 'violet', '');
+		return new HitFeedback(offsetX, offsetY, 'violet', '');
 	}
 }
-class HitEvent1 {
+class HitImage {
 	constructor(offsetX, offsetY, n1, n2, n3) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
@@ -882,13 +853,13 @@ class HitEvent1 {
 		this.rand = Array(Number(n2) || 0).fill().map(() => [Math.random() * 80 + 185, Math.random() * 2 * Math.PI]);
 	}
 	static perfect(offsetX, offsetY) {
-		return new HitEvent1(offsetX, offsetY, 'rgba(255,236,160,0.8823529)', 4, '#ffeca0');
+		return new HitImage(offsetX, offsetY, 'rgba(255,236,160,0.8823529)', 4, '#ffeca0');
 	}
 	static good(offsetX, offsetY) {
-		return new HitEvent1(offsetX, offsetY, 'rgba(180,225,255,0.9215686)', 3, '#b4e1ff');
+		return new HitImage(offsetX, offsetY, 'rgba(180,225,255,0.9215686)', 3, '#b4e1ff');
 	}
 }
-class HitEvent2 {
+class HitWord {
 	constructor(offsetX, offsetY, n1, n2) {
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
@@ -899,11 +870,11 @@ class HitEvent2 {
 	}
 	static early(offsetX, offsetY) {
 		//console.log('Tap', offsetX, offsetY);
-		return new HitEvent2(offsetX, offsetY, '#03aaf9', 'Early');
+		return new HitWord(offsetX, offsetY, '#03aaf9', 'Early');
 	}
 	static late(offsetX, offsetY) {
 		//console.log('Hold', offsetX, offsetY);
-		return new HitEvent2(offsetX, offsetY, '#ff4612', 'Late');
+		return new HitWord(offsetX, offsetY, '#ff4612', 'Late');
 	}
 }
 const interact = new InteractProxy(canvas);
@@ -1059,8 +1030,8 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 			return b.getImageData(0, 0, 1, 1).data[0];
 		})()) return msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
 	msgHandler.sendMessage('等待上传文件...');
-	$('uploader').classList.remove('disabled');
-	$('select').classList.remove('disabled');
+	$id('uploader').classList.remove('disabled');
+	$id('select').classList.remove('disabled');
 	btnPause.classList.add('disabled');
 
 	function decode(img, clip = 0) {
@@ -1169,9 +1140,9 @@ btnPlay.addEventListener('click', async function() {
 		timeBgm = 0;
 		if (!showTransition.checked) qwqIn.addTime(3e3);
 		canvas.classList.remove('fade');
-		$('mask').classList.add('fade');
+		$id('mask').classList.add('fade');
 		btnPause.classList.remove('disabled');
-		for (const i of $$$('.disabled-when-playing')) i.classList.add('disabled');
+		for (const i of $$('.disabled-when-playing')) i.classList.add('disabled');
 		frameAnimater.start();
 		qwqIn.play();
 		interact.activate();
@@ -1180,15 +1151,15 @@ btnPlay.addEventListener('click', async function() {
 		audio.stop();
 		frameAnimater.stop();
 		canvas.classList.add('fade');
-		$('mask').classList.remove('fade');
-		for (const i of $$$('.disabled-when-playing')) i.classList.remove('disabled');
+		$id('mask').classList.remove('fade');
+		for (const i of $$('.disabled-when-playing')) i.classList.remove('disabled');
 		btnPause.classList.add('disabled');
 		//清除原有数据
 		fucktemp1 = false;
 		fucktemp2 = false;
-		hitEvents0.clear();
-		hitEvents1.clear();
-		hitEvents2.clear();
+		hitFeedbackList.clear();
+		hitImageList.clear();
+		hitWordList.clear();
 		qwqIn.reset();
 		qwqOut.reset();
 		qwqEnd.reset();
@@ -1272,7 +1243,7 @@ function loop() {
 	} else if (!fucktemp1) qwqdraw2();
 	if (fucktemp2) qwqdraw3(fucktemp2);
 	ctx.globalAlpha = 1;
-	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
 	ctx.drawImage(bgImage, ...adjustSize(bgImage, canvas, 1.1));
 	ctx.fillStyle = '#000';
 	ctx.globalAlpha = 0.4;
@@ -1374,14 +1345,14 @@ function calcqwq() {
 		}
 	}
 	//更新打击特效和触摸点动画
-	hitEvents0.update();
-	hitEvents1.update();
-	hitEvents2.update();
+	hitFeedbackList.update();
+	hitImageList.update();
+	hitWordList.update();
 	for (const i of hitManager.list) {
 		if (i.type === 'keyboard') continue;
-		if (!i.isTapped) hitEvents0.add(HitEvent0.tap(i.offsetX, i.offsetY));
-		else if (i.isMoving) hitEvents0.add(HitEvent0.move(i.offsetX, i.offsetY)); //qwq
-		else if (i.isActive) hitEvents0.add(HitEvent0.hold(i.offsetX, i.offsetY));
+		if (!i.isTapped) hitFeedbackList.add(HitFeedback.tap(i.offsetX, i.offsetY));
+		else if (i.isMoving) hitFeedbackList.add(HitFeedback.move(i.offsetX, i.offsetY)); //qwq
+		else if (i.isActive) hitFeedbackList.add(HitFeedback.hold(i.offsetX, i.offsetY));
 	}
 	//触发判定和播放打击音效
 	if (isInEnd) {
@@ -1406,7 +1377,7 @@ function qwqdraw1() {
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	//绘制背景
 	ctxos.globalAlpha = 1;
-	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
 	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
 	if (isInEnd && app.bgVideo) {
 		const { videoWidth: width, videoHeight: height } = app.bgVideo;
@@ -1453,11 +1424,11 @@ function qwqdraw1() {
 			}
 		}
 	}
-	if ($('feedback').checked) hitEvents0.animate(); //绘制打击特效0
+	if ($id('feedback').checked) hitFeedbackList.animate(); //绘制打击特效0
 	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
-	hitEvents1.animate(); //绘制打击特效1
+	hitImageList.animate(); //绘制打击特效1
 	if (qwq[4]) ctxos.filter = 'none';
-	if (showCE2.checked) hitEvents2.animate(); //绘制打击特效2
+	if (showCE2.checked) hitWordList.animate(); //绘制打击特效2
 	ctxos.globalAlpha = 1;
 	//绘制进度条
 	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
@@ -1573,7 +1544,7 @@ function qwqdraw2() {
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.resetTransform();
 	ctxos.globalAlpha = 1;
-	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
 	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
@@ -1593,7 +1564,7 @@ function qwqdraw3(statData) {
 	ctxos.resetTransform();
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height);
 	ctxos.globalAlpha = 1;
-	const bgImage = $('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
 	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
