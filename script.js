@@ -3,30 +3,41 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b30'], 1611795955, 1678780223];
+import { brain } from './js/tips.js';
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b31'], 1611795955, 1679236370];
 const $id = query => document.getElementById(query);
+const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
 const tween = {
 	easeInSine: pos => 1 - Math.cos(pos * Math.PI / 2),
 	easeOutSine: pos => Math.sin(pos * Math.PI / 2),
 	easeOutCubic: pos => 1 + (pos - 1) ** 3,
 }
-const hook = {
-	uploaded: false //qwq
-};
+const main = {};
+main.uploaded = false; //qwq
+main.modify = a => a;
+main.pressTime = 0;
+main.kfcFkXqsVw50 = async () => {};
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of $id('view-nav').children) {
 	i.addEventListener('click', function() {
 		for (const j of this.parentElement.children) j.classList.remove('active');
 		const doc = $id('view-doc');
+		const cfg = $id('view-cfg');
 		const msg = $id('view-msg');
 		this.classList.add('active');
-		if (i.id === 'msg') {
+		if (i.id === 'nav-msg') {
 			doc.classList.add('hide');
+			cfg.classList.add('hide');
 			msg.classList.remove('hide');
-		} else {
-			if (doc.getAttribute('src') !== `docs/${i.id}.html`) doc.src = `docs/${i.id}.html`;
+		} else if (i.id === 'nav-cfg') {
+			doc.classList.add('hide');
+			cfg.classList.remove('hide');
 			msg.classList.add('hide');
+		} else {
+			if (!doc.src) doc.src = 'docs/use.html'; //防止阻塞页面
+			msg.classList.add('hide');
+			cfg.classList.add('hide');
 			doc.classList.remove('hide');
 		}
 	});
@@ -34,21 +45,21 @@ for (const i of $id('view-nav').children) {
 $id('cover-dark').addEventListener('click', () => {
 	$id('cover-dark').classList.add('fade');
 	$id('cover-view').classList.add('fade');
-	$id('cover-config').classList.add('fade');
 });
 $id('qwq').addEventListener('click', () => {
 	$id('cover-dark').classList.remove('fade');
 	$id('cover-view').classList.remove('fade');
-	$id('use').click();
+	$id('nav-use').click();
+});
+$id('btn-more').addEventListener('click', () => {
+	$id('cover-dark').classList.remove('fade');
+	$id('cover-view').classList.remove('fade');
+	$id('nav-cfg').click();
 });
 $id('msg-out').addEventListener('click', () => {
 	$id('cover-dark').classList.remove('fade');
 	$id('cover-view').classList.remove('fade');
-	$id('msg').click();
-});
-$id('btn-more').addEventListener('click', () => {
-	$id('cover-dark').classList.remove('fade');
-	$id('cover-config').classList.remove('fade');
+	$id('nav-msg').click();
 });
 const msgHandler = {
 	nodeText: $id('msg-out'),
@@ -101,6 +112,57 @@ const msgHandler = {
 		return false;
 	}
 }
+class StatusManager {
+	constructor(key) {
+		this.key = key;
+	}
+	init(resetCallback) {
+		this.data = JSON.parse(localStorage.getItem(this.key) || '{}');
+		if (typeof resetCallback === 'function') resetCallback(this.data) && this.reset();
+		return this;
+	}
+	save() {
+		localStorage.setItem(this.key, JSON.stringify(this.data));
+	}
+	reset() {
+		this.data = {};
+		this.save();
+	}
+	get(key) {
+		return this.data[key];
+	}
+	set(key, value) {
+		this.data[key] = value;
+		this.save();
+	}
+	bind(key, node) {
+		if (node instanceof HTMLInputElement) {
+			if (node.type === 'checkbox') {
+				const checked = this.get(key);
+				if (checked !== undefined) node.checked = checked;
+				else this.set(key, node.checked);
+				node.addEventListener('change', () => this.set(key, node.checked));
+			} else {
+				const value = this.get(key);
+				if (value !== undefined) node.value = value;
+				else this.set(key, node.value);
+				node.addEventListener('input', () => this.set(key, node.value));
+			}
+		} else {
+			const value = this.get(key);
+			if (value !== undefined) node.innerText = value;
+			else this.set(key, node.innerText);
+			node.addEventListener('input', () => this.set(key, node.innerText));
+		}
+	}
+}
+const status = new StatusManager('sim-phi-status').init(data => data.resetCfg);
+status.bind('feedback', $id('feedback'));
+status.bind('imageBlur', $id('imageBlur'));
+status.bind('highLight', $id('highLight'));
+status.bind('lineColor', $id('lineColor'));
+status.bind('autoplay', $id('autoplay'));
+status.bind('showTransition', $id('showTransition'));
 class Checkbox {
 	constructor(text, checked = false) {
 		this.container = document.createElement('div');
@@ -119,6 +181,7 @@ class Checkbox {
 	}
 	set checked(value) {
 		this.checkbox.checked = value;
+		this.checkbox.dispatchEvent(new Event('change'));
 	}
 	appendTo(container) {
 		container.appendChild(this.container);
@@ -127,16 +190,30 @@ class Checkbox {
 	toggle() {
 		this.checkbox.checked = !this.checkbox.checked;
 	}
+	register(status, key) {
+		this.checkbox.addEventListener('change', () => {
+			status.set(key, this.checked);
+			status.save();
+		});
+		const value = status.get(key);
+		if (value !== undefined) this.checked = value;
+		else status.set(key, this.checked);
+		return this;
+	}
 }
-const showCE2 = new Checkbox('Early/Late特效').appendTo($id('view-config'));
-const showPoint = new Checkbox('显示定位点').appendTo($id('view-config'));
-const showAcc = new Checkbox('显示Acc').appendTo($id('view-config'));
-const showStat = new Checkbox('显示统计').appendTo($id('view-config'));
-const lowRes = new Checkbox('低分辨率').appendTo($id('view-config'));
-const lockOri = new Checkbox('横屏锁定', true).appendTo($id('view-config'));
-const maxFrame = new Checkbox('限制帧率').appendTo($id('view-config'));
-const enableVP = new Checkbox('???').appendTo($id('view-config'));
-const enableFR = new Checkbox('???').appendTo($id('view-config'));
+const showCE2 = new Checkbox('Early/Late特效').appendTo($id('view-cfg')).register(status, 'showCE2');
+const showPoint = new Checkbox('显示定位点').appendTo($id('view-cfg')).register(status, 'showPoint');
+const showAcc = new Checkbox('显示Acc').appendTo($id('view-cfg')).register(status, 'showAcc');
+const showStat = new Checkbox('显示统计').appendTo($id('view-cfg')).register(status, 'showStat');
+const lowRes = new Checkbox('低分辨率').appendTo($id('view-cfg')).register(status, 'lowRes');
+const lockOri = new Checkbox('横屏锁定', true).appendTo($id('view-cfg')).register(status, 'lockOri');
+const maxFrame = new Checkbox('限制帧率').appendTo($id('view-cfg')).register(status, 'maxFrame');
+const autoDelay = new Checkbox('音画实时同步(若声音卡顿则建议关闭)', true).appendTo($id('view-cfg')).register(status, 'autoDelay');
+const enableVP = new Checkbox('???').appendTo($id('view-cfg')).register(status, 'enableVP');
+enableVP.checkbox.addEventListener('change', evt => app.enableVP = evt.target.checked);
+const enableFR = new Checkbox('???').appendTo($id('view-cfg')).register(status, 'enableFR');
+enableFR.checkbox.addEventListener('change', evt => app.enableFR = evt.target.checked);
+const resetCfg = new Checkbox('恢复默认设置(刷新生效)').appendTo($id('view-cfg')).register(status, 'resetCfg');
 //
 const stat = new simphi.Stat();
 const app = new simphi.Renderer($id('stage')); //test
@@ -309,6 +386,7 @@ async function checkSupport() {
 	if (!orientSupported) {
 		lockOri.checked = false;
 		lockOri.container.classList.add('disabled');
+		lockOri.label.textContent += '(当前设备或浏览器不支持)';
 	}
 }
 //qwq
@@ -414,7 +492,7 @@ self.addEventListener('resize', () => stage.resize());
 	async function handleFile(data, total) {
 		uploader_total = total;
 		console.log(data);
-		hook.uploaded = true;
+		main.uploaded = true;
 		switch (data.type) {
 			case 'line':
 				chartLineData.push(...data.data);
@@ -469,7 +547,7 @@ self.addEventListener('resize', () => stage.resize());
 }
 //qwq[water,demo,democlick]
 const plugins = [];
-const qwq = [null, false, null, 0, 0, 0];
+const qwq = [null, false, null, null, 0, 0];
 import('./js/demo.js').then(a => a.default());
 //qwq end
 const exitFull = () => {
@@ -514,7 +592,7 @@ const specialClick = {
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY < lineScale * 1.5) this.click(1);
 		if (offsetX < lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) this.click(2);
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) this.click(3);
-		if (qwqEnd.second > 0) qwq[3] = qwq[3] > 0 ? -qwqEnd.second : qwqEnd.second;
+		if (qwqEnd.second > 0) main.pressTime = main.pressTime > 0 ? -qwqEnd.second : qwqEnd.second;
 	}
 }
 const hitManager = new simphi.HitManager();
@@ -1087,8 +1165,9 @@ btnPlay.addEventListener('click', async function() {
 	if (this.value === '播放') {
 		if (!selectchart.value) return msgHandler.sendError('错误：未选择任何谱面');
 		if (!selectbgm.value) return msgHandler.sendError('错误：未选择任何音乐');
+		await main.kfcFkXqsVw50();
 		audio.play(res['mute'], { loop: true, isOut: false }); //播放空音频(防止音画不同步)
-		app.prerenderChart(charts.get(selectchart.value)); //fuckqwq
+		app.prerenderChart(main.modify(charts.get(selectchart.value))); //fuckqwq
 		app.md5 = chartsMD5.get(selectchart.value);
 		stat.level = Number(levelText.match(/\d+$/));
 		stat.reset(app.chart.numOfNotes, app.md5, selectspeed.value);
@@ -1200,7 +1279,7 @@ function playBgm(data, offset) {
 	isPaused = false;
 	if (!offset) offset = 0;
 	curTime_ms = performance.now();
-	audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: 1 });
+	audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: autoDelay.checked });
 }
 /** @param {HTMLVideoElement} data */
 function playVideo(data, offset) {
@@ -1272,78 +1351,7 @@ function calcqwq() {
 	}
 	timeChart = Math.max(timeBgm - (app.chart.offset + Number(inputOffset.value) / 1e3 || 0) / app.speed, 0);
 	//遍历判定线events和Note
-	for (const line of app.lines) {
-		for (const i of line.judgeLineDisappearEvents) {
-			if (timeChart < i.startRealTime) break;
-			if (timeChart > i.endRealTime) continue;
-			const t2 = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
-			const t1 = 1 - t2;
-			line.alpha = i.start * t1 + i.end * t2;
-		}
-		for (const i of line.judgeLineMoveEvents) {
-			if (timeChart < i.startRealTime) break;
-			if (timeChart > i.endRealTime) continue;
-			const t2 = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
-			const t1 = 1 - t2;
-			line.offsetX = app.matX(i.start * t1 + i.end * t2);
-			line.offsetY = app.matY(i.start2 * t1 + i.end2 * t2);
-		}
-		for (const i of line.judgeLineRotateEvents) {
-			if (timeChart < i.startRealTime) break;
-			if (timeChart > i.endRealTime) continue;
-			const t2 = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
-			const t1 = 1 - t2;
-			line.rotation = app.matR(i.start * t1 + i.end * t2);
-			line.cosr = Math.cos(line.rotation);
-			line.sinr = Math.sin(line.rotation);
-		}
-		for (const i of line.speedEvents) {
-			if (timeChart < i.startRealTime) break;
-			if (timeChart > i.endRealTime) continue;
-			line.positionY = (timeChart - i.startRealTime) * i.value * app.speed + (enableFR.checked ? i.floorPosition2 : i.floorPosition);
-		}
-		for (const i of line.notesAbove) {
-			i.cosr = line.cosr;
-			i.sinr = line.sinr;
-			setAlpha(i, app.scaleX * i.positionX, app.scaleY * getY(i));
-		}
-		for (const i of line.notesBelow) {
-			i.cosr = -line.cosr;
-			i.sinr = -line.sinr;
-			setAlpha(i, -app.scaleX * i.positionX, app.scaleY * getY(i));
-		}
-
-		function getY(i) {
-			if (!i.badtime) return realgetY(i);
-			if (performance.now() - i.badtime > 500) delete i.badtime;
-			if (!i.badY) i.badY = realgetY(i);
-			return i.badY;
-		}
-
-		function realgetY(i) {
-			if (i.type !== 3) return (i.floorPosition - line.positionY) * i.speed;
-			if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed * app.speed;
-			return i.floorPosition - line.positionY;
-		}
-
-		function setAlpha(i, dx, dy) {
-			i.projectX = line.offsetX + dx * i.cosr;
-			i.offsetX = i.projectX + dy * i.sinr;
-			i.projectY = line.offsetY + dx * i.sinr;
-			i.offsetY = i.projectY - dy * i.cosr;
-			i.visible = (i.offsetX - app.wlen) ** 2 + (i.offsetY - app.hlen) ** 2 < (app.wlen * 1.23625 + app.hlen + app.scaleY * i.realHoldTime * i.speed * app.speed) ** 2; //Math.hypot实测性能较低
-			if (i.badtime) i.alpha = 1 - range((performance.now() - i.badtime) / 500);
-			else if (i.realTime > timeChart) {
-				if (dy <= -1e-3 * app.scaleY || enableVP.checked && realgetY(i) > 2 / 0.6) i.alpha = showPoint.checked ? 0.45 : 0;
-				else i.alpha = (i.type === 3 && i.speed === 0) ? (showPoint.checked ? 0.45 : 0) : qwq[5] ? Math.max(1 + (timeChart - i.realTime) / 1.5, 0) : 1; //过线前1.5s出现
-				//i.frameCount = 0;
-			} else {
-				if (i.type === 3) i.alpha = i.speed === 0 ? (showPoint.checked ? 0.45 : 0) : (i.status % 4 === 2 ? 0.45 : 1);
-				else i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0); //过线后0.16s消失
-				i.frameCount = isNaN(i.frameCount) ? 0 : i.frameCount + 1;
-			}
-		}
-	}
+	app.updateByTime(timeChart);
 	//更新打击特效和触摸点动画
 	hitFeedbackList.update();
 	hitImageList.update();
@@ -1383,16 +1391,16 @@ function qwqdraw1() {
 		const { videoWidth: width, videoHeight: height } = app.bgVideo;
 		ctxos.drawImage(app.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
 	}
-	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
+	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0, lineScale); //绘制判定线(背景后0)
-	if (qwq[4]) ctxos.filter = 'none';
+	// if (qwq[4]) ctxos.filter = 'none';
 	ctxos.resetTransform();
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
-	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
+	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1, lineScale); //绘制判定线(背景前1)
-	if (qwq[4]) ctxos.filter = 'none';
+	// if (qwq[4]) ctxos.filter = 'none';
 	ctxos.resetTransform();
 	if (qwqIn.second >= 3 && qwqOut.second === 0) {
 		//绘制note
@@ -1425,9 +1433,9 @@ function qwqdraw1() {
 		}
 	}
 	if ($id('feedback').checked) hitFeedbackList.animate(); //绘制打击特效0
-	if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
+	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	hitImageList.animate(); //绘制打击特效1
-	if (qwq[4]) ctxos.filter = 'none';
+	// if (qwq[4]) ctxos.filter = 'none';
 	if (showCE2.checked) hitWordList.animate(); //绘制打击特效2
 	ctxos.globalAlpha = 1;
 	//绘制进度条
@@ -1629,7 +1637,7 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
 	ctxos.fillText(stat.noteRank[2], 1349, 650);
 	ctxos.font = '22px Custom,Noto Sans SC';
-	const qwq4 = range((qwq[3] > 0 ? qwqEnd.second - qwq[3] : 0.2 - qwqEnd.second - qwq[3]) * 5.00);
+	const qwq4 = range((main.pressTime > 0 ? qwqEnd.second - main.pressTime : 0.2 - qwqEnd.second - main.pressTime) * 5.00);
 	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
 	ctxos.fillStyle = '#696';
 	ctxos.fill(new Path2D('M841,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z'));
@@ -1683,29 +1691,38 @@ function drawTap(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
 	if (!note.visible || note.scored && !note.badtime) return;
-	ctxos.globalAlpha = note.alpha;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
-	if (note.badtime) ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
-	else if (HL) ctxos.drawImage(res['TapHL'], -res['TapHL'].width * 0.5, -res['TapHL'].height * 0.5);
-	else ctxos.drawImage(res['Tap'], -res['Tap'].width * 0.5, -res['Tap'].height * 0.5);
+	if (note.badtime) {
+		ctxos.globalAlpha = 1 - range((performance.now() - note.badtime) / 500);
+		ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
+	} else {
+		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
+		if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0); //过线前1.5s出现
+		if (HL) ctxos.drawImage(res['TapHL'], -res['TapHL'].width * 0.5, -res['TapHL'].height * 0.5);
+		else ctxos.drawImage(res['Tap'], -res['Tap'].width * 0.5, -res['Tap'].height * 0.5);
+	}
 }
 
 function drawDrag(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
 	if (!note.visible || note.scored && !note.badtime) return;
-	ctxos.globalAlpha = note.alpha;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	if (note.badtime);
-	else if (HL) ctxos.drawImage(res['DragHL'], -res['DragHL'].width * 0.5, -res['DragHL'].height * 0.5);
-	else ctxos.drawImage(res['Drag'], -res['Drag'].width * 0.5, -res['Drag'].height * 0.5);
+	else {
+		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
+		if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
+		if (HL) ctxos.drawImage(res['DragHL'], -res['DragHL'].width * 0.5, -res['DragHL'].height * 0.5);
+		else ctxos.drawImage(res['Drag'], -res['Drag'].width * 0.5, -res['Drag'].height * 0.5);
+	}
 }
 
 function drawHold(note, realTime) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
 	if (!note.visible || note.realTime + note.realHoldTime < realTime) return; //qwq
-	ctxos.globalAlpha = note.alpha;
+	ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
+	if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	const baseLength = app.scaleY / nsr * note.speed * app.speed;
 	const holdLength = baseLength * note.realHoldTime;
@@ -1728,11 +1745,14 @@ function drawFlick(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
 	if (!note.visible || note.scored && !note.badtime) return;
-	ctxos.globalAlpha = note.alpha;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	if (note.badtime);
-	else if (HL) ctxos.drawImage(res['FlickHL'], -res['FlickHL'].width * 0.5, -res['FlickHL'].height * 0.5);
-	else ctxos.drawImage(res['Flick'], -res['Flick'].width * 0.5, -res['Flick'].height * 0.5);
+	else {
+		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
+		if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
+		if (HL) ctxos.drawImage(res['FlickHL'], -res['FlickHL'].width * 0.5, -res['FlickHL'].height * 0.5);
+		else ctxos.drawImage(res['Flick'], -res['Flick'].width * 0.5, -res['Flick'].height * 0.5);
+	}
 }
 //调节画面尺寸和全屏相关(返回source播放aegleseeker会出现迷之error)
 function adjustSize(source, dest, scale) {
@@ -1865,9 +1885,87 @@ inputName.addEventListener('input', function() {
 		}
 	}, 1e3);
 });
+//plugin(tips)
+function fireTip(html) {
+	const cover = document.createElement('div');
+	cover.classList.add('cover-dark', 'fade');
+	const container = document.createElement('div');
+	container.classList.add('cover-view', 'fade');
+	const nav = document.createElement('div');
+	nav.classList.add('view-nav');
+	nav.innerHTML = `<p>Tip</p>`;
+	const content = document.createElement('div');
+	content.classList.add('view-content');
+	content.innerHTML = html;
+	container.append(nav, content);
+	requestAnimationFrame(() => {
+		$('.main').append(cover, container);
+		requestAnimationFrame(() => {
+			cover.classList.remove('fade');
+			container.classList.remove('fade');
+		});
+	});
+	cover.addEventListener('click', () => {
+		cover.classList.add('fade');
+		cover.addEventListener('transitionend', () => cover.remove());
+		container.classList.add('fade');
+		container.addEventListener('transitionend', () => container.remove());
+	});
+}
+/**
+ * @param {HTMLElement} elem 
+ * @param {Function} activeFn 
+ * @param {Function} doneFn 
+ */
+function longPress(elem, activeFn, doneFn, failFn) {
+	let timer = null;
+	elem.addEventListener('mousedown', onrequest);
+	elem.addEventListener('mouseup', oncancel);
+	elem.addEventListener('mouseleave', oncancel);
+	elem.addEventListener('touchstart', onrequest, { passive: true });
+	elem.addEventListener('touchend', oncancel);
+	elem.addEventListener('touchcancel', oncancel);
+
+	function onrequest() {
+		timer = requestAnimationFrame(onrequest);
+		if (activeFn()) {
+			cancelAnimationFrame(timer);
+			doneFn();
+			elem.removeEventListener('mousedown', onrequest);
+			elem.removeEventListener('mouseup', oncancel);
+			elem.removeEventListener('mouseleave', oncancel);
+			elem.removeEventListener('touchstart', onrequest);
+			elem.removeEventListener('touchend', oncancel);
+			elem.removeEventListener('touchcancel', oncancel);
+		};
+	}
+
+	function oncancel() {
+		cancelAnimationFrame(timer);
+		failFn();
+	}
+}
+(function helloworld() {
+	let pressTime = null;
+	longPress($('.title'), () => {
+		if (pressTime === null) pressTime = performance.now();
+		if (performance.now() - pressTime > 3473) return 1;
+		return 0;
+	}, () => {
+		helloworld(!fireTip(`<p>${brain.getTip()}</p>`));
+	}, () => pressTime = null);
+})();
+main.fireTip = fireTip;
+main.stat = stat;
+export var hook = self.hook = main;
 //debug
-self.app = app;
-self.res = res;
-self.audio = audio;
-self.msgHandler = msgHandler;
-self.frameAnimater = frameAnimater;
+main.app = app;
+main.res = res;
+main.audio = audio;
+main.msgHandler = msgHandler;
+main.frameAnimater = frameAnimater;
+main.qwqEnd = qwqEnd;
+main.bgms = bgms;
+main.selectbgm = selectbgm;
+main.qwq = qwq;
+// import('./reverseChart.js');

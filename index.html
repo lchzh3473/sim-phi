@@ -7,7 +7,7 @@
 	<title>(っ °Д °;)っ</title>
 	<link rel="manifest" href="./manifest.json">
 	<link rel="stylesheet" href="/utils/style.css">
-	<link rel="stylesheet" href="style.css?v=142221">
+	<link rel="stylesheet" href="style.css?v=142231">
 	<script>
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').then(() => { console.log('Service Worker Registered'); });
@@ -23,7 +23,7 @@
 	</script>
 	<script>if (!window.Promise) location.href = '/412.html';</script>
 	<script src="/utils/main.js"></script>
-	<script type="module" src="script.js?v=142230"></script>
+	<script type="module" src="script.js?v=142231"></script>
 </head>
 
 <body>
@@ -148,23 +148,17 @@
 					<div>GitHub: lchz&#104;3473/sim-phi</div>
 				</div>
 			</div>
-			<div id="cover-dark" class="fade"></div>
-			<div id="cover-view" class="fade">
+			<div id="cover-dark" class="cover-dark fade"></div>
+			<div id="cover-view" class="cover-view fade" qwq>
 				<div id="view-nav" class="view-nav">
-					<a id="use">模拟器使用说明</a>
-					<a id="msg">信息</a>
+					<a id="nav-use">模拟器使用说明</a>
+					<a id="nav-cfg">更多设置</a>
+					<a id="nav-msg">信息</a>
 				</div>
 				<div id="view-content" class="view-content">
-					<iframe id="view-doc" src="" frameborder="0"></iframe>
+					<iframe id="view-doc" frameborder="0"></iframe>
+					<div id="view-cfg"></div>
 					<div id="view-msg"></div>
-				</div>
-			</div>
-			<div id="cover-config" class="fade">
-				<div class="view-nav">
-					<p>更多设置</p>
-				</div>
-				<div class="view-content">
-					<div id="view-config"></div>
 				</div>
 			</div>
 		</div>

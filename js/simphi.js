@@ -1,4 +1,4 @@
-let energy = 0;
+// let energy = 0;
 class Stat {
 	constructor() {
 		this.level = 0;
@@ -128,8 +128,8 @@ class Stat {
 		if (this.combo > this.maxcombo) this.maxcombo = this.combo;
 		this.combos[0]++;
 		this.combos[type]++;
-		if (qwq[4]) energy++;
-		if (this.lineStatus !== 1) energy = 0;
+		// if (qwq[4]) energy++;
+		// if (this.lineStatus !== 1) energy = 0;
 	}
 	addDisp(disp) {
 		this.curDisp = disp;
@@ -182,12 +182,15 @@ class Renderer {
 		// this.showTransition = true;
 		// this.chartOffset = 0;
 		this._mirrorType = 0;
+		this.enableFR = false;
+		this.enableVP = false;
 		//qwq
 		this.chart = null;
 		this.bgImage = null;
 		this.bgImageBlur = null;
 		this.bgMusic = null;
 		this.bgVideo = null;
+		/** @type {JudgeLine[]} */
 		this.lines = [];
 		this.notes = [];
 		this.taps = [];
@@ -361,6 +364,76 @@ class Renderer {
 		}
 		this.chart = chartNew;
 		console.log(maxTime);
+	}
+	updateByTime(timeChart) {
+		for (const line of this.lines) {
+			for (const i of line.judgeLineDisappearEvents) {
+				if (timeChart < i.startRealTime) break;
+				if (timeChart > i.endRealTime) continue;
+				const dt = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
+				line.alpha = i.start + (i.end - i.start) * dt;
+			}
+			for (const i of line.judgeLineMoveEvents) {
+				if (timeChart < i.startRealTime) break;
+				if (timeChart > i.endRealTime) continue;
+				const dt = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
+				line.offsetX = this.matX(i.start + (i.end - i.start) * dt);
+				line.offsetY = this.matY(i.start2 + (i.end2 - i.start2) * dt);
+			}
+			for (const i of line.judgeLineRotateEvents) {
+				if (timeChart < i.startRealTime) break;
+				if (timeChart > i.endRealTime) continue;
+				const dt = (timeChart - i.startRealTime) / (i.endRealTime - i.startRealTime);
+				line.rotation = this.matR(i.start + (i.end - i.start) * dt);
+				line.cosr = Math.cos(line.rotation);
+				line.sinr = Math.sin(line.rotation);
+			}
+			for (const i of line.speedEvents) {
+				if (timeChart < i.startRealTime) break;
+				if (timeChart > i.endRealTime) continue;
+				line.positionY = (timeChart - i.startRealTime) * i.value * this.speed + (this.enableFR ? i.floorPosition2 : i.floorPosition);
+			}
+			const realgetY = (i) => {
+				if (i.type !== 3) return (i.floorPosition - line.positionY) * i.speed;
+				if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed * this.speed;
+				return i.floorPosition - line.positionY;
+			}
+			const getY = (i) => {
+				if (!i.badtime) return realgetY(i);
+				if (performance.now() - i.badtime > 500) delete i.badtime;
+				if (!i.badY) i.badY = realgetY(i);
+				return i.badY;
+			}
+			const setAlpha = (i, dx, dy) => {
+				i.projectX = line.offsetX + dx * i.cosr;
+				i.offsetX = i.projectX + dy * i.sinr;
+				i.projectY = line.offsetY + dx * i.sinr;
+				i.offsetY = i.projectY - dy * i.cosr;
+				i.visible = (i.offsetX - this.wlen) ** 2 + (i.offsetY - this.hlen) ** 2 < (this.wlen * 1.23625 + this.hlen + this.scaleY * i.realHoldTime * i.speed * this.speed) ** 2; //Math.hypot实测性能较低
+				i.showPoint = false;
+				if (i.badtime);
+				else if (i.realTime > timeChart) {
+					i.showPoint = true;
+					i.alpha = (dy <= -1e-3 * this.scaleY || this.enableVP && realgetY(i) * 0.6 > 2) ? 0 : (i.type === 3 && i.speed === 0) ? 0 : 1;
+				} else {
+					i.frameCount = i.frameCount == null ? 0 : i.frameCount + 1;
+					if (i.type === 3) {
+						i.showPoint = true;
+						i.alpha = i.speed === 0 ? 0 : i.status % 4 === 2 ? 0.45 : 1;
+					} else i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0); //过线后0.16s消失
+				}
+			}
+			for (const i of line.notesAbove) {
+				i.cosr = line.cosr;
+				i.sinr = line.sinr;
+				setAlpha(i, this.scaleX * i.positionX, this.scaleY * getY(i));
+			}
+			for (const i of line.notesBelow) {
+				i.cosr = -line.cosr;
+				i.sinr = -line.sinr;
+				setAlpha(i, -this.scaleX * i.positionX, this.scaleY * getY(i));
+			}
+		}
 	}
 }
 class HitEvent {
