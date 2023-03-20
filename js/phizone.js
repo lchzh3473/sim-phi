@@ -129,6 +129,8 @@ function getOffset(id) {
 	if (id === 110) return 150; //66
 	if (id === 115) return 200; //122
 	if (id === 119) return 100; //126
-	// handled up to 129
+	if (id === 133) return -150; //129
+	if (id === 134) return -100; //130
+	// handled up to 138
 	return 0;
 }
