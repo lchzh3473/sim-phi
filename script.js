@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b32'], 1611795955, 1679325935];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b32'], 1611795955, 1679629560];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -21,25 +21,11 @@ main.kfcFkXqsVw50 = async () => {};
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of $id('view-nav').children) {
 	i.addEventListener('click', function() {
-		for (const j of this.parentElement.children) j.classList.remove('active');
-		const doc = $id('view-doc');
-		const cfg = $id('view-cfg');
-		const msg = $id('view-msg');
-		this.classList.add('active');
-		if (i.id === 'nav-msg') {
-			doc.classList.add('hide');
-			cfg.classList.add('hide');
-			msg.classList.remove('hide');
-		} else if (i.id === 'nav-cfg') {
-			doc.classList.add('hide');
-			cfg.classList.remove('hide');
-			msg.classList.add('hide');
-		} else {
-			if (!doc.src) doc.src = 'docs/use.html'; //防止阻塞页面
-			msg.classList.add('hide');
-			cfg.classList.add('hide');
-			doc.classList.remove('hide');
-		}
+		for (const i of $id('view-nav').children) i.classList.toggle('active', i === this);
+		if (!$id('view-doc').src) $id('view-doc').src = 'docs/use.html'; //防止阻塞页面
+		$id('view-doc').classList.toggle('hide', this.id !== 'nav-use');
+		$id('view-cfg').classList.toggle('hide', this.id !== 'nav-cfg');
+		$id('view-msg').classList.toggle('hide', this.id !== 'nav-msg');
 	});
 }
 $id('cover-dark').addEventListener('click', () => {
@@ -115,7 +101,20 @@ const msgHandler = {
 const stat = new simphi.Stat();
 const app = new simphi.Renderer($id('stage')); //test
 const { canvas, ctx, canvasos, ctxos } = app;
-//
+class Emitter extends EventTarget {
+	constructor(statusInit) {
+		super();
+		this.status = statusInit;
+	}
+	emit(status) {
+		if (this.status === status) return;
+		this.status = status;
+		this.dispatchEvent(new Event('change'));
+	}
+	eq(status) { return this.status === status; }
+	ne(status) { return this.status !== status; }
+}
+const emitter = new Emitter('stop');
 const status2 = {
 	text: '',
 	list: [],
@@ -343,7 +342,6 @@ self.addEventListener('resize', () => stage.resize());
 	}
 }
 //qwq[water,demo,democlick]
-const plugins = [];
 const qwq = [null, false, null, null, 0, 0];
 import('./js/demo.js').then(a => a.default());
 //qwq end
@@ -357,10 +355,9 @@ const exitFull = () => {
 const specialClick = {
 	time: [0, 0, 0, 0],
 	func: [() => {
-		btnPause.click();
+		Promise.resolve().then(qwqPause);
 	}, () => {
-		btnPlay.click();
-		btnPlay.click();
+		Promise.resolve().then(qwqStop).then(qwqStop);
 	}, () => {
 		showStat.toggle();
 	}, async () => {
@@ -445,7 +442,7 @@ const judgeManager = {
 					if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 3);
 				}
 			}
-		} else if (!isPaused) {
+		} else if (emitter.eq('play')) {
 			for (const i of hitManager.list) {
 				if (!i.isTapped) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
 				if (i.isActive) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
@@ -625,7 +622,7 @@ const judgeManager = {
 					noteJudge.statOffset = deltaTime2; //qwq也许是统计偏移量？
 					if (!nearcomp) break;
 				}
-				if (!isPaused && note.holdTapTime && note.holdBroken) {
+				if (emitter.eq('play') && note.holdTapTime && note.holdBroken) {
 					note.status = 2; //console.log('Miss', i.name);
 					stat.addCombo(2, 3);
 					note.scored = true;
@@ -782,13 +779,13 @@ interact.setMouseEvent({
 //适配键盘(喵喵喵?)
 interact.setKeyboardEvent({
 	keydownCallback(evt) {
-		if (btnPlay.value !== '停止') return;
+		if (emitter.eq('stop')) return;
 		if (evt.key === 'Shift') btnPause.click();
 		else if (hitManager.list.find(i => i.type === 'keyboard' && i.id === evt.code)); //按住一个键时，会触发多次keydown事件
 		else hitManager.activate('keyboard', evt.code, NaN, NaN);
 	},
 	keyupCallback(evt) {
-		if (btnPlay.value !== '停止') return;
+		if (emitter.eq('stop')) return;
 		if (evt.key !== 'Shift') hitManager.deactivate('keyboard', evt.code);
 	}
 });
@@ -814,7 +811,7 @@ interact.setTouchEvent({
 		}
 	},
 	touchcancelCallback(evt) {
-		// if (!isPaused) btnPause.click();
+		// if (emitter.eq('play')) qwqPause();
 		for (const i of evt.changedTouches) {
 			hitManager.deactivate('touch', i.identifier);
 		}
@@ -907,7 +904,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	msgHandler.sendMessage('等待上传文件...');
 	$id('uploader').classList.remove('disabled');
 	$id('select').classList.remove('disabled');
-	btnPause.classList.add('disabled');
+	emitter.dispatchEvent(new CustomEvent('change'));
 
 	function decode(img, clip = 0) {
 		const canvas = document.createElement('canvas');
@@ -924,7 +921,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 });
 //必要组件
 const frameAnimater = new FrameAnimater();
-frameAnimater.setCallback(loop);
+frameAnimater.setCallback(mainLoop);
 let nowTime_ms = 0; //当前绝对时间(ms)
 let curTime = 0; //最近一次暂停的音乐时间(s)
 let curTime_ms = 0; //最近一次播放的绝对时间(ms)
@@ -934,15 +931,13 @@ let duration = 0; //音乐时长(s)
 let isInEnd = false; //开头过渡动画
 let isOutStart = false; //结尾过渡动画
 let isOutEnd = false; //临时变量
-let isPaused = true; //暂停
-document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && btnPause.value === '暂停' && btnPause.click());
-document.addEventListener('pagehide', () => document.visibilityState === 'hidden' && btnPause.value === '暂停' && btnPause.click()); //兼容Safari
+document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && emitter.eq('play') && qwqPause());
+document.addEventListener('pagehide', () => document.visibilityState === 'hidden' && emitter.eq('play') && qwqPause()); //兼容Safari
 const qwqIn = new Timer();
 const qwqOut = new Timer();
 const qwqEnd = new Timer();
 //播放bgm
 function playBgm(data, offset) {
-	isPaused = false;
 	if (!offset) offset = 0;
 	curTime_ms = performance.now();
 	audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: autoDelay.checked });
@@ -976,16 +971,37 @@ function playVideo(data, offset) {
 let fucktemp1 = false;
 let fucktemp2 = false;
 //作图
-function loop() {
+function mainLoop() {
 	frameTimer.addTick(); //计算fps
 	const { lineScale } = app;
 	nowTime_ms = performance.now();
 	app.resizeCanvas();
 	//计算时间
 	if (qwqOut.second < 0.67) {
-		calcqwq();
-		qwqdraw1();
-	} else if (!fucktemp1) qwqdraw2();
+		loopNoCanvas();
+		loopCanvas();
+	} else if (!fucktemp1) {
+		fucktemp1 = true;
+		audio.stop();
+		btnPause.classList.add('disabled'); //qwq
+		ctxos.globalCompositeOperation = 'source-over';
+		ctxos.resetTransform();
+		ctxos.globalAlpha = 1;
+		const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+		ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
+		ctxos.fillStyle = '#000'; //背景变暗
+		ctxos.globalAlpha = app.brightness; //背景不透明度
+		ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
+		setTimeout(() => {
+			if (!fucktemp1) return; //防止快速重开后直接结算
+			const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(levelText.slice(0, 2).toLocaleLowerCase());
+			audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`], { loop: true });
+			qwqEnd.reset();
+			qwqEnd.play();
+			stat.level = Number(levelText.match(/\d+$/));
+			fucktemp2 = stat.getData(app.playMode === 1, selectspeed.value);
+		}, 1e3);
+	} //只让它执行一次
 	if (fucktemp2) qwqdraw3(fucktemp2);
 	ctx.globalAlpha = 1;
 	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
@@ -1003,13 +1019,13 @@ function loop() {
 	ctx.fillText(`Phi\x67ros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
 }
 
-function calcqwq() {
+function loopNoCanvas() {
 	if (!isInEnd && qwqIn.second >= 3) {
 		isInEnd = true;
 		playBgm(app.bgMusic);
 		if (app.bgVideo) playVideo(app.bgVideo);
 	}
-	if (!isPaused && isInEnd && !isOutStart) timeBgm = curTime + (nowTime_ms - curTime_ms) / 1e3;
+	if (emitter.eq('play') && isInEnd && !isOutStart) timeBgm = curTime + (nowTime_ms - curTime_ms) / 1e3;
 	if (timeBgm >= duration) isOutStart = true;
 	if (showTransition.checked && isOutStart && !isOutEnd) {
 		isOutEnd = true;
@@ -1041,12 +1057,11 @@ function calcqwq() {
 	if (qwq[4] && stat.good + stat.bad) {
 		stat.level = Number(levelText.match(/\d+$/));
 		stat.reset();
-		btnPlay.click();
-		btnPlay.click();
+		Promise.resolve().then(qwqStop).then(qwqStop);
 	}
 }
 
-function qwqdraw1() {
+function loopCanvas() {
 	const { lineScale, noteScaleRatio } = app;
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	//绘制背景
@@ -1207,31 +1222,6 @@ function fillTextNode(text, x, y, size, maxWidth) {
 	if (dx > maxWidth) ctxos.font = `${size / dx * maxWidth}px Custom,Noto Sans SC`;
 	ctxos.fillText(text, x, y);
 	return dx;
-}
-
-function qwqdraw2() {
-	fucktemp1 = true;
-	btnPause.click(); //isPaused = true;
-	audio.stop();
-	// frameAnimater.stop();
-	btnPause.classList.add('disabled');
-	ctxos.globalCompositeOperation = 'source-over';
-	ctxos.resetTransform();
-	ctxos.globalAlpha = 1;
-	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
-	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
-	ctxos.fillStyle = '#000'; //背景变暗
-	ctxos.globalAlpha = app.brightness; //背景不透明度
-	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
-	const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(levelText.slice(0, 2).toLocaleLowerCase());
-	setTimeout(() => {
-		if (!fucktemp1) return; //qwq
-		audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`], { loop: true });
-		qwqEnd.reset();
-		qwqEnd.play();
-		stat.level = Number(levelText.match(/\d+$/));
-		fucktemp2 = stat.getData(app.playMode === 1, selectspeed.value);
-	}, 1e3);
 }
 
 function qwqdraw3(statData) {
@@ -1683,15 +1673,14 @@ const updateLevelText = type => {
 	const levelString = selectLevel.value || '?';
 	return [diffString, levelString].join('  Lv.');
 };
-updateLevelText();
+levelText = updateLevelText();
 selectDifficulty.addEventListener('change', () => levelText = updateLevelText(0));
 selectLevel.addEventListener('change', () => levelText = updateLevelText(1));
 $id('select-volume').addEventListener('change', evt => {
 	const volume = Number(evt.target.value);
 	app.musicVolume = Math.min(1, 1 / volume);
 	app.soundVolume = Math.min(1, volume);
-	btnPause.click();
-	btnPause.click();
+	Promise.resolve().then(qwqPause).then(qwqPause);
 });
 status.reg('selectVolume', $id('select-volume'));
 const inputOffset = $id('input-offset');
@@ -1728,9 +1717,47 @@ selectchart.addEventListener('change', adjustInfo);
 	maxFrame.checkbox.dispatchEvent(new Event('change'));
 })();
 //play
+emitter.addEventListener('change', /** @this {Emitter} */ function() {
+	canvas.classList.toggle('fade', this.eq('stop'));
+	$id('mask').classList.toggle('fade', this.ne('stop'));
+	btnPlay.value = this.eq('stop') ? '播放' : '停止';
+	btnPause.value = this.eq('pause') ? '继续' : '暂停';
+	btnPause.classList.toggle('disabled', this.eq('stop'));
+	for (const i of $$('.disabled-when-playing')) i.classList.toggle('disabled', this.ne('stop'));
+	// console.log(this);
+});
 btnPlay.addEventListener('click', async function() {
-	btnPause.value = '暂停';
-	if (this.value === '播放') {
+	if (this.classList.contains('disabled')) return;
+	this.classList.add('disabled');
+	await qwqStop();
+	this.classList.remove('disabled');
+});
+btnPause.addEventListener('click', async function() {
+	if (this.classList.contains('disabled')) return;
+	this.classList.add('disabled');
+	await qwqPause();
+	this.classList.remove('disabled');
+});
+inputOffset.addEventListener('input', function() {
+	if (this.value < -400) this.value = -400;
+	if (this.value > 600) this.value = 600;
+});
+// status2.reg($id('btn-reverse'), 'click', target => target.classList.contains('active') ? 'Reversed' : '');if (qwq[5]) arr[arr.length] = 'Reversed';
+status2.reg(selectflip, 'change', target => ['', 'FlipX', 'FlipY', 'FlipX&Y'][target.value]);
+status2.reg(selectspeed, 'change', target => target.value);
+status2.reg(emitter, 'change', ( /** @type {Emitter} */ target) => target.eq('pause') ? 'Paused' : '');
+//plugin(phizone)
+inputName.addEventListener('input', function() {
+	if (this.value == '/pz') setTimeout(() => {
+		if (this.value == '/pz') {
+			import('./js/phizone.js').then(({ dialog }) => dialog());
+			this.value = '';
+			this.dispatchEvent(new Event('input'));
+		}
+	}, 1e3);
+});
+async function qwqStop() {
+	if (emitter.eq('stop')) {
 		if (!selectchart.value) return msgHandler.sendError('错误：未选择任何谱面');
 		if (!selectbgm.value) return msgHandler.sendError('错误：未选择任何音乐');
 		await main.kfcFkXqsVw50();
@@ -1739,68 +1766,27 @@ btnPlay.addEventListener('click', async function() {
 		app.md5 = chartsMD5.get(selectchart.value);
 		stat.level = Number(levelText.match(/\d+$/));
 		stat.reset(app.chart.numOfNotes, app.md5, selectspeed.value);
-		for (const i of app.lines) {
-			i.imageW = 6220.8; //1920
-			i.imageH = 7.68; //3
-			i.imageL = [res['JudgeLine'], res['JudgeLineMP'], null, res['JudgeLineFC']];
-			i.imageS = 1; //2.56
-			i.imageA = 1; //1.5625
-			i.imageD = false;
-			i.imageC = true;
-			i.imageU = true;
-		}
-		for (const i of chartLineData) {
-			if (selectchart.value === i.Chart) {
-				if (!app.lines[i.LineId]) { msgHandler.sendWarning(`指定id的判定线不存在：${i.LineId}`); continue; }
-				if (!bgs.has(i.Image)) msgHandler.sendWarning(`图片不存在：${i.Image}`);
-				/** @type {ImageBitmap} */
-				const image = bgs.get(i.Image) || res['NoImageBlack'];
-				app.lines[i.LineId].imageW = image.width;
-				app.lines[i.LineId].imageH = image.height;
-				if (!lineImages.has(image)) lineImages.set(image, new LineImage(image));
-				const lineImage = lineImages.get(image);
-				app.lines[i.LineId].imageL = [image, await lineImage.getMP(), await lineImage.getAP(), await lineImage.getFC()];
-				if (isFinite(i.Vert = parseFloat(i.Vert))) { //Legacy
-					app.lines[i.LineId].imageS = Math.abs(i.Vert) * 1080 / image.height;
-					app.lines[i.LineId].imageU = i.Vert > 0;
-				}
-				if (isFinite(i.Horz = parseFloat(i.Horz))) app.lines[i.LineId].imageA = i.Horz; //Legacy
-				if (isFinite(i.IsDark = parseFloat(i.IsDark))) app.lines[i.LineId].imageD = !!i.IsDark; //Legacy
-				if (isFinite(i.Scale = parseFloat(i.Scale))) app.lines[i.LineId].imageS = i.Scale;
-				if (isFinite(i.Aspect = parseFloat(i.Aspect))) app.lines[i.LineId].imageA = i.Aspect;
-				if (isFinite(i.UseBackgroundDim = parseFloat(i.UseBackgroundDim))) app.lines[i.LineId].imageD = !!i.UseBackgroundDim;
-				if (isFinite(i.UseLineColor = parseFloat(i.UseLineColor))) app.lines[i.LineId].imageC = !!i.UseLineColor;
-				if (isFinite(i.UseLineScale = parseFloat(i.UseLineScale))) app.lines[i.LineId].imageU = !!i.UseLineScale;
-			}
-		}
+		await loadLineData();
 		app.bgImage = bgs.get(selectbg.value) || res['NoImageWhite'];
 		app.bgImageBlur = bgsBlur.get(selectbg.value) || res['NoImageWhite'];
 		const bgm = bgms.get(selectbgm.value);
 		app.bgMusic = bgm.audio;
 		app.bgVideo = bgm.video;
-		this.value = '停止';
 		duration = app.bgMusic.duration / app.speed;
 		isInEnd = false;
 		isOutStart = false;
 		isOutEnd = false;
-		isPaused = false;
 		timeBgm = 0;
 		if (!showTransition.checked) qwqIn.addTime(3e3);
-		canvas.classList.remove('fade');
-		$id('mask').classList.add('fade');
-		btnPause.classList.remove('disabled');
-		for (const i of $$('.disabled-when-playing')) i.classList.add('disabled');
 		frameAnimater.start();
 		qwqIn.play();
 		interact.activate();
+		emitter.emit('play');
 	} else {
+		emitter.emit('stop');
 		interact.deactive();
 		audio.stop();
 		frameAnimater.stop();
-		canvas.classList.add('fade');
-		$id('mask').classList.remove('fade');
-		for (const i of $$('.disabled-when-playing')) i.classList.remove('disabled');
-		btnPause.classList.add('disabled');
 		//清除原有数据
 		fucktemp1 = false;
 		fucktemp2 = false;
@@ -1813,50 +1799,62 @@ btnPlay.addEventListener('click', async function() {
 		curTime = 0;
 		curTime_ms = 0;
 		duration = 0;
-		this.value = '播放';
 	}
-});
-btnPause.addEventListener('click', async function() {
-	if (this.classList.contains('disabled') || btnPlay.value === '播放') return;
-	this.classList.add('disabled');
-	if (this.value === '暂停') {
+}
+async function loadLineData() {
+	for (const i of app.lines) {
+		i.imageW = 6220.8; //1920
+		i.imageH = 7.68; //3
+		i.imageL = [res['JudgeLine'], res['JudgeLineMP'], null, res['JudgeLineFC']];
+		i.imageS = 1; //2.56
+		i.imageA = 1; //1.5625
+		i.imageD = false;
+		i.imageC = true;
+		i.imageU = true;
+	}
+	for (const i of chartLineData) {
+		if (selectchart.value === i.Chart) {
+			if (!app.lines[i.LineId]) { msgHandler.sendWarning(`指定id的判定线不存在：${i.LineId}`); continue; }
+			if (!bgs.has(i.Image)) msgHandler.sendWarning(`图片不存在：${i.Image}`);
+			/** @type {ImageBitmap} */
+			const image = bgs.get(i.Image) || res['NoImageBlack'];
+			app.lines[i.LineId].imageW = image.width;
+			app.lines[i.LineId].imageH = image.height;
+			if (!lineImages.has(image)) lineImages.set(image, new LineImage(image));
+			const lineImage = lineImages.get(image);
+			app.lines[i.LineId].imageL = [image, await lineImage.getMP(), await lineImage.getAP(), await lineImage.getFC()];
+			if (isFinite(i.Vert = parseFloat(i.Vert))) { //Legacy
+				app.lines[i.LineId].imageS = Math.abs(i.Vert) * 1080 / image.height;
+				app.lines[i.LineId].imageU = i.Vert > 0;
+			}
+			if (isFinite(i.Horz = parseFloat(i.Horz))) app.lines[i.LineId].imageA = i.Horz; //Legacy
+			if (isFinite(i.IsDark = parseFloat(i.IsDark))) app.lines[i.LineId].imageD = !!i.IsDark; //Legacy
+			if (isFinite(i.Scale = parseFloat(i.Scale))) app.lines[i.LineId].imageS = i.Scale;
+			if (isFinite(i.Aspect = parseFloat(i.Aspect))) app.lines[i.LineId].imageA = i.Aspect;
+			if (isFinite(i.UseBackgroundDim = parseFloat(i.UseBackgroundDim))) app.lines[i.LineId].imageD = !!i.UseBackgroundDim;
+			if (isFinite(i.UseLineColor = parseFloat(i.UseLineColor))) app.lines[i.LineId].imageC = !!i.UseLineColor;
+			if (isFinite(i.UseLineScale = parseFloat(i.UseLineScale))) app.lines[i.LineId].imageU = !!i.UseLineScale;
+		}
+	}
+}
+async function qwqPause() {
+	if (emitter.eq('stop') || fucktemp1) return;
+	if (emitter.eq('play')) {
 		if (app.bgVideo) app.bgVideo.pause();
 		qwqIn.pause();
 		if (showTransition.checked && isOutStart) qwqOut.pause();
-		isPaused = true;
-		this.value = '继续';
 		curTime = timeBgm;
 		audio.stop();
+		emitter.emit('pause');
 	} else {
 		if (app.bgVideo) await playVideo(app.bgVideo, timeBgm * app.speed);
 		qwqIn.play();
 		if (showTransition.checked && isOutStart) qwqOut.play();
-		isPaused = false;
 		if (isInEnd && !isOutStart) playBgm(app.bgMusic, timeBgm * app.speed);
 		// console.log(app.bgVideo);
-		this.value = '暂停';
+		emitter.emit('play');
 	}
-	this.classList.remove('disabled');
-});
-inputOffset.addEventListener('input', function() {
-	if (this.value < -400) this.value = -400;
-	if (this.value > 600) this.value = 600;
-});
-// status2.reg($id('btn-reverse'), 'click', target => target.classList.contains('active') ? 'Reversed' : '');if (qwq[5]) arr[arr.length] = 'Reversed';
-status2.reg(selectflip, 'change', target => ['', 'FlipX', 'FlipY', 'FlipX&Y'][target.value]);
-status2.reg(selectspeed, 'change', target => target.value);
-status2.reg(btnPause, 'click', target => target.value !== '暂停' ? 'Paused' : ''); //qwq
-status2.reg(btnPlay, 'click', () => '');
-//plugin(phizone)
-inputName.addEventListener('input', function() {
-	if (this.value == '/pz') setTimeout(() => {
-		if (this.value == '/pz') {
-			import('./js/phizone.js').then(({ dialog }) => dialog());
-			this.value = '';
-			this.dispatchEvent(new Event('input'));
-		}
-	}, 1e3);
-});
+}
 //plugin(tips)
 function fireTip(html) {
 	const cover = document.createElement('div');
