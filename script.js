@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b33'], 1611795955, 1680187046];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b34'], 1611795955, 1680189489];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -1751,7 +1751,16 @@ status2.reg(emitter, 'change', ( /** @type {Emitter} */ target) => target.eq('pa
 inputName.addEventListener('input', function() {
 	if (this.value == '/pz') setTimeout(() => {
 		if (this.value == '/pz') {
-			import('./js/phizone.js').then(({ dialog }) => dialog());
+			import('./js/phizone.js?v=05').then(({ dialog }) => dialog());
+			this.value = '';
+			this.dispatchEvent(new Event('input'));
+		}
+	}, 1e3);
+});
+inputName.addEventListener('input', function() {
+	if (this.value == '/random') setTimeout(() => {
+		if (this.value == '/random') {
+			import('./js/phizone.js').then(({ random }) => random());
 			this.value = '';
 			this.dispatchEvent(new Event('input'));
 		}

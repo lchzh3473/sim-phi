@@ -1,5 +1,5 @@
 import { uploader } from './reader.js';
-const vtext = 'PhiZone API v0.4';
+const vtext = 'PhiZone API v0.5';
 const vprompt = str => prompt(`${vtext}\n${str}`);
 const valert = str => alert(`${vtext}\n${str}`);
 async function query(id) {
@@ -25,6 +25,66 @@ async function query(id) {
 		// offset: data.offset
 	};
 }
+async function randomCore() {
+	const response = await fetch(`https://api.phi.zone/charts/?pagination=0&query_charts=1`);
+	if (!response.ok) {
+		if (response.status === 404) return { charts: [] };
+		throw `${response.status} ${response.statusText}`;
+	}
+	const data = await response.json();
+	// console.log(data);
+	const charts = data.filter(a => a.chart).sort(_ => Math.random() - 0.5);
+	const chart = charts[0];
+	// console.log(chart);
+	const songId = chart.song;
+	const song = await fetch(`https://api.phi.zone/songs/${songId}/`).then(res => res.json());
+	// console.log(song);
+	return {
+		charts: [{
+			id: chart.id,
+			chart: chart.chart,
+			level: `${chart.level}  Lv.${chart.difficulty|0}`,
+			charter: chart.charter.replace(/\[PZUser:\d+:([^\]]+)\]/g, '$1'),
+		}],
+		composer: song.composer,
+		illustration: song.illustration,
+		illustrator: song.illustrator,
+		name: song.name,
+		song: song.song,
+		// offset: data.offset
+	};
+}
+export async function random() {
+	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
+	const data = await randomCore().catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
+	console.log(data);
+	if (!data) return;
+	const charts = data.charts;
+	if (!charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
+	await xhr3(data.song, dstr(data.song), 0, charts.length + 2);
+	await xhr3(data.illustration, dstr(data.illustration), 1, charts.length + 2);
+	for (let i = 0; i < charts.length; i++) {
+		const chart = charts[i];
+		await xhr3(chart.chart, dstr(chart.chart), i + 2, charts.length + 2);
+		const encoder = new TextEncoder();
+		const offset = getOffset(chart.id);
+		const infoText = `
+			#
+			Name: ${data.name}
+			Song: ${dstr(data.song)}
+			Picture: ${dstr(data.illustration)}
+			Chart: ${dstr(chart.chart)}
+			Level: ${chart.level}
+			Composer: ${data.composer}
+			Charter: ${chart.charter}
+			Illustrator: ${data.illustrator}
+			Offset: ${offset}
+		`;
+		const info = encoder.encode(infoText);
+		uploader.onload({ target: { result: info.buffer } }, { name: 'info.txt' });
+	}
+}
+self.random = random; //debug
 export async function dialog(num) {
 	const id = num || vprompt('请输入歌曲ID');
 	if (id === '' || id === null) return valert('未输入歌曲ID，已取消操作');
