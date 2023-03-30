@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b32'], 1611795955, 1679629560];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b33'], 1611795955, 1680187046];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -342,7 +342,7 @@ self.addEventListener('resize', () => stage.resize());
 	}
 }
 //qwq[water,demo,democlick]
-const qwq = [null, false, null, null, 0, 0];
+const qwq = [null, false, null, null, 0, null];
 import('./js/demo.js').then(a => a.default());
 //qwq end
 const exitFull = () => {
@@ -1068,7 +1068,7 @@ function loopCanvas() {
 	ctxos.globalAlpha = 1;
 	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
 	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
-	if (isInEnd && app.bgVideo) {
+	if (isInEnd && app.bgVideo && !main.qwqwq) {
 		const { videoWidth: width, videoHeight: height } = app.bgVideo;
 		ctxos.drawImage(app.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
 	}
@@ -1121,7 +1121,7 @@ function loopCanvas() {
 	ctxos.globalAlpha = 1;
 	//绘制进度条
 	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
-	ctxos.drawImage(res['ProgressBar'], (qwq[5] ? duration - timeBgm : timeBgm) / duration * 1920 - 1920, 0);
+	ctxos.drawImage(res['ProgressBar'], (main.qwqwq ? duration - timeBgm : timeBgm) / duration * 1920 - 1920, 0);
 	//绘制文字
 	ctxos.resetTransform();
 	ctxos.fillStyle = '#fff';
@@ -1178,7 +1178,7 @@ function loopCanvas() {
 	else ctxos.globalAlpha = 1 - tween.easeOutSine(qwqOut.second * 1.5);
 	ctxos.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'left';
-	ctxos.fillText(`${time2Str(qwq[5]?duration-timeBgm:timeBgm)}/${time2Str(duration)}${status2.text}`, lineScale * 0.05, lineScale * 0.6);
+	ctxos.fillText(`${time2Str(main.qwqwq?duration-timeBgm:timeBgm)}/${time2Str(duration)}${status2.text}`, lineScale * 0.05, lineScale * 0.6);
 	ctxos.textAlign = 'right';
 	ctxos.fillText(frameTimer.fpsStr, canvasos.width - lineScale * 0.05, lineScale * 0.6);
 	if (showStat.checked) {
@@ -1353,7 +1353,7 @@ function drawTap(note) {
 		ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
 	} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
-		if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0); //过线前1.5s出现
+		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0); //过线前1.5s出现
 		if (HL) ctxos.drawImage(res['TapHL'], -res['TapHL'].width * 0.5, -res['TapHL'].height * 0.5);
 		else ctxos.drawImage(res['Tap'], -res['Tap'].width * 0.5, -res['Tap'].height * 0.5);
 	}
@@ -1367,7 +1367,7 @@ function drawDrag(note) {
 	if (note.badtime);
 	else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
-		if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
+		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
 		if (HL) ctxos.drawImage(res['DragHL'], -res['DragHL'].width * 0.5, -res['DragHL'].height * 0.5);
 		else ctxos.drawImage(res['Drag'], -res['Drag'].width * 0.5, -res['Drag'].height * 0.5);
 	}
@@ -1378,7 +1378,7 @@ function drawHold(note, realTime) {
 	const nsr = app.noteScaleRatio;
 	if (!note.visible || note.realTime + note.realHoldTime < realTime) return; //qwq
 	ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
-	if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
+	if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	const baseLength = app.scaleY / nsr * note.speed * app.speed;
 	const holdLength = baseLength * note.realHoldTime;
@@ -1405,7 +1405,7 @@ function drawFlick(note) {
 	if (note.badtime);
 	else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
-		if (qwq[5]) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
+		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
 		if (HL) ctxos.drawImage(res['FlickHL'], -res['FlickHL'].width * 0.5, -res['FlickHL'].height * 0.5);
 		else ctxos.drawImage(res['Flick'], -res['Flick'].width * 0.5, -res['Flick'].height * 0.5);
 	}
@@ -1693,6 +1693,7 @@ const showTransition = $id('showTransition');
 lowRes.checkbox.addEventListener('change', evt => {
 	app.setLowResFactor(evt.target.checked ? 0.5 : 1);
 });
+lowRes.checkbox.dispatchEvent(new Event('change'));
 selectbg.onchange = () => { //qwq
 	app.bgImage = bgs.get(selectbg.value);
 	app.bgImageBlur = bgsBlur.get(selectbg.value);
@@ -1742,7 +1743,7 @@ inputOffset.addEventListener('input', function() {
 	if (this.value < -400) this.value = -400;
 	if (this.value > 600) this.value = 600;
 });
-// status2.reg($id('btn-reverse'), 'click', target => target.classList.contains('active') ? 'Reversed' : '');if (qwq[5]) arr[arr.length] = 'Reversed';
+status2.reg(emitter, 'change', _ => main.qwqwq ? 'Reversed' : ''); //qwq
 status2.reg(selectflip, 'change', target => ['', 'FlipX', 'FlipY', 'FlipX&Y'][target.value]);
 status2.reg(selectspeed, 'change', target => target.value);
 status2.reg(emitter, 'change', ( /** @type {Emitter} */ target) => target.eq('pause') ? 'Paused' : '');
@@ -1938,4 +1939,4 @@ main.qwqEnd = qwqEnd;
 main.bgms = bgms;
 main.selectbgm = selectbgm;
 main.qwq = qwq;
-// import('./reverseChart.js');
+main.qwqwq = false;
