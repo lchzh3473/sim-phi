@@ -1,5 +1,5 @@
 import { uploader } from './reader.js';
-const vtext = 'PhiZone API v0.5';
+const vtext = 'PhiZone API v0.6';
 const vprompt = str => prompt(`${vtext}\n${str}`);
 const valert = str => alert(`${vtext}\n${str}`);
 async function query(id) {
@@ -8,22 +8,9 @@ async function query(id) {
 		if (response.status === 404) return { charts: [] };
 		throw `${response.status} ${response.statusText}`;
 	}
-	const data = await response.json();
-	console.log(data);
-	return {
-		charts: data.charts.filter(a => a.chart).map(a => ({
-			id: a.id,
-			chart: a.chart,
-			level: `${a.level}  Lv.${a.difficulty|0}`,
-			charter: a.charter.replace(/\[PZUser:\d+:([^\]]+)\]/g, '$1'),
-		})),
-		composer: data.composer,
-		illustration: data.illustration,
-		illustrator: data.illustrator,
-		name: data.name,
-		song: data.song,
-		// offset: data.offset
-	};
+	const song = await response.json();
+	console.log(song);
+	return getData(song.charts.filter(a => a.chart), song);
 }
 async function randomCore() {
 	const response = await fetch(`https://api.phi.zone/charts/?pagination=0&query_charts=1`);
@@ -32,73 +19,65 @@ async function randomCore() {
 		throw `${response.status} ${response.statusText}`;
 	}
 	const data = await response.json();
-	// console.log(data);
 	const charts = data.filter(a => a.chart).sort(_ => Math.random() - 0.5);
 	const chart = charts[0];
-	// console.log(chart);
-	const songId = chart.song;
-	const song = await fetch(`https://api.phi.zone/songs/${songId}/`).then(res => res.json());
-	// console.log(song);
+	const song = await fetch(`https://api.phi.zone/songs/${chart.song}/`).then(res => res.json());
+	return getData([chart], song);
+}
+
+function getData(base, song) {
 	return {
-		charts: [{
-			id: chart.id,
-			chart: chart.chart,
-			level: `${chart.level}  Lv.${chart.difficulty|0}`,
-			charter: chart.charter.replace(/\[PZUser:\d+:([^\]]+)\]/g, '$1'),
-		}],
+		charts: base.map(a => ({
+			id: a.id,
+			chart: a.chart,
+			level: `${a.level}  Lv.${a.difficulty | 0}`,
+			charter: a.charter.replace(/\[PZUser:\d+:([^\]]+)\]/g, '$1'),
+			assets: a.assets,
+		})),
 		composer: song.composer,
 		illustration: song.illustration,
 		illustrator: song.illustrator,
 		name: song.name,
 		song: song.song,
-		// offset: data.offset
 	};
 }
 export async function random() {
-	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
 	const data = await randomCore().catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
 	console.log(data);
 	if (!data) return;
-	const charts = data.charts;
-	if (!charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
-	await xhr3(data.song, dstr(data.song), 0, charts.length + 2);
-	await xhr3(data.illustration, dstr(data.illustration), 1, charts.length + 2);
-	for (let i = 0; i < charts.length; i++) {
-		const chart = charts[i];
-		await xhr3(chart.chart, dstr(chart.chart), i + 2, charts.length + 2);
-		const encoder = new TextEncoder();
-		const offset = getOffset(chart.id);
-		const infoText = `
-			#
-			Name: ${data.name}
-			Song: ${dstr(data.song)}
-			Picture: ${dstr(data.illustration)}
-			Chart: ${dstr(chart.chart)}
-			Level: ${chart.level}
-			Composer: ${data.composer}
-			Charter: ${chart.charter}
-			Illustrator: ${data.illustrator}
-			Offset: ${offset}
-		`;
-		const info = encoder.encode(infoText);
-		uploader.onload({ target: { result: info.buffer } }, { name: 'info.txt' });
-	}
+	if (!data.charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
+	await readData(data);
 }
-self.random = random; //debug
 export async function dialog(num) {
 	const id = num || vprompt('请输入歌曲ID');
 	if (id === '' || id === null) return valert('未输入歌曲ID，已取消操作');
-	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
 	const data = await query(id).catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
 	console.log(data);
 	if (!data) return;
-	const charts = data.charts;
-	if (!charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
-	await xhr3(data.song, dstr(data.song), 0, charts.length + 2);
-	await xhr3(data.illustration, dstr(data.illustration), 1, charts.length + 2);
+	if (!data.charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
+	await readData(data);
+}
+async function readData(data) {
+	const /** @type {array} */ charts = data.charts;
+	const urls = [data.song, data.illustration];
+	for (const chart of charts) {
+		if (chart.chart) urls.push(chart.chart);
+		if (chart.assets) urls.push(chart.assets);
+	}
+	const downloader = new Downloader();
+	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
+	await downloader.add(urls, ({ url, status, statusText }) => valert(`资源 '${dstr(url)}' 加载失败\n错误代码：${status} ${statusText}`));
+	await downloader.start(uploader.onprogress);
+	const xhr4 = async (url, name) => {
+		const data = await downloader.getData(url);
+		uploader.onload({ target: { result: data } }, { name }); //以后添加catch
+	};
+	await xhr4(data.song, dstr(data.song));
+	await xhr4(data.illustration, dstr(data.illustration));
 	for (let i = 0; i < charts.length; i++) {
 		const chart = charts[i];
-		await xhr3(chart.chart, dstr(chart.chart), i + 2, charts.length + 2);
+		if (chart.assets) await xhr4(chart.assets, dstr(chart.assets));
+		await xhr4(chart.chart, dstr(chart.chart));
 		const encoder = new TextEncoder();
 		const offset = getOffset(chart.id);
 		const infoText = `
@@ -118,33 +97,60 @@ export async function dialog(num) {
 	}
 }
 /**
+ * @typedef {(ev:ProgressEvent<XMLHttpRequest>)} XHR
  * @param {string} url
- * @typedef {object} XMLHttpRequestCallbacks
- * @property {(ev:ProgressEvent<XMLHttpRequest>)} onprogress
- * @property {(ev:ProgressEvent<XMLHttpRequest>)} onload
- * @property {(ev:ProgressEvent<XMLHttpRequest>)} onerror
- * @param {XMLHttpRequestCallbacks} param1
+ * @param {XHR} onprogress
  */
-function xhr2(url, {
-	onprogress = () => void 0,
-	onload = () => void 0,
-	onerror = () => void 0,
-} = {}) {
-	const xhr = new XMLHttpRequest();
-	xhr.open('get', url, true);
-	xhr.responseType = 'arraybuffer';
-	xhr.onprogress = onprogress;
-	xhr.onload = ev => xhr.status === 200 ? onload(ev) : onerror(ev);
-	xhr.onerror = onerror;
-	xhr.send();
+function xhr2(url, onprogress = () => void 0) {
+	return new Promise((resolve, reject) => {
+		const xhr = new XMLHttpRequest();
+		xhr.open('get', url, true);
+		xhr.responseType = 'arraybuffer';
+		xhr.onprogress = onprogress;
+		xhr.onload = evt => (xhr.status === 200 ? resolve : reject)(evt);
+		xhr.onerror = reject;
+		xhr.send();
+	});
 }
-
-function xhr3(url, name, loaded, total) {
-	return new Promise(resolve => xhr2(url, {
-		onprogress(evt) { uploader.onprogress({ loaded: evt.total * loaded + evt.loaded, total: evt.total * total }) },
-		onload(evt) { resolve(uploader.onload({ target: { result: evt.target.response } }, { name })) },
-		onerror(evt) { resolve(valert(`资源 '${name}' 加载失败\n错误代码：${evt.target.status} ${evt.target.statusText}`)) }
-	}));
+async function getContentLength(url) {
+	const res = await fetch(url, { method: 'HEAD' });
+	const length = Number(res.headers.get('content-length')) || 0;
+	if (res.ok && length) return length;
+	const res2 = await fetch(url, { method: 'GET' });
+	res2.body.cancel();
+	if (!res2.ok) throw { url, status: res2.status, statusText: res2.statusText };
+	return Number(res2.headers.get('content-length')) || 0;
+}
+class Downloader {
+	constructor() {
+		this.xhrs = Object.create(null);
+	}
+	async add(urls = [], onerror = () => void 0) {
+		return Promise.all(urls.filter(url => !this.xhrs[url]).map(async url => {
+			const total = await getContentLength(url).catch(err => (onerror(err), 0));
+			this.xhrs[url] = { event: { loaded: 0, total } };
+		}));
+	}
+	async start(onprogress = () => void 0) {
+		const entries = Object.entries(this.xhrs);
+		return Promise.all(entries.map(([url, xhr]) => xhr2(url, evt => {
+			xhr.event = evt;
+			onprogress({ loaded: this.loaded, total: this.total });
+		}).then(evt => xhr.event = evt).catch(evt => xhr.event = evt)));
+	}
+	async getData(url) {
+		const { event } = this.xhrs[url];
+		if (event.loaded >= event.total) return event.target.response;
+		throw new Error('未加载完成');
+	}
+	get loaded() {
+		const values = Object.values(this.xhrs);
+		return values.reduce((loaded, xhr) => loaded + xhr.event.loaded, 0);
+	}
+	get total() {
+		const values = Object.values(this.xhrs);
+		return values.reduce((total, xhr) => total + xhr.event.total, 0);
+	}
 }
 
 function getOffset(id) {

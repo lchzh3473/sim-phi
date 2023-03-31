@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b34'], 1611795955, 1680189489];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b35'], 1611795955, 1680259793];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -266,7 +266,8 @@ self.addEventListener('resize', () => stage.resize());
 	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
 	uploader.onprogress = function(evt, i) { //显示加载文件进度
 		if (!evt.total) return;
-		msgHandler.sendMessage(`加载文件：${Math.floor(evt.loaded / evt.total * 100)}%`);
+		const percent = Math.floor(evt.loaded / evt.total * 100);
+		msgHandler.sendMessage(`加载文件：${percent}% (${bytefm(evt.loaded)}/${bytefm(evt.total)})`);
 	};
 	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
 	uploader.onload = function(evt, i) {
@@ -1531,6 +1532,28 @@ function hex2rgba(color) {
 function rgba2hex(...rgba) {
 	return '#' + rgba.map(i => ('00' + Math.round(Number(i) * 255 || 0).toString(16)).slice(-2)).join('');
 }
+//byte转人类可读
+function bytefm(byte = 0) {
+	if (byte < 1024) return `${byte}B`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}KB`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}MB`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}GB`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}TB`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}PB`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}EB`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}ZB`;
+	byte /= 1024;
+	if (byte < 1024) return `${byte.toFixed(2)}YB`;
+	byte /= 1024;
+	return `${byte}BB`;
+}
 //html交互(WIP)
 class StatusManager {
 	constructor(key) {
@@ -1751,7 +1774,7 @@ status2.reg(emitter, 'change', ( /** @type {Emitter} */ target) => target.eq('pa
 inputName.addEventListener('input', function() {
 	if (this.value == '/pz') setTimeout(() => {
 		if (this.value == '/pz') {
-			import('./js/phizone.js?v=05').then(({ dialog }) => dialog());
+			import('./js/phizone.js?v=06').then(({ dialog }) => dialog());
 			this.value = '';
 			this.dispatchEvent(new Event('input'));
 		}
@@ -1760,7 +1783,7 @@ inputName.addEventListener('input', function() {
 inputName.addEventListener('input', function() {
 	if (this.value == '/random') setTimeout(() => {
 		if (this.value == '/random') {
-			import('./js/phizone.js').then(({ random }) => random());
+			import('./js/phizone.js?v=06').then(({ random }) => random());
 			this.value = '';
 			this.dispatchEvent(new Event('input'));
 		}
