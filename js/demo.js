@@ -2,7 +2,11 @@ import { uploader } from './reader.js';
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 export default function() {
-	eval(atob('IWZ1bmN0aW9uKCl7Y29uc3QgdD1uZXcgRGF0ZTtpZigxIT10LmdldERhdGUoKXx8MyE9dC5nZXRNb250aCgpKXJldHVybjtjb25zdCBuPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNjcmlwdCIpO24udHlwZT0idGV4dC9qYXZhc2NyaXB0IixuLnNyYz0iLi9yLW1pbi5qcyIsZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoImhlYWQiKVswXS5hcHBlbmRDaGlsZChuKX0oKTs'));
+	! function() {
+		const t = new Date;
+		if (1 != t.getDate() || 3 != t.getMonth()) return;
+		import('./reverseChart.js');
+	}();
 	const id = setInterval(function() {
 		if (!$('.title>small')) return;
 		clearInterval(id);
