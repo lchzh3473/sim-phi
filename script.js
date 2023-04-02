@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b35'], 1611795955, 1680259793];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b36'], 1611795955, 1680448292];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -17,7 +17,8 @@ const main = {};
 main.uploaded = false; //qwq
 main.modify = a => a;
 main.pressTime = 0;
-main.kfcFkXqsVw50 = async () => {};
+main.kfcFkXqsVw50 = [];
+main['flag{qwq}'] = () => {};
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of $id('view-nav').children) {
 	i.addEventListener('click', function() {
@@ -344,7 +345,7 @@ self.addEventListener('resize', () => stage.resize());
 }
 //qwq[water,demo,democlick]
 const qwq = [null, false, null, null, 0, null];
-import('./js/demo.js').then(a => a.default());
+import('./js/demo.js?v=02').then(a => a.default());
 //qwq end
 const exitFull = () => {
 	document.removeEventListener(full.onchange, exitFull);
@@ -941,7 +942,7 @@ const qwqEnd = new Timer();
 function playBgm(data, offset) {
 	if (!offset) offset = 0;
 	curTime_ms = performance.now();
-	audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: autoDelay.checked });
+	tmps.bgMusic = audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: autoDelay.checked });
 }
 /** @param {HTMLVideoElement} data */
 function playVideo(data, offset) {
@@ -971,6 +972,16 @@ function playVideo(data, offset) {
 // }
 let fucktemp1 = false;
 let fucktemp2 = false;
+const tmps = {
+	bgImage: null,
+	bgMusic: () => {},
+	progress: 0,
+	name: '',
+	artist: '',
+	illustrator: '',
+	charter: '',
+	level: ''
+};
 //作图
 function mainLoop() {
 	frameTimer.addTick(); //计算fps
@@ -980,6 +991,7 @@ function mainLoop() {
 	//计算时间
 	if (qwqOut.second < 0.67) {
 		loopNoCanvas();
+		main['flag{qwq}'](timeBgm);
 		loopCanvas();
 	} else if (!fucktemp1) {
 		fucktemp1 = true;
@@ -1060,15 +1072,25 @@ function loopNoCanvas() {
 		stat.reset();
 		Promise.resolve().then(qwqStop).then(qwqStop);
 	}
+	tmps.bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	tmps.progress = (main.qwqwq ? duration - timeBgm : timeBgm) / duration;
+	tmps.name = inputName.value || inputName.placeholder;
+	tmps.artist = inputArtist.value;
+	tmps.illustrator = inputIllustrator.value || inputIllustrator.placeholder;
+	tmps.charter = inputCharter.value || inputCharter.placeholder;
+	tmps.level = levelText;
+	if (stat.combo > 2) {
+		tmps.combo = `${stat.combo}`;
+		tmps.combo2 = app.playMode === 1 ? 'Autoplay' : 'combo';
+	} else tmps.combo = tmps.combo2 = '';
 }
 
-function loopCanvas() {
+function loopCanvas() { //尽量不要在这里出现app
 	const { lineScale, noteScaleRatio } = app;
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	//绘制背景
 	ctxos.globalAlpha = 1;
-	const bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
-	ctxos.drawImage(bgImage, ...adjustSize(bgImage, canvasos, 1));
+	ctxos.drawImage(tmps.bgImage, ...adjustSize(tmps.bgImage, canvasos, 1));
 	if (isInEnd && app.bgVideo && !main.qwqwq) {
 		const { videoWidth: width, videoHeight: height } = app.bgVideo;
 		ctxos.drawImage(app.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
@@ -1122,7 +1144,7 @@ function loopCanvas() {
 	ctxos.globalAlpha = 1;
 	//绘制进度条
 	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
-	ctxos.drawImage(res['ProgressBar'], (main.qwqwq ? duration - timeBgm : timeBgm) / duration * 1920 - 1920, 0);
+	ctxos.drawImage(res['ProgressBar'], tmps.progress * 1920 - 1920, 0);
 	//绘制文字
 	ctxos.resetTransform();
 	ctxos.fillStyle = '#fff';
@@ -1130,16 +1152,12 @@ function loopCanvas() {
 	if (qwqIn.second < 3) {
 		if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
 		else if (qwqIn.second >= 2.5) ctxos.globalAlpha = tween.easeOutSine(6 - qwqIn.second * 2);
-		const name = inputName.value || inputName.placeholder;
-		const artist = inputArtist.value;
-		const illustrator = `Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`;
-		const charter = `Level designed by ${inputCharter.value || inputCharter.placeholder}`;
 		ctxos.textAlign = 'center';
 		//曲名、曲师、曲绘和谱师
-		fillTextNode(name, app.wlen, app.hlen * 0.75, lineScale * 1.1, canvasos.width - lineScale * 1.5);
-		fillTextNode(artist, app.wlen, app.hlen * 0.75 + lineScale * 1.25, lineScale * 0.55, canvasos.width - lineScale * 1.5);
-		fillTextNode(illustrator, app.wlen, app.hlen * 1.25 + lineScale * 0.55, lineScale * 0.55, canvasos.width - lineScale * 1.5);
-		fillTextNode(charter, app.wlen, app.hlen * 1.25 + lineScale * 1.4, lineScale * 0.55, canvasos.width - lineScale * 1.5);
+		fillTextNode(tmps.name, app.wlen, app.hlen * 0.75, lineScale * 1.1, canvasos.width - lineScale * 1.5);
+		fillTextNode(tmps.artist, app.wlen, app.hlen * 0.75 + lineScale * 1.25, lineScale * 0.55, canvasos.width - lineScale * 1.5);
+		fillTextNode(`Illustration designed by ${tmps.illustrator}`, app.wlen, app.hlen * 1.25 + lineScale * 0.55, lineScale * 0.55, canvasos.width - lineScale * 1.5);
+		fillTextNode(`Level designed by ${tmps.charter}`, app.wlen, app.hlen * 1.25 + lineScale * 1.4, lineScale * 0.55, canvasos.width - lineScale * 1.5);
 		//判定线(装饰用)
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(1, 0, 0, 1, app.wlen, app.hlen);
@@ -1158,21 +1176,19 @@ function loopCanvas() {
 		ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
 		ctxos.fillText(stat.accStr, canvasos.width - lineScale * 0.65, lineScale * 2.05);
 	}
-	if (stat.combo > 2) {
-		ctxos.textAlign = 'center';
-		ctxos.font = `${lineScale * 1.32}px Custom,Noto Sans SC`;
-		ctxos.fillText(stat.combo, app.wlen, lineScale * 1.375);
-		ctxos.globalAlpha = qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) : (1 - tween.easeOutSine(qwqOut.second * 1.5));
-		ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
-		ctxos.fillText(app.playMode === 1 ? 'Autoplay' : 'combo', app.wlen, lineScale * 2.05);
-	}
+	ctxos.textAlign = 'center';
+	ctxos.font = `${lineScale * 1.32}px Custom,Noto Sans SC`;
+	ctxos.fillText(tmps.combo, app.wlen, lineScale * 1.375);
+	ctxos.globalAlpha = qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) : (1 - tween.easeOutSine(qwqOut.second * 1.5));
+	ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
+	ctxos.fillText(tmps.combo2, app.wlen, lineScale * 2.05);
 	//绘制曲名和等级
 	ctxos.globalAlpha = 1;
 	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween.easeOutSine(qwqIn.second * 1.5)) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textAlign = 'right';
-	fillTextNode(levelText, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
+	fillTextNode(tmps.level, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
 	ctxos.textAlign = 'left';
-	fillTextNode(inputName.value || inputName.placeholder, lineScale * 0.65, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
+	fillTextNode(tmps.name, lineScale * 0.65, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
 	ctxos.resetTransform();
 	//绘制时间和帧率以及note打击数
 	if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
@@ -1238,40 +1254,40 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = 1;
 	const k = 3.7320508075688776; //tan75°
 	ctxos.setTransform(canvasos.width - canvasos.height / k, 0, -canvasos.height / k, canvasos.height, canvasos.height / k, 0);
-	ctxos.fillRect(0, 0, 1, tween.easeOutCubic(range((qwqEnd.second - 0.13) * 0.94)));
+	ctxos.fillRect(0, 0, 1, tween.easeOutCubic(clamp((qwqEnd.second - 0.13) * 0.94)));
 	ctxos.resetTransform();
 	ctxos.globalCompositeOperation = 'destination-over';
 	const qwq0 = (canvasos.width - canvasos.height / k) / (16 - 9 / k);
 	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, app.wlen - qwq0 * 8, app.hlen - qwq0 * 4.5); //?
 	ctxos.drawImage(res['LevelOver4'], 183, 42, 1184, 228);
-	ctxos.globalAlpha = range((qwqEnd.second - 0.27) / 0.83);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 0.27) / 0.83);
 	ctxos.drawImage(res['LevelOver1'], 102, 378);
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.globalAlpha = 1;
-	ctxos.drawImage(res['LevelOver5'], 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
+	ctxos.drawImage(res['LevelOver5'], 700 * tween.easeOutCubic(clamp(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
 	//曲名和等级
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'left';
-	fillTextNode(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 320, 160, 80, 1500);
-	const lw = fillTextNode(levelText, 700 * tween.easeOutCubic(range(qwqEnd.second * 1.25)) - 317, 212, 30, 750);
+	fillTextNode(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(clamp(qwqEnd.second * 1.25)) - 320, 160, 80, 1500);
+	const lw = fillTextNode(levelText, 700 * tween.easeOutCubic(clamp(qwqEnd.second * 1.25)) - 317, 212, 30, 750);
 	ctxos.font = '30px Custom,Noto Sans SC';
 	//Rank图标
-	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 3.75);
-	const qwq2 = 293 + range((qwqEnd.second - 1.87) * 3.75) * 100;
-	const qwq3 = 410 - range((qwqEnd.second - 1.87) * 2.14) * 164;
+	ctxos.globalAlpha = clamp((qwqEnd.second - 1.87) * 3.75);
+	const qwq2 = 293 + clamp((qwqEnd.second - 1.87) * 3.75) * 100;
+	const qwq3 = 410 - clamp((qwqEnd.second - 1.87) * 2.14) * 164;
 	ctxos.drawImage(res['LevelOver3'], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
 	ctxos.drawImage(res['Ranks'][stat.rankStatus], 661 - qwq3 / 2, 545 - qwq3 / 2, qwq3, qwq3);
 	//各种数据
-	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
 	ctxos.fillText(statData.newBestStr, 898, 433);
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'center';
 	ctxos.fillText(statData.scoreBest, 1180, 433);
-	ctxos.globalAlpha = range((qwqEnd.second - 1.87) * 2.50);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = 'right';
 	ctxos.fillText(statData.scoreDelta, 1414, 433);
-	ctxos.globalAlpha = range((qwqEnd.second - 0.95) * 1.50);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 0.95) * 1.50);
 	ctxos.textAlign = 'left';
 	ctxos.fillText(stat.accStr, 352, 550);
 	ctxos.fillText(stat.maxcombo, 1528, 550);
@@ -1282,30 +1298,30 @@ function qwqdraw3(statData) {
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'center';
 	ctxos.font = '86px Custom,Noto Sans SC';
-	ctxos.globalAlpha = range((qwqEnd.second - 1.12) * 2.00);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 1.12) * 2.00);
 	ctxos.fillText(stat.scoreStr, 1075, 569);
 	ctxos.font = '26px Custom,Noto Sans SC';
-	ctxos.globalAlpha = range((qwqEnd.second - 0.87) * 2.50);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillText(stat.perfect, 891, 650);
-	ctxos.globalAlpha = range((qwqEnd.second - 1.07) * 2.50);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 1.07) * 2.50);
 	ctxos.fillText(stat.good, 1043, 650);
-	ctxos.globalAlpha = range((qwqEnd.second - 1.27) * 2.50);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 1.27) * 2.50);
 	ctxos.fillText(stat.noteRank[6], 1196, 650);
-	ctxos.globalAlpha = range((qwqEnd.second - 1.47) * 2.50);
+	ctxos.globalAlpha = clamp((qwqEnd.second - 1.47) * 2.50);
 	ctxos.fillText(stat.noteRank[2], 1349, 650);
 	ctxos.font = '22px Custom,Noto Sans SC';
-	const qwq4 = range((main.pressTime > 0 ? qwqEnd.second - main.pressTime : 0.2 - qwqEnd.second - main.pressTime) * 5.00);
-	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 0.87) * 2.50) * qwq4;
+	const qwq4 = clamp((main.pressTime > 0 ? qwqEnd.second - main.pressTime : 0.2 - qwqEnd.second - main.pressTime) * 5.00);
+	ctxos.globalAlpha = 0.8 * clamp((qwqEnd.second - 0.87) * 2.50) * qwq4;
 	ctxos.fillStyle = '#696';
 	ctxos.fill(new Path2D('M841,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z'));
-	ctxos.globalAlpha = 0.8 * range((qwqEnd.second - 1.07) * 2.50) * qwq4;
+	ctxos.globalAlpha = 0.8 * clamp((qwqEnd.second - 1.07) * 2.50) * qwq4;
 	ctxos.fillStyle = '#669';
 	ctxos.fill(new Path2D('M993,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z'));
 	ctxos.fillStyle = '#fff';
-	ctxos.globalAlpha = range((qwqEnd.second - 0.97) * 2.50) * qwq4;
+	ctxos.globalAlpha = clamp((qwqEnd.second - 0.97) * 2.50) * qwq4;
 	ctxos.fillText('Early: ' + stat.noteRank[5], 891, 759);
 	ctxos.fillText('Late: ' + stat.noteRank[1], 891, 792);
-	ctxos.globalAlpha = range((qwqEnd.second - 1.17) * 2.50) * qwq4;
+	ctxos.globalAlpha = clamp((qwqEnd.second - 1.17) * 2.50) * qwq4;
 	ctxos.fillText('Early: ' + stat.noteRank[7], 1043, 759);
 	ctxos.fillText('Late: ' + stat.noteRank[3], 1043, 792);
 	ctxos.resetTransform();
@@ -1317,7 +1333,7 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = 'source-over';
 }
 
-function range(num) {
+function clamp(num) {
 	if (num < 0) return 0;
 	if (num > 1) return 1;
 	return num;
@@ -1350,7 +1366,7 @@ function drawTap(note) {
 	if (!note.visible || note.scored && !note.badtime) return;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	if (note.badtime) {
-		ctxos.globalAlpha = 1 - range((performance.now() - note.badtime) / 500);
+		ctxos.globalAlpha = 1 - clamp((performance.now() - note.badtime) / 500);
 		ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
 	} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
@@ -1793,7 +1809,7 @@ async function qwqStop() {
 	if (emitter.eq('stop')) {
 		if (!selectchart.value) return msgHandler.sendError('错误：未选择任何谱面');
 		if (!selectbgm.value) return msgHandler.sendError('错误：未选择任何音乐');
-		await main.kfcFkXqsVw50();
+		for (const kfc of main.kfcFkXqsVw50) await kfc();
 		audio.play(res['mute'], { loop: true, isOut: false }); //播放空音频(防止音画不同步)
 		app.prerenderChart(main.modify(charts.get(selectchart.value))); //fuckqwq
 		app.md5 = chartsMD5.get(selectchart.value);
@@ -1970,5 +1986,12 @@ main.frameAnimater = frameAnimater;
 main.qwqEnd = qwqEnd;
 main.bgms = bgms;
 main.selectbgm = selectbgm;
+main.selectchart = selectchart;
+main.chartsMD5 = chartsMD5;
+main.tmps = tmps;
 main.qwq = qwq;
 main.qwqwq = false;
+Object.defineProperty(main, 'curTime', {
+	get: () => curTime,
+	set: (v) => curTime = v
+})

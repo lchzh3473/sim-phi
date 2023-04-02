@@ -1,3 +1,8 @@
+@font-face {
+	font-family: Custom;
+	src: url(src/Custom.woff2);
+}
+
 ::-webkit-scrollbar {
 	display: none;
 }

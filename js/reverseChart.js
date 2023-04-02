@@ -159,13 +159,13 @@ class Chart {
 	}
 }
 let /** @type {Map} */ kfcFkXqsVw50 = null;
-hook.kfcFkXqsVw50 = async function() {
+hook.kfcFkXqsVw50.push(async function() {
 	if (!(kfcFkXqsVw50 instanceof Map)) return;
 	const /** @type {AudioBuffer} */ bgm = hook.bgms.get(hook.selectbgm.value).audio;
 	for (let i = 0; i < bgm.numberOfChannels; i++) bgm.getChannelData(i).reverse();
 	kfcFkXqsVw50.set(bgm, hook.qwqwq = !kfcFkXqsVw50.get(bgm));
 	hook.modify = hook.qwqwq ? a => reverseChart(a, bgm.duration) : a => a;
-};
+});
 /**
  * 
  * @param {Chart} chart json
