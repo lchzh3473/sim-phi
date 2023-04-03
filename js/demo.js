@@ -9,77 +9,65 @@ export default function() {
 	}();
 	hook.kfcFkXqsVw50.push(function() {
 		if (hook.chartsMD5.get(hook.selectchart.value) === 'ab9d2cc3eb569236ead459ad4caba109') {
+			console.log('好耶');
 			const analyser = hook.audio.actx.createAnalyser();
 			analyser.fftSize = 4096;
 			// analyser.minDecibels = -180;
-			const bufferLength = analyser.frequencyBinCount;
-			const freq = new Uint8Array(bufferLength);
+			const getFreq = () => { //progress变为频谱图
+				const bufferLength = analyser.frequencyBinCount;
+				const freq = new Uint8Array(bufferLength);
+				analyser.getByteFrequencyData(freq);
+				const avg = freq.reduce((a, b) => a + b) / bufferLength;
+				return Math.min(1, avg / 255 * 2.15); //qwq
+			}
 			let flagMusic = true;
 			let flagPerfect = NaN;
 			let flagGood = NaN;
 			let flagBad = NaN;
 			let flagEm = '';
 			let flagN = false;
-			console.log('好耶');
+			const setFlag = (flag, em, n) => {
+				flagEm = em;
+				flagN = n;
+				return flag;
+			}
 			hook['flag{qwq}'] = time => {
+				time *= hook.app.speed * 1.95;
 				const bgMusic = hook.tmps.bgMusic();
 				if (bgMusic && bgMusic !== flagMusic) {
 					bgMusic.connect(analyser); //?
 					flagMusic = bgMusic;
 				}
-				if (time < 86.15) {
+				if (time < 168) {
 					hook.stat.numOfNotes = 305;
 					hook.tmps.level = 'lN  Lv.I2';
-					hook.tmps.progress = time / 112;
-				} else if (time < 86.9) {
-					const progress = (1 - (time - 86.15) / 0.75) ** 3; //easeCubicOut
-					hook.stat.numOfNotes = (2500 - 2185 * progress) | 0;
-					setProgress();
+					hook.tmps.progress = time / 218;
+				} else if (time < 169) {
+					const progress = 1 - (169 - time) ** 3; //easeCubicOut
+					hook.stat.numOfNotes = (305 + 2195 * progress) | 0;
+					hook.tmps.progress = getFreq();
 				} else {
 					hook.stat.numOfNotes = 2500;
-					setProgress();
+					hook.tmps.progress = getFreq();
 				}
-				if (time > 39000 / 234 && time < 42960 / 234) {
+				if (time > 325 && time < 358) {
 					//监听判定变化
-					const statusPerfect = hook.stat.perfect;
-					const statusGood = hook.stat.good;
-					const statusBad = hook.stat.bad;
-					if (isNaN(flagPerfect)) flagPerfect = statusPerfect;
-					if (isNaN(flagGood)) flagGood = statusGood;
-					if (isNaN(flagBad)) flagBad = statusBad;
-					if (statusPerfect !== flagPerfect) {
-						flagPerfect = statusPerfect;
-						flagEm = '\uff2f(\u2267\u25bd\u2266)\uff2f';
-						flagN = true;
-					} else if (statusGood !== flagGood) {
-						flagGood = statusGood;
-						flagEm = '(\uff3e\u03c9\uff3e)';
-						flagN = true;
-					} else if (statusBad !== flagBad) {
-						flagBad = statusBad;
-						flagEm = '(\u2299\ufe4f\u2299;)';
-						flagN = true;
-					}
+					const statusP = hook.stat.perfect;
+					const statusG = hook.stat.good;
+					const statusB = hook.stat.bad;
+					if (isNaN(flagPerfect)) flagPerfect = statusP;
+					if (isNaN(flagGood)) flagGood = statusG;
+					if (isNaN(flagBad)) flagBad = statusB;
+					if (statusP !== flagPerfect) flagPerfect = setFlag(statusP, '\uff2f(\u2267\u25bd\u2266)\uff2f', true);
+					else if (statusG !== flagGood) flagGood = setFlag(statusG, '(\uff3e\u03c9\uff3e)', true);
+					else if (statusB !== flagBad) flagBad = setFlag(statusB, '(\u2299\ufe4f\u2299;)', true);
 					//监听时间变化
-					const tick = (time - 39000 / 234) * 234 / 120;
-					if (tick < 2) update();
-					else if (tick > 9 && tick < 10) update();
-					else if (tick > 17 && tick < 18) update();
-					else if (tick > 25 && tick < 26) update();
+					if (time < 327) setFlag(null, '(\u2299o\u2299)', false);
+					else if (time > 334 && time < 335) setFlag(null, '(\u2299o\u2299)', false);
+					else if (time > 342 && time < 343) setFlag(null, '(\u2299o\u2299)', false);
+					else if (time > 350 && time < 351) setFlag(null, '(\u2299o\u2299)', false);
 					else if (!flagN) flagEm = '(\u2299ω\u2299)';
 					hook.tmps.combo = flagEm;
-				}
-
-				function setProgress() { //progress变为频谱图
-					analyser.getByteFrequencyData(freq);
-					const avg = freq.reduce((a, b) => a + b) / bufferLength;
-					hook.tmps.progress = avg / 255 * 2.15;
-					// console.log(hook.tmps.progress);
-				}
-
-				function update() {
-					flagEm = '(\u2299o\u2299)';
-					flagN = false;
 				}
 			};
 		}

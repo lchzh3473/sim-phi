@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b36'], 1611795955, 1680448292];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b37'], 1611795955, 1680534448];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -345,7 +345,7 @@ self.addEventListener('resize', () => stage.resize());
 }
 //qwq[water,demo,democlick]
 const qwq = [null, false, null, null, 0, null];
-import('./js/demo.js?v=02').then(a => a.default());
+import('./js/demo.js?v=03').then(a => a.default());
 //qwq end
 const exitFull = () => {
 	document.removeEventListener(full.onchange, exitFull);
@@ -908,12 +908,12 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 	$id('select').classList.remove('disabled');
 	emitter.dispatchEvent(new CustomEvent('change'));
 
-	function decode(img, clip = 0) {
+	function decode(img, border = 0) {
 		const canvas = document.createElement('canvas');
-		canvas.width = img.width - clip * 2;
-		canvas.height = img.height - clip * 2;
+		canvas.width = img.width - border * 2;
+		canvas.height = img.height - border * 2;
 		const ctx = canvas.getContext('2d');
-		ctx.drawImage(img, -clip, -clip);
+		ctx.drawImage(img, -border, -border);
 		const id = ctx.getImageData(0, 0, canvas.width, canvas.width);
 		const ab = new Uint8Array(id.data.length / 4 * 3);
 		for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
@@ -1254,40 +1254,40 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = 1;
 	const k = 3.7320508075688776; //tan75°
 	ctxos.setTransform(canvasos.width - canvasos.height / k, 0, -canvasos.height / k, canvasos.height, canvasos.height / k, 0);
-	ctxos.fillRect(0, 0, 1, tween.easeOutCubic(clamp((qwqEnd.second - 0.13) * 0.94)));
+	ctxos.fillRect(0, 0, 1, tween.easeOutCubic(clip((qwqEnd.second - 0.13) * 0.94)));
 	ctxos.resetTransform();
 	ctxos.globalCompositeOperation = 'destination-over';
 	const qwq0 = (canvasos.width - canvasos.height / k) / (16 - 9 / k);
 	ctxos.setTransform(qwq0 / 120, 0, 0, qwq0 / 120, app.wlen - qwq0 * 8, app.hlen - qwq0 * 4.5); //?
 	ctxos.drawImage(res['LevelOver4'], 183, 42, 1184, 228);
-	ctxos.globalAlpha = clamp((qwqEnd.second - 0.27) / 0.83);
+	ctxos.globalAlpha = clip((qwqEnd.second - 0.27) / 0.83);
 	ctxos.drawImage(res['LevelOver1'], 102, 378);
 	ctxos.globalCompositeOperation = 'source-over';
 	ctxos.globalAlpha = 1;
-	ctxos.drawImage(res['LevelOver5'], 700 * tween.easeOutCubic(clamp(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
+	ctxos.drawImage(res['LevelOver5'], 700 * tween.easeOutCubic(clip(qwqEnd.second * 1.25)) - 369, 91, 20, 80);
 	//曲名和等级
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'left';
-	fillTextNode(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(clamp(qwqEnd.second * 1.25)) - 320, 160, 80, 1500);
-	const lw = fillTextNode(levelText, 700 * tween.easeOutCubic(clamp(qwqEnd.second * 1.25)) - 317, 212, 30, 750);
+	fillTextNode(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(clip(qwqEnd.second * 1.25)) - 320, 160, 80, 1500);
+	const lw = fillTextNode(levelText, 700 * tween.easeOutCubic(clip(qwqEnd.second * 1.25)) - 317, 212, 30, 750);
 	ctxos.font = '30px Custom,Noto Sans SC';
 	//Rank图标
-	ctxos.globalAlpha = clamp((qwqEnd.second - 1.87) * 3.75);
-	const qwq2 = 293 + clamp((qwqEnd.second - 1.87) * 3.75) * 100;
-	const qwq3 = 410 - clamp((qwqEnd.second - 1.87) * 2.14) * 164;
+	ctxos.globalAlpha = clip((qwqEnd.second - 1.87) * 3.75);
+	const qwq2 = 293 + clip((qwqEnd.second - 1.87) * 3.75) * 100;
+	const qwq3 = 410 - clip((qwqEnd.second - 1.87) * 2.14) * 164;
 	ctxos.drawImage(res['LevelOver3'], 661 - qwq2 / 2, 545 - qwq2 / 2, qwq2, qwq2);
 	ctxos.drawImage(res['Ranks'][stat.rankStatus], 661 - qwq3 / 2, 545 - qwq3 / 2, qwq3, qwq3);
 	//各种数据
-	ctxos.globalAlpha = clamp((qwqEnd.second - 0.87) * 2.50);
+	ctxos.globalAlpha = clip((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillStyle = statData.newBestColor;
 	ctxos.fillText(statData.newBestStr, 898, 433);
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'center';
 	ctxos.fillText(statData.scoreBest, 1180, 433);
-	ctxos.globalAlpha = clamp((qwqEnd.second - 1.87) * 2.50);
+	ctxos.globalAlpha = clip((qwqEnd.second - 1.87) * 2.50);
 	ctxos.textAlign = 'right';
 	ctxos.fillText(statData.scoreDelta, 1414, 433);
-	ctxos.globalAlpha = clamp((qwqEnd.second - 0.95) * 1.50);
+	ctxos.globalAlpha = clip((qwqEnd.second - 0.95) * 1.50);
 	ctxos.textAlign = 'left';
 	ctxos.fillText(stat.accStr, 352, 550);
 	ctxos.fillText(stat.maxcombo, 1528, 550);
@@ -1298,30 +1298,30 @@ function qwqdraw3(statData) {
 	ctxos.fillStyle = '#fff';
 	ctxos.textAlign = 'center';
 	ctxos.font = '86px Custom,Noto Sans SC';
-	ctxos.globalAlpha = clamp((qwqEnd.second - 1.12) * 2.00);
+	ctxos.globalAlpha = clip((qwqEnd.second - 1.12) * 2.00);
 	ctxos.fillText(stat.scoreStr, 1075, 569);
 	ctxos.font = '26px Custom,Noto Sans SC';
-	ctxos.globalAlpha = clamp((qwqEnd.second - 0.87) * 2.50);
+	ctxos.globalAlpha = clip((qwqEnd.second - 0.87) * 2.50);
 	ctxos.fillText(stat.perfect, 891, 650);
-	ctxos.globalAlpha = clamp((qwqEnd.second - 1.07) * 2.50);
+	ctxos.globalAlpha = clip((qwqEnd.second - 1.07) * 2.50);
 	ctxos.fillText(stat.good, 1043, 650);
-	ctxos.globalAlpha = clamp((qwqEnd.second - 1.27) * 2.50);
+	ctxos.globalAlpha = clip((qwqEnd.second - 1.27) * 2.50);
 	ctxos.fillText(stat.noteRank[6], 1196, 650);
-	ctxos.globalAlpha = clamp((qwqEnd.second - 1.47) * 2.50);
+	ctxos.globalAlpha = clip((qwqEnd.second - 1.47) * 2.50);
 	ctxos.fillText(stat.noteRank[2], 1349, 650);
 	ctxos.font = '22px Custom,Noto Sans SC';
-	const qwq4 = clamp((main.pressTime > 0 ? qwqEnd.second - main.pressTime : 0.2 - qwqEnd.second - main.pressTime) * 5.00);
-	ctxos.globalAlpha = 0.8 * clamp((qwqEnd.second - 0.87) * 2.50) * qwq4;
+	const qwq4 = clip((main.pressTime > 0 ? qwqEnd.second - main.pressTime : 0.2 - qwqEnd.second - main.pressTime) * 5.00);
+	ctxos.globalAlpha = 0.8 * clip((qwqEnd.second - 0.87) * 2.50) * qwq4;
 	ctxos.fillStyle = '#696';
 	ctxos.fill(new Path2D('M841,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z'));
-	ctxos.globalAlpha = 0.8 * clamp((qwqEnd.second - 1.07) * 2.50) * qwq4;
+	ctxos.globalAlpha = 0.8 * clip((qwqEnd.second - 1.07) * 2.50) * qwq4;
 	ctxos.fillStyle = '#669';
 	ctxos.fill(new Path2D('M993,718s-10,0-10,10v80s0,10,10,10h100s10,0,10-10v-80s0-10-10-10h-40l-10-20-10,20h-40z'));
 	ctxos.fillStyle = '#fff';
-	ctxos.globalAlpha = clamp((qwqEnd.second - 0.97) * 2.50) * qwq4;
+	ctxos.globalAlpha = clip((qwqEnd.second - 0.97) * 2.50) * qwq4;
 	ctxos.fillText('Early: ' + stat.noteRank[5], 891, 759);
 	ctxos.fillText('Late: ' + stat.noteRank[1], 891, 792);
-	ctxos.globalAlpha = clamp((qwqEnd.second - 1.17) * 2.50) * qwq4;
+	ctxos.globalAlpha = clip((qwqEnd.second - 1.17) * 2.50) * qwq4;
 	ctxos.fillText('Early: ' + stat.noteRank[7], 1043, 759);
 	ctxos.fillText('Late: ' + stat.noteRank[3], 1043, 792);
 	ctxos.resetTransform();
@@ -1333,7 +1333,7 @@ function qwqdraw3(statData) {
 	ctxos.globalCompositeOperation = 'source-over';
 }
 
-function clamp(num) {
+function clip(num) {
 	if (num < 0) return 0;
 	if (num > 1) return 1;
 	return num;
@@ -1366,7 +1366,7 @@ function drawTap(note) {
 	if (!note.visible || note.scored && !note.badtime) return;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	if (note.badtime) {
-		ctxos.globalAlpha = 1 - clamp((performance.now() - note.badtime) / 500);
+		ctxos.globalAlpha = 1 - clip((performance.now() - note.badtime) / 500);
 		ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
 	} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);

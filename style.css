@@ -1,6 +1,6 @@
 @font-face {
 	font-family: Custom;
-	src: url(src/Custom.woff2);
+	src: url('src/Custom.woff2') format('woff2');
 }
 
 ::-webkit-scrollbar {
