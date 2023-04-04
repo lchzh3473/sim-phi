@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b37'], 1611795955, 1680534448];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b38'], 1611795955, 1680614770];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -345,7 +345,7 @@ self.addEventListener('resize', () => stage.resize());
 }
 //qwq[water,demo,democlick]
 const qwq = [null, false, null, null, 0, null];
-import('./js/demo.js?v=03').then(a => a.default());
+import('./js/demo.js?v=04').then(a => a.default());
 //qwq end
 const exitFull = () => {
 	document.removeEventListener(full.onchange, exitFull);
@@ -980,7 +980,9 @@ const tmps = {
 	artist: '',
 	illustrator: '',
 	charter: '',
-	level: ''
+	level: '',
+	combo: '',
+	combo2: ''
 };
 //作图
 function mainLoop() {

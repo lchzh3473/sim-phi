@@ -70,7 +70,7 @@ export default function() {
 					hook.tmps.combo = flagEm;
 				}
 			};
-		}
+		} else hook['flag{qwq}'] = () => {};
 	});
 	const id = setInterval(function() {
 		if (!$('.title>small')) return;

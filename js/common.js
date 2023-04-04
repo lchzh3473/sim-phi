@@ -143,6 +143,7 @@ export const orientation = {
 			} catch (e) {
 				if (e.name == 'SecurityError') resolve(true);
 				else if (e.name == 'NotSupportedError') resolve(false);
+				else if (e.name == 'TypeError') resolve(false); //Safari 16.4
 				else throw e;
 			}
 		});
