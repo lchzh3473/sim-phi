@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b38'], 1611795955, 1680614770];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b39'], 1611795955, 1680881118];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -829,9 +829,8 @@ function getPos(obj) {
 }
 //hit end
 const res = {}; //存放资源
-//初始化
-document.addEventListener('DOMContentLoaded', async function qwq() {
-	document.removeEventListener('DOMContentLoaded', qwq);
+//初始化(踩坑：监听DOMContentLoaded似乎会阻塞页面导致长时间白屏)
+window.addEventListener('load', async function() {
 	canvas.classList.add('fade');
 	let loadedNum = 0;
 	let errorNum = 0;
@@ -920,7 +919,7 @@ document.addEventListener('DOMContentLoaded', async function qwq() {
 		const size = new DataView(ab.buffer, 0, 4).getUint32(0);
 		return { result: ab.buffer.slice(4, size + 4) };
 	}
-});
+}, { once: true });
 //必要组件
 const frameAnimater = new FrameAnimater();
 frameAnimater.setCallback(mainLoop);
@@ -1792,7 +1791,7 @@ status2.reg(emitter, 'change', ( /** @type {Emitter} */ target) => target.eq('pa
 inputName.addEventListener('input', function() {
 	if (this.value == '/pz') setTimeout(() => {
 		if (this.value == '/pz') {
-			import('./js/phizone.js?v=06').then(({ dialog }) => dialog());
+			import('./js/phizone.js?v=07').then(({ dialog }) => dialog());
 			this.value = '';
 			this.dispatchEvent(new Event('input'));
 		}
@@ -1801,7 +1800,7 @@ inputName.addEventListener('input', function() {
 inputName.addEventListener('input', function() {
 	if (this.value == '/random') setTimeout(() => {
 		if (this.value == '/random') {
-			import('./js/phizone.js?v=06').then(({ random }) => random());
+			import('./js/phizone.js?v=07').then(({ random }) => random());
 			this.value = '';
 			this.dispatchEvent(new Event('input'));
 		}

@@ -1,8 +1,9 @@
 import { uploader } from './reader.js';
-const vtext = 'PhiZone API v0.6';
+const vtext = 'PhiZone API v0.7';
 const vprompt = str => prompt(`${vtext}\n${str}`);
 const valert = str => alert(`${vtext}\n${str}`);
 async function query(id) {
+	hook.msgHandler.sendMessage('等待服务器响应...');
 	const response = await fetch(`https://api.phi.zone/songs/${id|0}/?query_charts=1`);
 	if (!response.ok) {
 		if (response.status === 404) return { charts: [] };
@@ -13,6 +14,7 @@ async function query(id) {
 	return getData(song.charts.filter(a => a.chart), song);
 }
 async function randomCore() {
+	hook.msgHandler.sendMessage('等待服务器响应...');
 	const response = await fetch(`https://api.phi.zone/charts/?pagination=0&query_charts=1`);
 	if (!response.ok) {
 		if (response.status === 404) return { charts: [] };
@@ -66,6 +68,7 @@ async function readData(data) {
 	}
 	const downloader = new Downloader();
 	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
+	hook.msgHandler.sendMessage('获取资源列表...');
 	await downloader.add(urls, ({ url, status, statusText }) => valert(`资源 '${dstr(url)}' 加载失败\n错误代码：${status} ${statusText}`));
 	await downloader.start(uploader.onprogress);
 	const xhr4 = async (url, name) => {
@@ -112,6 +115,22 @@ function xhr2(url, onprogress = () => void 0) {
 		xhr.send();
 	});
 }
+// async function xhr2(url, onprogress = () => void 0) {
+// 	const data = [];
+// 	let loaded = 0;
+// 	const res = await fetch(url, { method: 'GET' });
+// 	if (!res.ok) throw { url, status: res.status, statusText: res.statusText };
+// 	const total = Number(res.headers.get('content-length'));
+// 	const reader = res.body.getReader();
+// 	while (true) {
+// 		const { done, value } = await reader.read();
+// 		if (done) break;
+// 		data.push(value);
+// 		loaded += value.length;
+// 		onprogress({ loaded, total });
+// 	}
+// 	return { target: { response: new Blob(data).arrayBuffer() }, loaded, total };
+// }
 async function getContentLength(url) {
 	const res = await fetch(url, { method: 'HEAD' });
 	const length = Number(res.headers.get('content-length')) || 0;
@@ -149,7 +168,7 @@ class Downloader {
 	}
 	get total() {
 		const values = Object.values(this.xhrs);
-		return values.reduce((total, xhr) => total + xhr.event.total, 0);
+		return values.reduce((total, xhr) => total + Math.max(xhr.event.loaded, xhr.event.total), 0);
 	}
 }
 

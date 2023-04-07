@@ -95,10 +95,8 @@ export const full = {
 		//Apple第三方浏览器可能根本没有包含full的属性或方法qwq
 		if (!this.enabled) return Promise.reject();
 		const onFullscreen = () => new Promise((resolve, reject) => {
-			const onchange = evt => { resolve(evt), document.removeEventListener(this.onchange, onchange) };
-			const onerror = evt => { reject(evt), document.removeEventListener(this.onerror, onerror) };
-			document.addEventListener(this.onchange, onchange);
-			document.addEventListener(this.onerror, onerror);
+			document.addEventListener(this.onchange, resolve, { once: true });
+			document.addEventListener(this.onerror, reject, { once: true });
 		})
 		if (this.element) {
 			if (document.exitFullscreen) return document.exitFullscreen(), onFullscreen();
