@@ -3,15 +3,6 @@
 	src: url('src/Custom.woff2') format('woff2');
 }
 
-::-webkit-scrollbar {
-	display: none;
-}
-
-:root {
-	/* Firefox */
-	scrollbar-width: none;
-}
-
 html,
 body {
 	/*overflow: hidden;*/
@@ -158,6 +149,9 @@ body {
 
 #view-cfg>div {
 	padding: 0.5em 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 .view-nav {
@@ -217,7 +211,6 @@ body {
 	text-align: center;
 	padding: calc(6px + 1vmin);
 	font-size: calc(6px + 1vmin);
-	font-family: Consolas, Menlo, monospace;
 	user-select: text;
 	-webkit-user-select: text;
 	-moz-user-select: text;

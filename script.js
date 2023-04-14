@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b40'], 1611795955, 1681313222];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b41'], 1611795955, 1681442438];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -1581,19 +1581,19 @@ class StatusManager {
 		this.data[key] = value;
 		this.save();
 	}
-	reg(key, node) {
+	reg(key, node, dispatch = true) {
 		if (node instanceof HTMLInputElement || node instanceof HTMLSelectElement) {
 			const property = node.type === 'checkbox' ? 'checked' : 'value';
 			const value = this.get(key);
 			if (value !== undefined) node[property] = value;
 			node.addEventListener('change', () => this.set(key, node[property]));
-			node.dispatchEvent(new Event('change'));
+			if (dispatch) node.dispatchEvent(new Event('change'));
 		} else if (node instanceof HTMLTextAreaElement) {
 			const value = this.get(key);
 			if (value !== undefined) node.value = value;
 			node.addEventListener('change', () => this.set(key, node.value));
-			node.dispatchEvent(new Event('change'));
-		} else throw new Error('node must be a HTMLInputElement or HTMLSelectElement or HTMLTextAreaElement');
+			if (dispatch) node.dispatchEvent(new Event('change'));
+		} else throw new Error('Node must be <input>, <select> or <textarea>');
 	}
 }
 class Checkbox {
@@ -1744,11 +1744,12 @@ selectchart.addEventListener('change', adjustInfo);
 		if (this.value > 1000) this.value = 1000;
 		frameAnimater.setFrameRate(this.value);
 	});
-	status.reg('maxFrameNumber', input);
+	status.reg('maxFrameNumber', input, false);
 	maxFrame.container.appendChild(input);
 	maxFrame.checkbox.addEventListener('change', function() {
 		input.classList.toggle('disabled', !this.checked);
-		frameAnimater.setFrameRate(this.checked ? input.value : 0);
+		if (this.checked) input.dispatchEvent(new Event('change'));
+		else frameAnimater.setFrameRate(0);
 	});
 	maxFrame.checkbox.dispatchEvent(new Event('change'));
 })();
@@ -1986,7 +1987,7 @@ const enableFilter = new Checkbox('启用滤镜').appendBefore(resetCfg.containe
 			main.filter = null;
 		}
 	});
-	status.reg('filterText', input);
+	status.reg('filterText', input, false);
 	enableFilter.container.appendChild(input);
 	enableFilter.checkbox.addEventListener('change', function() {
 		input.classList.toggle('disabled', !this.checked);
