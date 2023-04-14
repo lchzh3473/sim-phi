@@ -289,7 +289,7 @@ function parse(pec, filename) {
 		const speed = isNaN(i.speed) ? 1 : i.speed;
 		if (!linesPec[i.lineId]) linesPec[i.lineId] = new LinePec(bpmList.baseBpm);
 		linesPec[i.lineId].pushNote(type, time, i.offsetX / 115.2, holdTime, speed, i.isAbove === 1, i.isFake !== 0); //102.4
-		if (i.isAbove !== 1 && i.isAbove !== 2) warnings.push(`检测到非法方向:${i.isAbove}(将被视为2)\n位于:"${i.text}"\n来自${filename}`);
+		// if (i.isAbove !== 1 && i.isAbove !== 2) warnings.push(`检测到非法方向:${i.isAbove}(将被视为2)\n位于:"${i.text}"\n来自${filename}`);
 		if (i.isFake !== 0) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
 		if (i.size !== 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
 	}
@@ -746,7 +746,7 @@ function parseRPE(pec, filename) {
 		if (i.notes) {
 			for (const note of i.notes) {
 				if (note.alpha === undefined) note.alpha = 255;
-				if (note.above !== 1 && note.above !== 2) warnings.push(`检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
+				// if (note.above !== 1 && note.above !== 2) warnings.push(`检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
 				if (note.isFake !== 0) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
 				if (note.size !== 1) warnings.push(`未适配size=${note.size}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
 				if (note.yOffset !== 0) warnings.push(`未适配yOffset=${note.yOffset}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);

@@ -4,10 +4,15 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b39'], 1611795955, 1680881118];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b40'], 1611795955, 1681313222];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
+const createOffscreenCanvas = (width, height) => {
+	if (self.OffscreenCanvas) return new OffscreenCanvas(width, height);
+	const canvas = document.createElement('canvas');
+	return Object.assign(canvas, { width, height });
+}
 const tween = {
 	easeInSine: pos => 1 - Math.cos(pos * Math.PI / 2),
 	easeOutSine: pos => Math.sin(pos * Math.PI / 2),
@@ -18,6 +23,7 @@ main.uploaded = false; //qwq
 main.modify = a => a;
 main.pressTime = 0;
 main.kfcFkXqsVw50 = [];
+main.filter = null;
 main['flag{qwq}'] = () => {};
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of $id('view-nav').children) {
@@ -856,9 +862,7 @@ window.addEventListener('load', async function() {
 					});
 
 					function decodeAlt(img) {
-						const canvas = document.createElement('canvas');
-						canvas.width = img.width;
-						canvas.height = img.height;
+						const canvas = createOffscreenCanvas(img.width, img.height);
 						const ctx = canvas.getContext('2d');
 						ctx.drawImage(img, 0, 0);
 						const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -898,7 +902,7 @@ window.addEventListener('load', async function() {
 	hitRaw.forEach(img => img.close());
 	res['mute'] = audio.mute(1);
 	if (!(() => {
-			const b = document.createElement('canvas').getContext('2d');
+			const b = createOffscreenCanvas(1, 1).getContext('2d');
 			b.drawImage(res['JudgeLine'], 0, 0);
 			return b.getImageData(0, 0, 1, 1).data[0];
 		})()) return msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
@@ -908,9 +912,7 @@ window.addEventListener('load', async function() {
 	emitter.dispatchEvent(new CustomEvent('change'));
 
 	function decode(img, border = 0) {
-		const canvas = document.createElement('canvas');
-		canvas.width = img.width - border * 2;
-		canvas.height = img.height - border * 2;
+		const canvas = createOffscreenCanvas(img.width - border * 2, img.height - border * 2);
 		const ctx = canvas.getContext('2d');
 		ctx.drawImage(img, -border, -border);
 		const id = ctx.getImageData(0, 0, canvas.width, canvas.width);
@@ -951,24 +953,6 @@ function playVideo(data, offset) {
 	data.muted = true;
 	return data.play();
 }
-// class CanvasText {
-// 	constructor() {
-// 		/** @type {HTMLCanvasElement} */
-// 		this.canvas = self.OffscreenCanvas ? new OffscreenCanvas(300, 100) : document.createElement('canvas');
-// 		this.ctx = this.canvas.getContext('2d');
-// 		this.ctx.textAlign = 'center';
-// 		this.ctx.font = '30px sans-serif';
-// 		this.ctx.fillStyle = '#000';
-// 		this.ctx.strokeStyle = '#fff';
-// 		this.ctx.lineWidth = 2;
-// 	}
-// 	/** @param {string} text */
-// 	setText(text) {
-// 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-// 		this.ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
-// 		this.ctx.strokeText(text, this.canvas.width / 2, this.canvas.height / 2);
-// 	}
-// }
 let fucktemp1 = false;
 let fucktemp2 = false;
 const tmps = {
@@ -1137,7 +1121,6 @@ function loopCanvas() { //尽量不要在这里出现app
 			}
 		}
 	}
-	if ($id('feedback').checked) hitFeedbackList.animate(); //绘制打击特效0
 	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	hitImageList.animate(); //绘制打击特效1
 	// if (qwq[4]) ctxos.filter = 'none';
@@ -1191,7 +1174,15 @@ function loopCanvas() { //尽量不要在这里出现app
 	ctxos.textAlign = 'left';
 	fillTextNode(tmps.name, lineScale * 0.65, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
 	ctxos.resetTransform();
+	//滤镜处理
+	if (qwqIn.second > 3 && main.filter) {
+		main.filter.apply(canvasos);
+		ctxos.drawImage(main.filter.getImage(nowTime_ms / 1e3), 0, 0);
+	}
+	if ($id('feedback').checked) hitFeedbackList.animate(); //绘制打击特效0
+	ctxos.resetTransform();
 	//绘制时间和帧率以及note打击数
+	ctxos.fillStyle = '#fff';
 	if (qwqIn.second < 0.67) ctxos.globalAlpha = tween.easeOutSine(qwqIn.second * 1.5);
 	else ctxos.globalAlpha = 1 - tween.easeOutSine(qwqOut.second * 1.5);
 	ctxos.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
@@ -1463,9 +1454,8 @@ class LineImage {
  * @param {ImageBitmap} img 
  */
 function imgBlur(img) {
-	const canvas = document.createElement('canvas');
-	const w = canvas.width = img.width;
-	const h = canvas.height = img.height;
+	const canvas = createOffscreenCanvas(img.width, img.height);
+	const { width: w, height: h } = canvas;
 	const ctx = canvas.getContext('2d');
 	ctx.drawImage(img, 0, 0);
 	StackBlur.canvasRGBA(canvas, 0, 0, w, h, Math.ceil(Math.min(w, h) * 0.0125));
@@ -1477,9 +1467,7 @@ function imgBlur(img) {
  */
 function imgShader(img, color, limit = 512) {
 	const dataRGBA = hex2rgba(color);
-	const canvas = document.createElement('canvas');
-	canvas.width = img.width;
-	canvas.height = img.height;
+	const canvas = createOffscreenCanvas(img.width, img.height);
 	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
 	ctx.drawImage(img, 0, 0);
 	for (let dx = 0; dx < img.width; dx += limit) {
@@ -1502,9 +1490,7 @@ function imgShader(img, color, limit = 512) {
  */
 function imgPainter(img, color, limit = 512) {
 	const dataRGBA = hex2rgba(color);
-	const canvas = document.createElement('canvas');
-	canvas.width = img.width;
-	canvas.height = img.height;
+	const canvas = createOffscreenCanvas(img.width, img.height);
 	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
 	ctx.drawImage(img, 0, 0);
 	for (let dx = 0; dx < img.width; dx += limit) {
@@ -1540,7 +1526,7 @@ function imgSplit(img, limitX, limitY) {
 }
 //十六进制color转rgba数组
 function hex2rgba(color) {
-	const ctx = document.createElement('canvas').getContext('2d');
+	const ctx = createOffscreenCanvas(1, 1).getContext('2d');
 	ctx.fillStyle = color;
 	ctx.fillRect(0, 0, 1, 1);
 	return ctx.getImageData(0, 0, 1, 1).data;
@@ -1602,7 +1588,12 @@ class StatusManager {
 			if (value !== undefined) node[property] = value;
 			node.addEventListener('change', () => this.set(key, node[property]));
 			node.dispatchEvent(new Event('change'));
-		} else throw new Error('node must be a HTMLInputElement');
+		} else if (node instanceof HTMLTextAreaElement) {
+			const value = this.get(key);
+			if (value !== undefined) node.value = value;
+			node.addEventListener('change', () => this.set(key, node.value));
+			node.dispatchEvent(new Event('change'));
+		} else throw new Error('node must be a HTMLInputElement or HTMLSelectElement or HTMLTextAreaElement');
 	}
 }
 class Checkbox {
@@ -1629,6 +1620,10 @@ class Checkbox {
 		container.appendChild(this.container);
 		return this;
 	}
+	appendBefore(node) {
+		node.parentNode.insertBefore(this.container, node);
+		return this;
+	}
 	toggle() {
 		this.checked = !this.checkbox.checked;
 	}
@@ -1648,19 +1643,19 @@ status.reg('highLight', $id('highLight'));
 status.reg('lineColor', $id('lineColor'));
 status.reg('autoplay', $id('autoplay'));
 status.reg('showTransition', $id('showTransition'));
-const showCE2 = new Checkbox('Early/Late特效').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'showCE2'));
-const showPoint = new Checkbox('显示定位点').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'showPoint'));
-const showAcc = new Checkbox('显示Acc').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'showAcc'));
-const showStat = new Checkbox('显示统计').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'showStat'));
-const lowRes = new Checkbox('低分辨率').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'lowRes'));
-const lockOri = new Checkbox('横屏锁定', true).appendTo($id('view-cfg')).hook(status.reg.bind(status, 'lockOri'));
-const maxFrame = new Checkbox('限制帧率').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'maxFrame'));
-const autoDelay = new Checkbox('音画实时同步(若声音卡顿则建议关闭)', true).appendTo($id('view-cfg')).hook(status.reg.bind(status, 'autoDelay'));
-const enableVP = new Checkbox('???').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'enableVP'));
-enableVP.checkbox.addEventListener('change', evt => app.enableVP = evt.target.checked);
-const enableFR = new Checkbox('???').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'enableFR'));
-enableFR.checkbox.addEventListener('change', evt => app.enableFR = evt.target.checked);
 const resetCfg = new Checkbox('恢复默认设置(刷新生效)').appendTo($id('view-cfg')).hook(status.reg.bind(status, 'resetCfg'));
+const showCE2 = new Checkbox('Early/Late特效').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'showCE2'));
+const showPoint = new Checkbox('显示定位点').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'showPoint'));
+const showAcc = new Checkbox('显示Acc').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'showAcc'));
+const showStat = new Checkbox('显示统计').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'showStat'));
+const lowRes = new Checkbox('低分辨率').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'lowRes'));
+const lockOri = new Checkbox('横屏锁定', true).appendBefore(resetCfg.container).hook(status.reg.bind(status, 'lockOri'));
+const maxFrame = new Checkbox('限制帧率').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'maxFrame'));
+const autoDelay = new Checkbox('音画实时同步(若声音卡顿则建议关闭)', true).appendBefore(resetCfg.container).hook(status.reg.bind(status, 'autoDelay'));
+const enableVP = new Checkbox('隐藏距离较远的音符').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableVP'));
+enableVP.checkbox.addEventListener('change', evt => app.enableVP = evt.target.checked);
+const enableFR = new Checkbox('使用单精度浮点运算').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFR'));
+enableFR.checkbox.addEventListener('change', evt => app.enableFR = evt.target.checked);
 const selectbg = $id('select-bg');
 const btnPlay = $id('btn-play');
 const btnPause = $id('btn-pause');
@@ -1975,10 +1970,35 @@ function longPress(elem, activeFn, doneFn, failFn) {
 		helloworld(!fireTip(`<p>${brain.getTip()}</p>`));
 	}, () => pressTime = null);
 })();
+//plugin(filter)
+const enableFilter = new Checkbox('启用滤镜').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFilter'));
+(function() {
+	const input = document.createElement('textarea');
+	Object.assign(input, { placeholder: '在此输入着色器代码' });
+	input.style.cssText += ';width:150px;height:1em;margin-left:10px';
+	input.addEventListener('change', async function() {
+		const filter = await import('./js/filter.js');
+		try {
+			const filter0 = new filter.default(input.value);
+			main.filter = filter0;
+		} catch (e) {
+			console.error(e);
+			main.filter = null;
+		}
+	});
+	status.reg('filterText', input);
+	enableFilter.container.appendChild(input);
+	enableFilter.checkbox.addEventListener('change', function() {
+		input.classList.toggle('disabled', !this.checked);
+		if (!this.checked) main.filter = null;
+		else input.dispatchEvent(new Event('change'));
+	});
+	enableFilter.checkbox.dispatchEvent(new Event('change'));
+})();
+//debug
+export var hook = self.hook = main;
 main.fireTip = fireTip;
 main.stat = stat;
-export var hook = self.hook = main;
-//debug
 main.app = app;
 main.res = res;
 main.audio = audio;
@@ -1992,7 +2012,18 @@ main.chartsMD5 = chartsMD5;
 main.tmps = tmps;
 main.qwq = qwq;
 main.qwqwq = false;
-Object.defineProperty(main, 'curTime', {
-	get: () => curTime,
-	set: (v) => curTime = v
+main.pause = () => emitter.eq('play') && qwqPause();
+Object.defineProperty(main, 'time', {
+	get: () => timeBgm,
+	set: async (v) => {
+		if (emitter.eq('stop') || fucktemp1) return;
+		const isPlaying = emitter.eq('play');
+		if (isPlaying) await qwqPause();
+		curTime = timeBgm = v;
+		// app.notes.forEach(a => { a.status = 0;
+		// 	a.scored = 0;
+		// 	a.holdStatus = 1; });
+		// stat.reset();
+		if (isPlaying) await qwqPause();
+	}
 })
