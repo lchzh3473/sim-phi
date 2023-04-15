@@ -758,7 +758,7 @@ class HitWord {
 	}
 }
 const interact = new InteractProxy(canvas);
-//适配PC鼠标
+//兼容PC鼠标
 interact.setMouseEvent({
 	mousedownCallback(evt) {
 		const idx = evt.button;
@@ -784,7 +784,7 @@ interact.setMouseEvent({
 		else hitManager.deactivate('mouse', 1 << idx);
 	}
 });
-//适配键盘(喵喵喵?)
+//兼容键盘(喵喵喵?)
 interact.setKeyboardEvent({
 	keydownCallback(evt) {
 		if (emitter.eq('stop')) return;
@@ -798,7 +798,7 @@ interact.setKeyboardEvent({
 	}
 });
 self.addEventListener('blur', () => hitManager.clear('keyboard'));
-//适配移动设备
+//兼容移动设备
 interact.setTouchEvent({
 	touchstartCallback(evt) {
 		for (const i of evt.changedTouches) {
