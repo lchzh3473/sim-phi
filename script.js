@@ -4,7 +4,7 @@ import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer,
 import { uploader, readZip } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b41'], 1611795955, 1681442438];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b42'], 1611795955, 1681575202];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -853,11 +853,11 @@ window.addEventListener('load', async function() {
 			const img = await createImageBitmap(blob);
 			if (ext && ext[0] === 'm') {
 				const data = decode(img, Number(ext.slice(1))).result;
-				// 小米浏览器出现问题：decode出来的数据部分被有损压缩导致资源加载失败
+				img.close();
 				res[name] = await audio.decode(data).catch(async err => {
 					const blob = await fetch(raw.alternative[name], { referrerPolicy: 'no-referrer' }).then(i => i.blob());
 					return await createImageBitmap(blob).then(decodeAlt).then(audio.decode.bind(audio)).catch(err => {
-						msgHandler.sendWarning(`您的浏览器存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
+						msgHandler.sendWarning(`音频加载存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
 						return audio.mute(1);
 					});
 
@@ -878,7 +878,7 @@ window.addEventListener('load', async function() {
 					}
 				});
 			} else {
-				res[name] = await createImageBitmap(img, 0, 0, img.width, img.height /* , { imageOrientation: 'flipY' } */ );
+				res[name] = img;
 			}
 			msgHandler.sendMessage(`加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`);
 		}).catch(err => {
@@ -887,11 +887,12 @@ window.addEventListener('load', async function() {
 		}).finally(resolve);
 	})));
 	if (errorNum) return msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
+	const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL'];
+	for (const i of entries) await noteRender.add(i, res[i], 8080 / raw.image[i].split('|')[1]);
 	res['NoImageBlack'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(0), 1, 1));
 	res['NoImageWhite'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(255), 1, 1));
 	res['JudgeLineMP'] = await imgShader(res['JudgeLine'], '#feffa9');
 	res['JudgeLineFC'] = await imgShader(res['JudgeLine'], '#a2eeff');
-	res['TapBad'] = await imgPainter(res['Tap'], '#6c4343');
 	res['Ranks'] = await imgSplit(res['Rank']);
 	res['Rank'].close();
 	const hitRaw = await imgSplit(res['HitFXRaw']);
@@ -957,6 +958,7 @@ let fucktemp1 = false;
 let fucktemp2 = false;
 const tmps = {
 	bgImage: null,
+	bgVideo: null,
 	bgMusic: () => {},
 	progress: 0,
 	name: '',
@@ -1058,6 +1060,7 @@ function loopNoCanvas() {
 		Promise.resolve().then(qwqStop).then(qwqStop);
 	}
 	tmps.bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
+	tmps.bgVideo = app.bgVideo;
 	tmps.progress = (main.qwqwq ? duration - timeBgm : timeBgm) / duration;
 	tmps.name = inputName.value || inputName.placeholder;
 	tmps.artist = inputArtist.value;
@@ -1071,14 +1074,14 @@ function loopNoCanvas() {
 }
 
 function loopCanvas() { //尽量不要在这里出现app
-	const { lineScale, noteScaleRatio } = app;
+	const { lineScale } = app;
 	ctxos.clearRect(0, 0, canvasos.width, canvasos.height); //重置画面
 	//绘制背景
 	ctxos.globalAlpha = 1;
 	ctxos.drawImage(tmps.bgImage, ...adjustSize(tmps.bgImage, canvasos, 1));
-	if (isInEnd && app.bgVideo && !main.qwqwq) {
-		const { videoWidth: width, videoHeight: height } = app.bgVideo;
-		ctxos.drawImage(app.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
+	if (isInEnd && tmps.bgVideo && !main.qwqwq) {
+		const { videoWidth: width, videoHeight: height } = tmps.bgVideo;
+		ctxos.drawImage(tmps.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
 	}
 	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
 	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0, lineScale); //绘制判定线(背景后0)
@@ -1093,10 +1096,7 @@ function loopCanvas() { //尽量不要在这里出现app
 	ctxos.resetTransform();
 	if (qwqIn.second >= 3 && qwqOut.second === 0) {
 		//绘制note
-		for (const i of app.holds) drawHold(i, timeChart);
-		for (const i of app.dragsReversed) drawDrag(i);
-		for (const i of app.tapsReversed) drawTap(i);
-		for (const i of app.flicksReversed) drawFlick(i);
+		drawNotes();
 		if (showPoint.checked) { //绘制定位点
 			ctxos.font = `${lineScale}px Custom,Noto Sans SC`;
 			ctxos.textAlign = 'center';
@@ -1330,28 +1330,40 @@ function clip(num) {
 	if (num > 1) return 1;
 	return num;
 }
-class NoteRender {
-	constructor() {
-		this.urlMap = new Map();
+class ScaledNote {
+	constructor(img, scale) {
+		this.img = img;
+		this.scale = scale;
+		const dx = -img.width / 2 * scale;
+		const dy = -img.height / 2 * scale;
+		const dw = img.width * scale;
+		const dh = img.height * scale;
+		/** @param {CanvasRenderingContext2D} ctx */
+		this.full = ctx => ctx.drawImage(img, dx, dy);
+		/** @param {CanvasRenderingContext2D} ctx */
+		this.head = ctx => ctx.drawImage(img, dx, 0, dw, dh);
+		/** @param {CanvasRenderingContext2D} ctx */
+		this.body = (ctx, offset, length) => ctx.drawImage(img, dx, offset, dw, length);
+		/** @param {CanvasRenderingContext2D} ctx */
+		this.tail = (ctx, offset) => ctx.drawImage(img, dx, offset - dh);
 	}
-	init(pack = {}) {
-		this.res = {
-			Tap: pack['Tap'],
-			TapHL: pack['TapHL'],
-			Drag: pack['Drag'],
-			DragHL: pack['DragHL'],
-			HoldHead: pack['HoldHead'],
-			HoldHeadHL: pack['HoldHeadHL'],
-			Hold: pack['Hold'],
-			HoldHL: pack['HoldHL'],
-			HoldEnd: pack['HoldEnd'],
-			Flick: pack['Flick'],
-			FlickHL: pack['FlickHL'],
-		};
-	}
-	async load() {} //todo
 }
+const noteRender = {
+	/** @type {Object<string,ScaledNote>} */
+	res: {},
+	async add(name, img, scale) {
+		this.res[name] = new ScaledNote(img, scale);
+		if (name === 'Tap') this.res['TapBad'] = new ScaledNote(await imgPainter(img, '#6c4343'), scale);
+	}
+};
 //绘制Note
+function drawNotes() {
+	for (const i of app.holds) drawHold(i, timeChart);
+	for (const i of app.dragsReversed) drawDrag(i);
+	for (const i of app.tapsReversed) drawTap(i);
+	for (const i of app.flicksReversed) drawFlick(i);
+}
+
 function drawTap(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
@@ -1359,12 +1371,11 @@ function drawTap(note) {
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	if (note.badtime) {
 		ctxos.globalAlpha = 1 - clip((performance.now() - note.badtime) / 500);
-		ctxos.drawImage(res['TapBad'], -res['TapBad'].width * 0.5, -res['TapBad'].height * 0.5);
+		noteRender.res['TapBad'].full(ctxos);
 	} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0); //过线前1.5s出现
-		if (HL) ctxos.drawImage(res['TapHL'], -res['TapHL'].width * 0.5, -res['TapHL'].height * 0.5);
-		else ctxos.drawImage(res['Tap'], -res['Tap'].width * 0.5, -res['Tap'].height * 0.5);
+		noteRender.res[HL ? 'TapHL' : 'Tap'].full(ctxos);
 	}
 }
 
@@ -1377,8 +1388,7 @@ function drawDrag(note) {
 	else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
-		if (HL) ctxos.drawImage(res['DragHL'], -res['DragHL'].width * 0.5, -res['DragHL'].height * 0.5);
-		else ctxos.drawImage(res['Drag'], -res['Drag'].width * 0.5, -res['Drag'].height * 0.5);
+		noteRender.res[HL ? 'DragHL' : 'Drag'].full(ctxos);
 	}
 }
 
@@ -1392,18 +1402,12 @@ function drawHold(note, realTime) {
 	const baseLength = app.scaleY / nsr * note.speed * app.speed;
 	const holdLength = baseLength * note.realHoldTime;
 	if (note.realTime > realTime) {
-		if (HL) {
-			ctxos.drawImage(res['HoldHeadHL'], -res['HoldHeadHL'].width * 1.026 * 0.5, 0, res['HoldHeadHL'].width * 1.026, res['HoldHeadHL'].height * 1.026);
-			ctxos.drawImage(res['HoldHL'], -res['HoldHL'].width * 1.026 * 0.5, -holdLength, res['HoldHL'].width * 1.026, holdLength);
-		} else {
-			ctxos.drawImage(res['HoldHead'], -res['HoldHead'].width * 0.5, 0);
-			ctxos.drawImage(res['Hold'], -res['Hold'].width * 0.5, -holdLength, res['Hold'].width, holdLength);
-		}
+		noteRender.res[HL ? 'HoldHeadHL' : 'HoldHead'].head(ctxos);
+		noteRender.res[HL ? 'HoldHL' : 'Hold'].body(ctxos, -holdLength, holdLength);
 	} else {
-		if (HL) ctxos.drawImage(res['HoldHL'], -res['HoldHL'].width * 1.026 * 0.5, -holdLength, res['HoldHL'].width * 1.026, holdLength - baseLength * (realTime - note.realTime));
-		else ctxos.drawImage(res['Hold'], -res['Hold'].width * 0.5, -holdLength, res['Hold'].width, holdLength - baseLength * (realTime - note.realTime));
+		noteRender.res[HL ? 'HoldHL' : 'Hold'].body(ctxos, -holdLength, holdLength - baseLength * (realTime - note.realTime));
 	}
-	ctxos.drawImage(res['HoldEnd'], -res['HoldEnd'].width * 0.5, -holdLength - res['HoldEnd'].height);
+	noteRender.res['HoldEnd'].tail(ctxos, -holdLength);
 }
 
 function drawFlick(note) {
@@ -1415,8 +1419,7 @@ function drawFlick(note) {
 	else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
-		if (HL) ctxos.drawImage(res['FlickHL'], -res['FlickHL'].width * 0.5, -res['FlickHL'].height * 0.5);
-		else ctxos.drawImage(res['Flick'], -res['Flick'].width * 0.5, -res['Flick'].height * 0.5);
+		noteRender.res[HL ? 'FlickHL' : 'Flick'].full(ctxos);
 	}
 }
 //调节画面尺寸和全屏相关(返回source播放aegleseeker会出现迷之error)
