@@ -1,8 +1,5 @@
 import { csv2array } from './common.js';
 import Pec from './pec2json.js';
-/** @type {Worker} */
-let zip_worker = null;
-let zip_total = 0;
 export const uploader = {
 	// files: [],
 	input: Object.assign(document.createElement('input'), {
@@ -44,117 +41,123 @@ export const uploader = {
  * @property {ArrayBuffer} buffer
  * 
  * @typedef {object} ReaderOptions
- * @property {()=>void} onloadstart
- * @property {(param1:ReaderData,param2:number)=>void} onread
- * @property {(param1:ArrayBuffer)=>Promise<AudioBuffer>} createAudioBuffer
- * 
- * @param {DataType} result 
- * @param {ReaderOptions} options 
+ * @property {(data:DataType)=>Promise<ReaderData>} handler
  */
-export function readZip(result, {
+const stringify = async i => {
+	const labels = ['utf-8', 'gbk', 'big5', 'shift_jis'];
+	for (const label of labels) {
+		const decoder = new TextDecoder(label, { fatal: true }); // '\ufffd'
+		try {
+			return decoder.decode(i);
+		} catch (e) {
+			if (label === labels[labels.length - 1]) throw e;
+		}
+	}
+};
+export class ZipReader extends EventTarget {
+	/** @param {ReaderOptions} options */
+	constructor({
+		handler = async data => data,
+	}) {
+		super();
+		this.worker = null;
+		this.total = 0;
+		this.handler = handler;
+	}
+	/** @param {DataType} result */
+	read(result) {
+		if (!this.worker) {
+			this.dispatchEvent(new CustomEvent('loadstart'));
+			const worker = new Worker('worker/zip.js'); //以后考虑indexedDB存储url
+			worker.addEventListener('message', async msg => {
+				/** @type {{data:DataType,total:number}} */
+				const data = msg.data;
+				this.total = data.total;
+				const result = await this.handler(data.data);
+				this.dispatchEvent(new CustomEvent('read', { detail: result }));
+			});
+			this.worker = worker;
+			this.terminate = () => this.worker.terminate();
+		}
+		this.worker.postMessage(result, [result.buffer]);
+	}
+}
+/**
+ * @param {DataType} i 
+ * @returns {Promise<ReaderData>}
+ */
+export async function readFile(i, {
 	createAudioBuffer = async arraybuffer => {
 		/** @type {AudioContext} */
 		const actx = new(window.AudioContext || window.webkitAudioContext);
 		await actx.close();
 		return actx.decodeAudioData(arraybuffer);
-	},
-	onloadstart = () => void 0,
-	onread = () => void 0,
-}) {
-	const string = async i => {
-		const labels = ['utf-8', 'gbk', 'big5', 'shift_jis'];
-		for (const label of labels) {
-			const decoder = new TextDecoder(label, { fatal: true }); // '\ufffd'
-			try {
-				return decoder.decode(i);
-			} catch (e) {
-				if (label === labels[labels.length - 1]) throw e;
-			}
-		}
-	};
-	/**
-	 * @param {DataType} i 
-	 * @returns {Promise<ReaderData>}
-	 */
-	const it = async i => {
-		const { name, path } = splitPath(i.name);
-		if (name === 'line.csv') {
-			const data = await string(i.buffer);
-			const chartLine = joinPathInfo(csv2array(data, true), path);
-			return { type: 'line', data: chartLine };
-		}
-		if (name === 'info.csv') {
-			const data = await string(i.buffer);
-			const chartInfo = joinPathInfo(csv2array(data, true), path);
-			return { type: 'info', data: chartInfo };
-		}
-		if (name === 'Settings.txt' || name === 'info.txt') {
-			const data = await string(i.buffer);
-			const chartInfo = joinPathInfo(Pec.info(data), path);
-			return { type: 'info', data: chartInfo };
-		}
-		return new Promise(() => { //binary
-			throw new Error('Just make it a promise');
-		}).catch(async () => { //video
-			const videoElement = document.createElement('video');
-			videoElement.src = URL.createObjectURL(new Blob([i.buffer]));
-			videoElement.preload = 'metadata';
-			await new Promise((resolve, reject) => {
-				videoElement.onloadedmetadata = resolve;
-				videoElement.onerror = reject;
-			});
-			const { videoWidth: width, videoHeight: height } = videoElement;
-			const data = {
-				audio: await createAudioBuffer(i.buffer.slice()),
-				video: width && height ? videoElement : null
-			}
-			return { type: 'media', name: i.name, data };
-		}).catch(async () => { //audio
-			const data = { audio: await createAudioBuffer(i.buffer.slice()), video: null };
-			return { type: 'media', name: i.name, data };
-		}).catch(async () => { //image
-			const data = new Blob([i.buffer]);
-			const imageData = await createImageBitmap(data);
-			return { type: 'image', name: i.name, data: imageData };
-		}).catch(async () => { //string
-			const data = await string(i.buffer);
-			try {
-				JSON.parse(data);
-				return new Promise(() => { //json
-					throw new Error('Just make it a promise');
-				}).catch(async () => { //chart
-					const jsonData = await chart123(data, (_, value) => typeof value === 'number' ? Math.fround(value) : value);
-					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
-				}).catch(async () => { //rpe
-					const rpeData = Pec.parseRPE(data, i.name, path); //qwq
-					const jsonData = await chart123(rpeData.data);
-					const { messages: msg, info, line } = rpeData;
-					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg, info, line };
-				});
-			} catch (e) {
-				return new Promise(() => { //plain
-					throw new Error('Just make it a promise');
-				}).catch(async () => { //pec
-					const pecData = Pec.parse(data, i.name);
-					const jsonData = await chart123(pecData.data);
-					return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: pecData.messages };
-				});
-			}
-		}).catch(error => ({ type: 'error', name: i.name, data: error }));
-	};
-	if (!zip_worker) {
-		onloadstart();
-		const worker = new Worker('worker/zip.js'); //以后考虑indexedDB存储url
-		worker.addEventListener('message', async msg => {
-			/** @type {{data:{name:string,path:string,buffer:ArrayBuffer},total:number}} */
-			const data = msg.data;
-			zip_total = data.total;
-			const result = await it(data.data);
-			return onread(result, zip_total);
-		});
-		zip_worker = worker;
 	}
-	zip_worker.postMessage(result, [result.buffer]);
+}) {
+	const { name, path } = splitPath(i.name);
+	if (name === 'line.csv') {
+		const data = await stringify(i.buffer);
+		const chartLine = joinPathInfo(csv2array(data, true), path);
+		return { type: 'line', data: chartLine };
+	}
+	if (name === 'info.csv') {
+		const data = await stringify(i.buffer);
+		const chartInfo = joinPathInfo(csv2array(data, true), path);
+		return { type: 'info', data: chartInfo };
+	}
+	if (name === 'Settings.txt' || name === 'info.txt') {
+		const data = await stringify(i.buffer);
+		const chartInfo = joinPathInfo(Pec.info(data), path);
+		return { type: 'info', data: chartInfo };
+	}
+	return new Promise(() => {
+		throw new Error('Just make it a promise');
+	}).catch(async () => {
+		const videoElement = document.createElement('video');
+		videoElement.src = URL.createObjectURL(new Blob([i.buffer]));
+		videoElement.preload = 'metadata';
+		await new Promise((resolve, reject) => {
+			videoElement.onloadedmetadata = resolve;
+			videoElement.onerror = reject;
+		});
+		const { videoWidth: width, videoHeight: height } = videoElement;
+		const data = {
+			audio: await createAudioBuffer(i.buffer.slice()),
+			video: width && height ? videoElement : null
+		};
+		return { type: 'media', name: i.name, data };
+	}).catch(async () => {
+		const data = { audio: await createAudioBuffer(i.buffer.slice()), video: null };
+		return { type: 'media', name: i.name, data };
+	}).catch(async () => {
+		const data = new Blob([i.buffer]);
+		const imageData = await createImageBitmap(data);
+		return { type: 'image', name: i.name, data: imageData };
+	}).catch(async () => {
+		const data = await stringify(i.buffer);
+		try {
+			JSON.parse(data);
+			return new Promise(() => {
+				throw new Error('Just make it a promise');
+			}).catch(async () => {
+				const jsonData = await chart123(data, (_, value) => typeof value === 'number' ? Math.fround(value) : value);
+				return { type: 'chart', name: i.name, md5: md5(data), data: jsonData };
+			}).catch(async () => {
+				const rpeData = Pec.parseRPE(data, i.name, path); //qwq
+				const jsonData = await chart123(rpeData.data);
+				const { messages: msg, info, line } = rpeData;
+				return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg, info, line };
+			});
+		} catch (e) {
+			return new Promise(() => {
+				throw new Error('Just make it a promise');
+			}).catch(async () => {
+				const pecData = Pec.parse(data, i.name);
+				const jsonData = await chart123(pecData.data);
+				return { type: 'chart', name: i.name, md5: md5(data), data: jsonData, msg: pecData.messages };
+			});
+		}
+	}).catch(error => ({ type: 'error', name: i.name, data: error }));
 }
 
 function splitPath(i) {

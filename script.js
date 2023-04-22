@@ -1,10 +1,10 @@
 import simphi from './js/simphi.js';
 import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
-import { uploader, readZip } from './js/reader.js';
+import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
 import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b42'], 1611795955, 1681575202];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b43'], 1611795955, 1682136201];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -19,7 +19,6 @@ const tween = {
 	easeOutCubic: pos => 1 + (pos - 1) ** 3,
 }
 const main = {};
-main.uploaded = false; //qwq
 main.modify = a => a;
 main.pressTime = 0;
 main.kfcFkXqsVw50 = [];
@@ -260,16 +259,36 @@ stage.resize(1.777778); //qwq
 self.addEventListener('resize', () => stage.resize());
 //uploader
 {
+	const /** @type {Object<string,number>} */ dones = {};
+	const /** @type {Object<string,number>} */ totals = {};
 	let uploader_done = 0;
 	let uploader_total = 0;
+	/**
+	 * @param {string} tag
+	 * @param {number} total
+	 */
+	const handleFile = async (tag, total, promise, oncomplete = () => {}) => {
+		totals[tag] = total;
+		uploader_total = Object.values(totals).reduce((a, b) => a + b, 0);
+		if (!(promise instanceof Promise)) promise = Promise.resolve();
+		await promise.catch(err => msgHandler.sendWarning(`不支持的文件：${err.cause.name}`));
+		dones[tag] = (dones[tag] || 0) + 1;
+		uploader_done = Object.values(dones).reduce((a, b) => a + b, 0);
+		msgHandler.sendMessage(`读取文件：${uploader_done}/${uploader_total}`);
+		if (dones[tag] === totals[tag]) oncomplete();
+		loadComplete();
+	}
+	main.handleFile = handleFile;
+	let file_total = 0;
+	const options = { createAudioBuffer() { return audio.decode(...arguments) } };
+	const zip = new ZipReader({ handler: data => readFile(data, options) });
+	zip.addEventListener('loadstart', () => msgHandler.sendMessage('加载zip组件...'));
+	zip.addEventListener('read', evt => handleFile('zip', zip.total, pick(evt.detail)));
 	$id('uploader-upload').addEventListener('click', uploader.uploadFile);
 	$id('uploader-file').addEventListener('click', uploader.uploadFile);
 	$id('uploader-dir').addEventListener('click', uploader.uploadDir);
 	/** @type {((_:FileList) => void)} */
-	uploader.onchange = e => {
-		console.log(e.length);
-		if (e.length) $id('uploader').classList.add('disabled');
-	}
+	uploader.onchange = loadComplete;
 	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
 	uploader.onprogress = function(evt, i) { //显示加载文件进度
 		if (!evt.total) return;
@@ -279,24 +298,22 @@ self.addEventListener('resize', () => stage.resize());
 	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
 	uploader.onload = function(evt, i) {
 		console.log(evt);
-		readZip({
-			name: i.name,
-			buffer: evt.target.result,
-			path: i.webkitRelativePath || i.name
-		}, {
-			createAudioBuffer() { return audio.decode(...arguments) },
-			onloadstart: () => msgHandler.sendMessage('加载zip组件...'),
-			onread: handleFile,
-		});
+		const buffer = evt.target.result;
+		const isZip = new DataView(buffer).getUint32(0, false) === 0x504b0304;
+		const data = { name: i.name, buffer, path: i.webkitRelativePath || i.name };
+		//检测buffer是否为zip
+		if (isZip) zip.read(data);
+		else {
+			file_total++;
+			readFile(data, options).then(result => handleFile('file', file_total, pick(result)));
+		}
 	}
-	/** 
+	/**
+	 * @typedef {import("./js/reader").ReaderData} ReaderData
 	 * @param {ReaderData} data 
-	 * @param {number} total
 	 */
-	async function handleFile(data, total) {
-		uploader_total = total;
+	async function pick(data) {
 		console.log(data);
-		main.uploaded = true;
 		switch (data.type) {
 			case 'line':
 				chartLineData.push(...data.data);
@@ -305,9 +322,6 @@ self.addEventListener('resize', () => stage.resize());
 				chartInfoData.push(...data.data);
 				break;
 			case 'media':
-				bgms.set(data.name, data.data);
-				selectbgm.appendChild(createOption(data.name, data.name));
-				break;
 			case 'audio':
 				bgms.set(data.name, data.data);
 				selectbgm.appendChild(createOption(data.name, data.name));
@@ -329,24 +343,27 @@ self.addEventListener('resize', () => stage.resize());
 				break;
 			default:
 				console.error(data.data);
-				msgHandler.sendWarning(`不支持的文件：${data.name}`);
+				throw new Error(`Unsupported file: ${data.name}`, { cause: data });
 		}
-		msgHandler.sendMessage(`读取文件：${++uploader_done}/${uploader_total}`);
-		if (uploader_done !== uploader_total) return;
-		$id('uploader').classList.remove('disabled');
-		adjustInfo();
-		/**
-		 * @param {string} innerhtml 
-		 * @param {string} value 
-		 */
-		function createOption(value, innerhtml) {
-			const option = document.createElement('option');
-			const isHidden = /(^|\/)\./.test(innerhtml);
-			option.innerHTML = isHidden ? '' : innerhtml;
-			option.value = value;
-			if (isHidden) option.classList.add('hide');
-			return option;
-		}
+	}
+	/**
+	 * @param {string} innerhtml 
+	 * @param {string} value 
+	 */
+	function createOption(value, innerhtml) {
+		const option = document.createElement('option');
+		const isHidden = /(^|\/)\./.test(innerhtml);
+		option.innerHTML = isHidden ? '' : innerhtml;
+		option.value = value;
+		if (isHidden) option.classList.add('hide');
+		return option;
+	}
+
+	function loadComplete() {
+		if (uploader_done === uploader_total) {
+			$id('uploader').classList.remove('disabled');
+			adjustInfo();
+		} else $id('uploader').classList.add('disabled');
 	}
 }
 //qwq[water,demo,democlick]
@@ -408,10 +425,11 @@ class JudgeEvent {
 		this.preventBad = false; //是否阻止判定为Bad
 	}
 }
+/** @typedef {import('./js/simphi.js').NoteExtends} NoteExtends */
 /**
  * 判定和音符的水平距离
  * @param {JudgeEvent} judgeEvent 
- * @param {Note} note 
+ * @param {NoteExtends} note 
  */
 function getJudgeOffset(judgeEvent, note) {
 	const { offsetX, offsetY } = judgeEvent;
@@ -421,7 +439,7 @@ function getJudgeOffset(judgeEvent, note) {
 /**
  * 判定和音符的曼哈顿距离
  * @param {JudgeEvent} judgeEvent
- * @param {Note} note
+ * @param {NoteExtends} note
  */
 function getJudgeDistance(judgeEvent, note) {
 	const { offsetX, offsetY } = judgeEvent;
@@ -431,6 +449,7 @@ function getJudgeDistance(judgeEvent, note) {
 const judgeManager = {
 	/**@type {JudgeEvent[]} */
 	list: [],
+	/**@param {NoteExtends[]} notes */
 	addEvent(notes, realTime) {
 		const { list } = this;
 		list.length = 0;
@@ -463,8 +482,7 @@ const judgeManager = {
 		}
 	},
 	/**
-	 * 以后扩充Note定义
-	 * @param {Note[]} notes
+	 * @param {NoteExtends[]} notes
 	 * @param {number} realTime
 	 * @param {number} width
 	 */
@@ -498,7 +516,7 @@ const judgeManager = {
 					}
 				} else if (deltaTime < 0) {
 					audio.play(res['HitSong1'], { gainrate: app.soundVolume });
-					hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
+					hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
 					stat.addCombo(4, 2);
 					note.scored = true;
 				}
@@ -540,16 +558,16 @@ const judgeManager = {
 					}
 				} else if (deltaTime < 0) {
 					audio.play(res['HitSong2'], { gainrate: app.soundVolume });
-					hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
+					hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
 					stat.addCombo(4, 4);
 					note.scored = true;
 				}
 			} else { //Hold音符
 				if (note.type === 3 && note.holdTapTime) { //是否触发头判
 					if ((performance.now() - note.holdTapTime) * note.holdTime >= 1.6e4 * note.realHoldTime) { //间隔时间与bpm成反比
-						if (note.holdStatus % 4 === 0) hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
-						else if (note.holdStatus % 4 === 1) hitImageList.add(HitImage.perfect(note.projectX, note.projectY));
-						else if (note.holdStatus % 4 === 3) hitImageList.add(HitImage.good(note.projectX, note.projectY));
+						if (note.holdStatus % 4 === 0) hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
+						else if (note.holdStatus % 4 === 1) hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
+						else if (note.holdStatus % 4 === 3) hitImageList.add(HitImage.good(note.projectX, note.projectY, note));
 						note.holdTapTime = performance.now();
 					}
 					if (deltaTime + note.realHoldTime < 0.2) {
@@ -595,29 +613,30 @@ const judgeManager = {
 						noteJudge.status = 6; //console.log('Bad', i.name);
 						noteJudge.badtime = performance.now();
 					} else {
-						stat.addDisp(Math.max(deltaTime2, (-1 - noteJudge.frameCount) * 0.04 || 0));
+						const note = noteJudge;
+						stat.addDisp(Math.max(deltaTime2, (-1 - note.frameCount) * 0.04 || 0));
 						audio.play(res['HitSong0'], { gainrate: app.soundVolume });
 						if (deltaTime2 > 0.08) {
-							noteJudge.holdStatus = 7; //console.log('Good(Early)', i.name);
-							hitImageList.add(HitImage.good(noteJudge.projectX, noteJudge.projectY));
-							hitWordList.add(HitWord.early(noteJudge.projectX, noteJudge.projectY));
+							note.holdStatus = 7; //console.log('Good(Early)', i.name);
+							hitImageList.add(HitImage.good(note.projectX, note.projectY, note));
+							hitWordList.add(HitWord.early(note.projectX, note.projectY));
 						} else if (deltaTime2 > 0.04) {
-							noteJudge.holdStatus = 5; //console.log('Perfect(Early)', i.name);
-							hitImageList.add(HitImage.perfect(noteJudge.projectX, noteJudge.projectY));
-							hitWordList.add(HitWord.early(noteJudge.projectX, noteJudge.projectY));
-						} else if (deltaTime2 > -0.04 || noteJudge.frameCount < 1) {
-							noteJudge.holdStatus = 4; //console.log('Perfect(Max)', i.name);
-							hitImageList.add(HitImage.perfect(noteJudge.projectX, noteJudge.projectY));
-						} else if (deltaTime2 > -0.08 || noteJudge.frameCount < 2) {
-							noteJudge.holdStatus = 1; //console.log('Perfect(Late)', i.name);
-							hitImageList.add(HitImage.perfect(noteJudge.projectX, noteJudge.projectY));
-							hitWordList.add(HitWord.late(noteJudge.projectX, noteJudge.projectY));
+							note.holdStatus = 5; //console.log('Perfect(Early)', i.name);
+							hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
+							hitWordList.add(HitWord.early(note.projectX, note.projectY));
+						} else if (deltaTime2 > -0.04 || note.frameCount < 1) {
+							note.holdStatus = 4; //console.log('Perfect(Max)', i.name);
+							hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
+						} else if (deltaTime2 > -0.08 || note.frameCount < 2) {
+							note.holdStatus = 1; //console.log('Perfect(Late)', i.name);
+							hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
+							hitWordList.add(HitWord.late(note.projectX, note.projectY));
 						} else {
-							noteJudge.holdStatus = 3; //console.log('Good(Late)', i.name);
-							hitImageList.add(HitImage.good(noteJudge.projectX, noteJudge.projectY));
-							hitWordList.add(HitWord.late(noteJudge.projectX, noteJudge.projectY));
+							note.holdStatus = 3; //console.log('Good(Late)', i.name);
+							hitImageList.add(HitImage.good(note.projectX, note.projectY, note));
+							hitWordList.add(HitWord.late(note.projectX, note.projectY));
 						}
-						if (noteJudge.type === 1) noteJudge.status = noteJudge.holdStatus;
+						if (note.type === 1) note.status = note.holdStatus;
 					}
 					if (noteJudge.status) {
 						stat.addCombo(noteJudge.status, 1);
@@ -664,6 +683,7 @@ class HitEvents extends Array {
 }
 const hitFeedbackList = new HitEvents({ //存放点击特效
 	updateCallback: i => ++i.time > 0,
+	/**	@param {HitFeedback} i */
 	iterateCallback: i => {
 		ctxos.globalAlpha = 0.85;
 		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
@@ -675,15 +695,18 @@ const hitFeedbackList = new HitEvents({ //存放点击特效
 });
 const hitImageList = new HitEvents({ //存放点击特效
 	updateCallback: i => nowTime_ms >= i.time + i.duration,
+	/**	@param {HitImage} i */
 	iterateCallback: i => {
 		const tick = (nowTime_ms - i.time) / i.duration;
+		const effects = i.effects;
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(app.noteScaleRatio * 6, 0, 0, app.noteScaleRatio * 6, i.offsetX, i.offsetY); //缩放
-		ctxos.drawImage(i.images[parseInt(tick * 30)] || i.images[i.images.length - 1], -128, -128); //停留约0.5秒
+		// ctxos.rotate(i.rotation);
+		(effects[parseInt(tick * effects.length)] || effects[effects.length - 1]).full(ctxos); //停留约0.5秒
 		ctxos.fillStyle = i.color;
 		ctxos.globalAlpha = 1 - tick; //不透明度
 		const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //方块大小
-		for (const j of i.rand) {
+		for (const j of i.direction) {
 			const ds = j[0] * (9 * tick / (8 * tick + 1)); //打击点距离
 			ctxos.fillRect(ds * Math.cos(j[1]) - r3 / 2, ds * Math.sin(j[1]) - r3 / 2, r3, r3);
 		}
@@ -691,6 +714,7 @@ const hitImageList = new HitEvents({ //存放点击特效
 });
 const hitWordList = new HitEvents({ //存放点击特效
 	updateCallback: i => nowTime_ms >= i.time + i.duration,
+	/**	@param {HitWord} i */
 	iterateCallback: i => {
 		const tick = (nowTime_ms - i.time) / i.duration;
 		ctxos.setTransform(1, 0, 0, 1, i.offsetX, i.offsetY); //缩放
@@ -723,20 +747,23 @@ class HitFeedback {
 	}
 }
 class HitImage {
-	constructor(offsetX, offsetY, n1, n2, n3) {
+	constructor(offsetX, offsetY, n1, n3) {
+		const packs = noteRender.hitFX[n1];
 		this.offsetX = Number(offsetX) || 0;
 		this.offsetY = Number(offsetY) || 0;
 		this.time = performance.now();
-		this.duration = 500;
-		this.images = res['HitFX'][n1]; //以后做缺少检测
+		this.duration = packs.duration;
+		this.effects = packs.effects;
+		this.direction = Array(packs.numOfParts || 0).fill().map(() => [Math.random() * 80 + 185, Math.random() * 2 * Math.PI]);
 		this.color = String(n3);
-		this.rand = Array(Number(n2) || 0).fill().map(() => [Math.random() * 80 + 185, Math.random() * 2 * Math.PI]);
 	}
-	static perfect(offsetX, offsetY) {
-		return new HitImage(offsetX, offsetY, 'rgba(255,236,160,0.8823529)', 4, '#ffeca0');
+	static perfect(offsetX, offsetY, note) {
+		console.log(note);
+		return new HitImage(offsetX, offsetY, 'Perfect', '#ffeca0');
 	}
-	static good(offsetX, offsetY) {
-		return new HitImage(offsetX, offsetY, 'rgba(180,225,255,0.9215686)', 3, '#b4e1ff');
+	static good(offsetX, offsetY, note) {
+		console.log(note);
+		return new HitImage(offsetX, offsetY, 'Good', '#b4e1ff');
 	}
 }
 class HitWord {
@@ -888,19 +915,14 @@ window.addEventListener('load', async function() {
 	})));
 	if (errorNum) return msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
 	const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL'];
-	for (const i of entries) await noteRender.add(i, res[i], 8080 / raw.image[i].split('|')[1]);
+	for (const i of entries) await noteRender.update(i, res[i], 8080 / raw.image[i].split('|')[1]);
+	await noteRender.updateFX(res['HitFXRaw'], 8080 / raw.image['HitFXRaw'].split('|')[1]);
 	res['NoImageBlack'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(0), 1, 1));
 	res['NoImageWhite'] = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(255), 1, 1));
 	res['JudgeLineMP'] = await imgShader(res['JudgeLine'], '#feffa9');
 	res['JudgeLineFC'] = await imgShader(res['JudgeLine'], '#a2eeff');
 	res['Ranks'] = await imgSplit(res['Rank']);
 	res['Rank'].close();
-	const hitRaw = await imgSplit(res['HitFXRaw']);
-	res['HitFXRaw'].close();
-	res['HitFX'] = {};
-	res['HitFX']['rgba(255,236,160,0.8823529)'] = await Promise.all(hitRaw.map(img => imgShader(img, 'rgba(255,236,160,0.8823529)'))); //#fce491
-	res['HitFX']['rgba(180,225,255,0.9215686)'] = await Promise.all(hitRaw.map(img => imgShader(img, 'rgba(180,225,255,0.9215686)'))); //#9ed5f3
-	hitRaw.forEach(img => img.close());
 	res['mute'] = audio.mute(1);
 	if (!(() => {
 			const b = createOffscreenCanvas(1, 1).getContext('2d');
@@ -1331,7 +1353,7 @@ function clip(num) {
 	return num;
 }
 class ScaledNote {
-	constructor(img, scale) {
+	constructor(img, scale, compacted) {
 		this.img = img;
 		this.scale = scale;
 		const dx = -img.width / 2 * scale;
@@ -1339,21 +1361,57 @@ class ScaledNote {
 		const dw = img.width * scale;
 		const dh = img.height * scale;
 		/** @param {CanvasRenderingContext2D} ctx */
-		this.full = ctx => ctx.drawImage(img, dx, dy);
+		this.full = ctx => ctx.drawImage(img, dx, dy, dw, dh);
 		/** @param {CanvasRenderingContext2D} ctx */
 		this.head = ctx => ctx.drawImage(img, dx, 0, dw, dh);
 		/** @param {CanvasRenderingContext2D} ctx */
 		this.body = (ctx, offset, length) => ctx.drawImage(img, dx, offset, dw, length);
 		/** @param {CanvasRenderingContext2D} ctx */
-		this.tail = (ctx, offset) => ctx.drawImage(img, dx, offset - dh);
+		this.tail = (ctx, offset) => ctx.drawImage(img, dx, offset - dh, dw, dh);
+		if (compacted) {
+			/** @param {CanvasRenderingContext2D} ctx */
+			this.head = ctx => ctx.drawImage(img, dx, dy, dw, dh);
+			/** @param {CanvasRenderingContext2D} ctx */
+			this.tail = (ctx, offset) => ctx.drawImage(img, dx, offset - dh - dy, dw, dh);
+		}
 	}
 }
+/**
+ * @typedef {Object} HitFX
+ * @property {ScaledNote[]} effects
+ * @property {number} numOfParts
+ * @property {number} duration
+ */
 const noteRender = {
 	/** @type {Object<string,ScaledNote>} */
-	res: {},
-	async add(name, img, scale) {
-		this.res[name] = new ScaledNote(img, scale);
-		if (name === 'Tap') this.res['TapBad'] = new ScaledNote(await imgPainter(img, '#6c4343'), scale);
+	note: {},
+	/** @type {Object<string,HitFX>} */
+	hitFX: {},
+	/** 
+	 * @param {string} name 
+	 * @param {ImageBitmap} img
+	 * @param {number} scale
+	 */
+	async update(name, img, scale, compacted) {
+		this.note[name] = new ScaledNote(img, scale, compacted);
+		if (name === 'Tap') this.note['TapBad'] = new ScaledNote(await imgPainter(img, '#6c4343'), scale);
+	},
+	async updateFX(img, scale, limitX, limitY, hideParts, duration) {
+		const hitRaw = await imgSplit(img, limitX, limitY);
+		const hitPerfect = hitRaw.map(async img => new ScaledNote(await imgShader(img, 'rgba(255,236,160,0.8823529)'), scale)); //#fce491,#ffeca0e1
+		const hitGood = hitRaw.map(async img => new ScaledNote(await imgShader(img, 'rgba(180,225,255,0.9215686)'), scale)); //#9ed5f3,#b4e1ffeb
+		img.close();
+		this.hitFX['Perfect'] = {
+			effects: await Promise.all(hitPerfect),
+			numOfParts: hideParts ? 0 : 4,
+			duration: (duration | 0) || 500
+		};
+		this.hitFX['Good'] = {
+			effects: await Promise.all(hitGood),
+			numOfParts: hideParts ? 0 : 3,
+			duration: (duration | 0) || 500
+		}
+		hitRaw.forEach(img => img.close());
 	}
 };
 //绘制Note
@@ -1371,11 +1429,11 @@ function drawTap(note) {
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
 	if (note.badtime) {
 		ctxos.globalAlpha = 1 - clip((performance.now() - note.badtime) / 500);
-		noteRender.res['TapBad'].full(ctxos);
+		noteRender.note['TapBad'].full(ctxos);
 	} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0); //过线前1.5s出现
-		noteRender.res[HL ? 'TapHL' : 'Tap'].full(ctxos);
+		noteRender.note[HL ? 'TapHL' : 'Tap'].full(ctxos);
 	}
 }
 
@@ -1388,7 +1446,7 @@ function drawDrag(note) {
 	else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
-		noteRender.res[HL ? 'DragHL' : 'Drag'].full(ctxos);
+		noteRender.note[HL ? 'DragHL' : 'Drag'].full(ctxos);
 	}
 }
 
@@ -1402,12 +1460,12 @@ function drawHold(note, realTime) {
 	const baseLength = app.scaleY / nsr * note.speed * app.speed;
 	const holdLength = baseLength * note.realHoldTime;
 	if (note.realTime > realTime) {
-		noteRender.res[HL ? 'HoldHeadHL' : 'HoldHead'].head(ctxos);
-		noteRender.res[HL ? 'HoldHL' : 'Hold'].body(ctxos, -holdLength, holdLength);
+		noteRender.note[HL ? 'HoldHeadHL' : 'HoldHead'].head(ctxos);
+		noteRender.note[HL ? 'HoldHL' : 'Hold'].body(ctxos, -holdLength, holdLength);
 	} else {
-		noteRender.res[HL ? 'HoldHL' : 'Hold'].body(ctxos, -holdLength, holdLength - baseLength * (realTime - note.realTime));
+		noteRender.note[HL ? 'HoldHL' : 'Hold'].body(ctxos, -holdLength, holdLength - baseLength * (realTime - note.realTime));
 	}
-	noteRender.res['HoldEnd'].tail(ctxos, -holdLength);
+	noteRender.note['HoldEnd'].tail(ctxos, -holdLength);
 }
 
 function drawFlick(note) {
@@ -1419,7 +1477,7 @@ function drawFlick(note) {
 	else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
-		noteRender.res[HL ? 'FlickHL' : 'Flick'].full(ctxos);
+		noteRender.note[HL ? 'FlickHL' : 'Flick'].full(ctxos);
 	}
 }
 //调节画面尺寸和全屏相关(返回source播放aegleseeker会出现迷之error)
@@ -1473,8 +1531,8 @@ function imgShader(img, color, limit = 512) {
 	const canvas = createOffscreenCanvas(img.width, img.height);
 	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
 	ctx.drawImage(img, 0, 0);
-	for (let dx = 0; dx < img.width; dx += limit) {
-		for (let dy = 0; dy < img.height; dy += limit) {
+	for (let dy = 0; dy < img.height; dy += limit) {
+		for (let dx = 0; dx < img.width; dx += limit) {
 			const imgData = ctx.getImageData(dx, dy, limit, limit);
 			for (let i = 0; i < imgData.data.length / 4; i++) {
 				imgData.data[i * 4] *= dataRGBA[0] / 255;
@@ -1496,8 +1554,8 @@ function imgPainter(img, color, limit = 512) {
 	const canvas = createOffscreenCanvas(img.width, img.height);
 	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
 	ctx.drawImage(img, 0, 0);
-	for (let dx = 0; dx < img.width; dx += limit) {
-		for (let dy = 0; dy < img.height; dy += limit) {
+	for (let dy = 0; dy < img.height; dy += limit) {
+		for (let dx = 0; dx < img.width; dx += limit) {
 			const imgData = ctx.getImageData(dx, dy, limit, limit);
 			for (let i = 0; i < imgData.data.length / 4; i++) {
 				imgData.data[i * 4] = dataRGBA[0];
@@ -1520,8 +1578,8 @@ function imgSplit(img, limitX, limitY) {
 	limitX = parseInt(limitX) || Math.min(img.width, img.height);
 	limitY = parseInt(limitY) || limitX;
 	const arr = [];
-	for (let dx = 0; dx < img.width; dx += limitX) {
-		for (let dy = 0; dy < img.height; dy += limitY) {
+	for (let dy = 0; dy < img.height; dy += limitY) {
+		for (let dx = 0; dx < img.width; dx += limitX) {
 			arr.push(createImageBitmap(img, dx, dy, limitX, limitY));
 		}
 	}
@@ -1657,8 +1715,10 @@ const maxFrame = new Checkbox('限制帧率').appendBefore(resetCfg.container).h
 const autoDelay = new Checkbox('音画实时同步(若声音卡顿则建议关闭)', true).appendBefore(resetCfg.container).hook(status.reg.bind(status, 'autoDelay'));
 const enableVP = new Checkbox('隐藏距离较远的音符').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableVP'));
 enableVP.checkbox.addEventListener('change', evt => app.enableVP = evt.target.checked);
+enableVP.checkbox.dispatchEvent(new Event('change'));
 const enableFR = new Checkbox('使用单精度浮点运算').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFR'));
 enableFR.checkbox.addEventListener('change', evt => app.enableFR = evt.target.checked);
+enableFR.checkbox.dispatchEvent(new Event('change'));
 const selectbg = $id('select-bg');
 const btnPlay = $id('btn-play');
 const btnPause = $id('btn-pause');
@@ -1999,6 +2059,16 @@ const enableFilter = new Checkbox('启用滤镜').appendBefore(resetCfg.containe
 	});
 	enableFilter.checkbox.dispatchEvent(new Event('change'));
 })();
+//plugin(skin)
+inputName.addEventListener('input', function() {
+	if (this.value == '/skin') setTimeout(() => {
+		if (this.value == '/skin') {
+			import('./js/skin.js').then(module => module.default());
+			this.value = '';
+			this.dispatchEvent(new Event('input'));
+		}
+	}, 1e3);
+});
 //debug
 export var hook = self.hook = main;
 main.fireTip = fireTip;
@@ -2013,6 +2083,8 @@ main.bgms = bgms;
 main.selectbgm = selectbgm;
 main.selectchart = selectchart;
 main.chartsMD5 = chartsMD5;
+main.noteRender = noteRender;
+main.ZipReader = ZipReader;
 main.tmps = tmps;
 main.qwq = qwq;
 main.qwqwq = false;

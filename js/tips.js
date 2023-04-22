@@ -25,7 +25,10 @@ brain.addTip('反馈bug时记得带上设备以及浏览器名称和版本号！
 //暗示类
 brain.addTip('用键盘打歌是怎样的体验？');
 brain.addTip('<ruby>奥拓普雷<rp>(</rp><rt>Autoplay</rt><rp>)</rp></ruby>先生，永远的音游之光');
-brain.addTip('在【曲名】处输入“/pz”可以打开Phizone的对话框哦！');
+brain.addTip('上传并选择视频文件播放可以将背景替换为视频！');
+brain.addTip('在【曲名】处输入“/pz”可以打开Phizone的对话框！');
+brain.addTip('在【曲名】处输入“/random”以加载随机歌曲！');
+brain.addTip('在【曲名】处输入“/skin”可以打开皮肤选择器！');
 // brain.addTip('4.1 Hyperer Mode Released');
 // brain.addTip('4.1 Reverse Mode Released');
 //闲聊类

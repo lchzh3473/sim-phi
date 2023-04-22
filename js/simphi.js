@@ -1,3 +1,37 @@
+/**
+ * @typedef {Object} NoteExtends
+ * @property {number} type
+ * @property {number} time
+ * @property {number} positionX
+ * @property {number} holdTime
+ * @property {number} speed
+ * @property {number} floorPosition
+ * @property {number} offsetX
+ * @property {number} offsetY
+ * @property {number} alpha
+ * @property {number} realTime
+ * @property {number} realHoldTime
+ * @property {JudgeLine} line
+ * @property {number} lineId
+ * @property {number} noteId
+ * @property {number} isAbove
+ * @property {string} name
+ * @property {number} isMulti
+ * @property {Note[]} nearNotes
+ * @property {number} cosr
+ * @property {number} sinr
+ * @property {number} projectX
+ * @property {number} projectY
+ * @property {number} visible
+ * @property {number} showPoint
+ * @property {number} holdStatus
+ * @property {number} holdTapTime
+ * @property {boolean} holdBroken
+ * @property {number} status
+ * @property {number} scored
+ * @property {number} statOffset
+ * @property {number} frameCount
+ */
 // let energy = 0;
 class Stat {
 	constructor() {
@@ -192,17 +226,29 @@ class Renderer {
 		this.bgVideo = null;
 		/** @type {JudgeLine[]} */
 		this.lines = [];
+		/** @type {NoteExtends[]} */
 		this.notes = [];
+		/** @type {NoteExtends[]} */
 		this.taps = [];
+		/** @type {NoteExtends[]} */
 		this.drags = [];
+		/** @type {NoteExtends[]} */
 		this.flicks = [];
+		/** @type {NoteExtends[]} */
 		this.holds = [];
+		/** @type {NoteExtends[]} */
 		this.linesReversed = [];
+		/** @type {NoteExtends[]} */
 		this.notesReversed = [];
+		/** @type {NoteExtends[]} */
 		this.tapsReversed = [];
+		/** @type {NoteExtends[]} */
 		this.dragsReversed = [];
+		/** @type {NoteExtends[]} */
 		this.flicksReversed = [];
+		/** @type {NoteExtends[]} */
 		this.holdsReversed = [];
+		/** @type {NoteExtends[]} */
 		this.tapholds = [];
 		//qwq2
 		this._setLowResFactor(1);
@@ -287,17 +333,18 @@ class Renderer {
 			}
 		}
 		//向Renderer添加Note
-		const addNote = (note, beat32, lineId, noteId, isAbove) => {
+		/** @param {NoteExtends} note */
+		const addNote = (note, beat32, line, noteId, isAbove) => {
 			note.offsetX = 0;
 			note.offsetY = 0;
 			note.alpha = 0;
-			note.rotation = 0;
 			note.realTime = note.time * beat32;
 			note.realHoldTime = note.holdTime * beat32;
-			note.lineId = lineId;
+			note.line = line;
+			note.lineId = line.lineId;
 			note.noteId = noteId;
 			note.isAbove = isAbove;
-			note.name = `${lineId}${isAbove ? '+' : '-'}${noteId}${'?tdhf'[note.type]}`;
+			note.name = `${line.lineId}${isAbove ? '+' : '-'}${noteId}${'?tdhf'[note.type]}`;
 			this.notes.push(note);
 			if (note.type === 1) this.taps.push(note);
 			else if (note.type === 2) this.drags.push(note);
@@ -324,8 +371,8 @@ class Renderer {
 			addRealTime(i.judgeLineMoveEvents, i.bpm);
 			addRealTime(i.judgeLineRotateEvents, i.bpm);
 			this.lines.push(i); //qwq可以定义新类防止函数在循环里定义
-			i.notesAbove.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i.lineId, noteId, true));
-			i.notesBelow.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i.lineId, noteId, false));
+			i.notesAbove.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i, noteId, true));
+			i.notesBelow.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i, noteId, false));
 		}
 		this.notes.sort(sortNote);
 		this.taps.sort(sortNote);
