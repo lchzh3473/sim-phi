@@ -3,8 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-import { brain } from './js/tips.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b43'], 1611795955, 1682136201];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b44'], 1611795955, 1682347041];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -22,7 +21,6 @@ const main = {};
 main.modify = a => a;
 main.pressTime = 0;
 main.kfcFkXqsVw50 = [];
-main.filter = null;
 main['flag{qwq}'] = () => {};
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of $id('view-nav').children) {
@@ -163,7 +161,7 @@ async function checkSupport() {
 	};
 	self.addEventListener('error', e => sysError(e.error, e.message));
 	self.addEventListener('unhandledrejection', e => sysError(e.reason));
-	const loadPlugin = async (name, urls, check) => {
+	const loadLib = async (name, urls, check) => {
 		if (!check()) return true;
 		const errmsg1 = `错误：${name}组件加载失败（点击查看详情）`;
 		const errmsg2 = `${name}组件加载失败，请检查您的网络连接然后重试：`;
@@ -185,12 +183,12 @@ async function checkSupport() {
 		if (version && version[1] >= 17.4);
 		else msgHandler.sendWarning(text);
 	}
-	if (!await loadPlugin('ImageBitmap兼容', urls.bitmap, () => isUndefined('createImageBitmap'))) return -1;
-	if (!await loadPlugin('StackBlur', urls.blur, () => isUndefined('StackBlur'))) return -2;
-	if (!await loadPlugin('md5', urls.md5, () => isUndefined('md5'))) return -3;
+	if (!await loadLib('ImageBitmap兼容', urls.bitmap, () => isUndefined('createImageBitmap'))) return -1;
+	if (!await loadLib('StackBlur', urls.blur, () => isUndefined('StackBlur'))) return -2;
+	if (!await loadLib('md5', urls.md5, () => isUndefined('md5'))) return -3;
 	msgHandler.sendMessage('加载声音组件...');
 	const oggCompatible = !!(new Audio).canPlayType('audio/ogg');
-	if (!await loadPlugin('ogg格式兼容', '/lib/oggmented-bundle.js', () => !oggCompatible && isUndefined('oggmented'))) return -4;
+	if (!await loadLib('ogg格式兼容', '/lib/oggmented-bundle.js', () => !oggCompatible && isUndefined('oggmented'))) return -4;
 	audio.init(oggCompatible ? self.AudioContext || self.webkitAudioContext : oggmented.OggmentedAudioContext); //兼容Safari
 	const orientSupported = await orientation.checkSupport();
 	if (!orientSupported) {
@@ -288,26 +286,26 @@ self.addEventListener('resize', () => stage.resize());
 	$id('uploader-file').addEventListener('click', uploader.uploadFile);
 	$id('uploader-dir').addEventListener('click', uploader.uploadDir);
 	/** @type {((_:FileList) => void)} */
-	uploader.onchange = loadComplete;
-	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
-	uploader.onprogress = function(evt, i) { //显示加载文件进度
+	uploader.addEventListener('change', loadComplete);
+	/** @type {((_:ProgressEvent<FileReader>) => void)} */
+	uploader.addEventListener('progress', function(evt) { //显示加载文件进度
 		if (!evt.total) return;
 		const percent = Math.floor(evt.loaded / evt.total * 100);
 		msgHandler.sendMessage(`加载文件：${percent}% (${bytefm(evt.loaded)}/${bytefm(evt.total)})`);
-	};
-	/** @type {((_:ProgressEvent<FileReader>,_:File) => void)} */
-	uploader.onload = function(evt, i) {
+	});
+	uploader.addEventListener('load', /** @param {(ProgressEvent<FileReader>&{file:File,buffer:ArrayBuffer})} evt*/ function(evt) {
 		console.log(evt);
-		const buffer = evt.target.result;
-		const isZip = new DataView(buffer).getUint32(0, false) === 0x504b0304;
-		const data = { name: i.name, buffer, path: i.webkitRelativePath || i.name };
+		const { file: { name, webkitRelativePath: path }, buffer } = evt;
+		const isZip = buffer.byteLength > 4 && new DataView(buffer).getUint32(0, false) === 0x504b0304;
+		const data = { name: name, buffer, path: path || name };
 		//检测buffer是否为zip
 		if (isZip) zip.read(data);
 		else {
 			file_total++;
 			readFile(data, options).then(result => handleFile('file', file_total, pick(result)));
 		}
-	}
+	});
+	main.uploader = uploader;
 	/**
 	 * @typedef {import("./js/reader").ReaderData} ReaderData
 	 * @param {ReaderData} data 
@@ -368,7 +366,7 @@ self.addEventListener('resize', () => stage.resize());
 }
 //qwq[water,demo,democlick]
 const qwq = [null, false, null, null, 0, null];
-import('./js/demo.js?v=04').then(a => a.default());
+import('./js/demo.js').then(a => a.default());
 //qwq end
 const exitFull = () => {
 	document.removeEventListener(full.onchange, exitFull);
@@ -1076,11 +1074,11 @@ function loopNoCanvas() {
 	}
 	//更新判定
 	hitManager.update();
-	if (qwq[4] && stat.good + stat.bad) {
-		stat.level = Number(levelText.match(/\d+$/));
-		stat.reset();
-		Promise.resolve().then(qwqStop).then(qwqStop);
-	}
+	// if (qwq[4] && stat.good + stat.bad) {
+	// 	stat.level = Number(levelText.match(/\d+$/));
+	// 	stat.reset();
+	// 	Promise.resolve().then(qwqStop).then(qwqStop);
+	// }
 	tmps.bgImage = $id('imageBlur').checked ? app.bgImageBlur : app.bgImage;
 	tmps.bgVideo = app.bgVideo;
 	tmps.progress = (main.qwqwq ? duration - timeBgm : timeBgm) / duration;
@@ -1105,14 +1103,14 @@ function loopCanvas() { //尽量不要在这里出现app
 		const { videoWidth: width, videoHeight: height } = tmps.bgVideo;
 		ctxos.drawImage(tmps.bgVideo, ...adjustSize({ width, height }, canvasos, 1));
 	}
-	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
+	// if (qwq[4]) ctxos.filter = `hue-rotate(${stat.combo*360/7}deg)`;
 	if (qwqIn.second >= 2.5 && !stat.lineStatus) drawLine(0, lineScale); //绘制判定线(背景后0)
 	// if (qwq[4]) ctxos.filter = 'none';
 	ctxos.resetTransform();
 	ctxos.fillStyle = '#000'; //背景变暗
 	ctxos.globalAlpha = app.brightness; //背景不透明度
 	ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
-	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
+	// if (qwq[4]) ctxos.filter = `hue-rotate(${stat.combo*360/7}deg)`;
 	if (qwqIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1, lineScale); //绘制判定线(背景前1)
 	// if (qwq[4]) ctxos.filter = 'none';
 	ctxos.resetTransform();
@@ -1143,7 +1141,7 @@ function loopCanvas() { //尽量不要在这里出现app
 			}
 		}
 	}
-	// if (qwq[4]) ctxos.filter = `hue-rotate(${energy*360/7}deg)`;
+	// if (qwq[4]) ctxos.filter = `hue-rotate(${stat.combo*360/7}deg)`;
 	hitImageList.animate(); //绘制打击特效1
 	// if (qwq[4]) ctxos.filter = 'none';
 	if (showCE2.checked) hitWordList.animate(); //绘制打击特效2
@@ -1846,25 +1844,6 @@ status2.reg(emitter, 'change', _ => main.qwqwq ? 'Reversed' : ''); //qwq
 status2.reg(selectflip, 'change', target => ['', 'FlipX', 'FlipY', 'FlipX&Y'][target.value]);
 status2.reg(selectspeed, 'change', target => target.value);
 status2.reg(emitter, 'change', ( /** @type {Emitter} */ target) => target.eq('pause') ? 'Paused' : '');
-//plugin(phizone)
-inputName.addEventListener('input', function() {
-	if (this.value == '/pz') setTimeout(() => {
-		if (this.value == '/pz') {
-			import('./js/phizone.js?v=07').then(({ dialog }) => dialog());
-			this.value = '';
-			this.dispatchEvent(new Event('input'));
-		}
-	}, 1e3);
-});
-inputName.addEventListener('input', function() {
-	if (this.value == '/random') setTimeout(() => {
-		if (this.value == '/random') {
-			import('./js/phizone.js?v=07').then(({ random }) => random());
-			this.value = '';
-			this.dispatchEvent(new Event('input'));
-		}
-	}, 1e3);
-});
 async function qwqStop() {
 	if (emitter.eq('stop')) {
 		if (!selectchart.value) return msgHandler.sendError('错误：未选择任何谱面');
@@ -1964,6 +1943,21 @@ async function qwqPause() {
 		emitter.emit('play');
 	}
 }
+//plugins
+function loadPlugin(searchValue, callback) {
+	inputName.addEventListener('input', function() {
+		if (this.value === searchValue) setTimeout(() => {
+			if (this.value === searchValue) {
+				callback();
+				this.value = '';
+				this.dispatchEvent(new Event('input'));
+			}
+		}, 1e3);
+	});
+}
+//plugin(phizone)
+loadPlugin('/pz', () => import('./extends/phizone.js').then(({ dialog }) => dialog()));
+loadPlugin('/random', () => import('./extends/phizone.js').then(({ random }) => random()));
 //plugin(tips)
 function fireTip(html) {
 	const cover = document.createElement('div');
@@ -2024,24 +2018,27 @@ function longPress(elem, activeFn, doneFn, failFn) {
 		failFn();
 	}
 }
+main.brain = null;
 (function helloworld() {
 	let pressTime = null;
 	longPress($('.title'), () => {
 		if (pressTime === null) pressTime = performance.now();
 		if (performance.now() - pressTime > 3473) return 1;
 		return 0;
-	}, () => {
-		helloworld(!fireTip(`<p>${brain.getTip()}</p>`));
+	}, async () => {
+		if (!main.brain) main.brain = await import('./extends/tips.js').then(m => m['brain']);
+		helloworld(!fireTip(`<p>${main.brain.getTip()}</p>`));
 	}, () => pressTime = null);
 })();
 //plugin(filter)
 const enableFilter = new Checkbox('启用滤镜').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFilter'));
+main.filter = null;
 (function() {
 	const input = document.createElement('textarea');
 	Object.assign(input, { placeholder: '在此输入着色器代码' });
 	input.style.cssText += ';width:150px;height:1em;margin-left:10px';
 	input.addEventListener('change', async function() {
-		const filter = await import('./js/filter.js');
+		const filter = await import('./extends/filter.js');
 		try {
 			const filter0 = new filter.default(input.value);
 			main.filter = filter0;
@@ -2060,15 +2057,7 @@ const enableFilter = new Checkbox('启用滤镜').appendBefore(resetCfg.containe
 	enableFilter.checkbox.dispatchEvent(new Event('change'));
 })();
 //plugin(skin)
-inputName.addEventListener('input', function() {
-	if (this.value == '/skin') setTimeout(() => {
-		if (this.value == '/skin') {
-			import('./js/skin.js').then(module => module.default());
-			this.value = '';
-			this.dispatchEvent(new Event('input'));
-		}
-	}, 1e3);
-});
+loadPlugin('/skin', () => import('./extends/skin.js').then(module => module.default()));
 //debug
 export var hook = self.hook = main;
 main.fireTip = fireTip;

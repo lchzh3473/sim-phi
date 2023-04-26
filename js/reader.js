@@ -1,34 +1,45 @@
 import { csv2array } from './common.js';
 import Pec from './pec2json.js';
-export const uploader = {
+class FileEmitter extends EventTarget {
 	// files: [],
-	input: Object.assign(document.createElement('input'), {
-		type: 'file',
-		accept: '',
-		multiple: true,
-		/**@this {HTMLInputElement} */
-		onchange() {
-			uploader.onchange(this.files);
-			for (const i of this.files) { //加载文件
-				const reader = new FileReader;
-				reader.readAsArrayBuffer(i);
-				reader.onprogress = evt => uploader.onprogress(evt, i);
-				reader.onload = evt => uploader.onload(evt, i);
+	constructor() {
+		super();
+		const _this = this;
+		this.input = Object.assign(document.createElement('input'), {
+			type: 'file',
+			accept: '',
+			multiple: true,
+			/**@this {HTMLInputElement} */
+			onchange() {
+				_this.firechange(this.files);
+				for (const i of this.files) { //加载文件
+					const reader = new FileReader;
+					reader.readAsArrayBuffer(i);
+					reader.onprogress = evt => _this.fireprogress(evt.loaded, evt.total);
+					reader.onload = evt => _this.fireload(i, evt.target.result);
+				}
 			}
-		}
-	}),
+		});
+	}
 	uploadFile() {
 		uploader.input.webkitdirectory = false;
 		uploader.input.click();
-	},
+	}
 	uploadDir() {
 		uploader.input.webkitdirectory = true;
 		uploader.input.click();
-	},
-	onchange() {},
-	onprogress() {},
-	onload() {}
+	}
+	firechange(files) {
+		return this.dispatchEvent(Object.assign(new Event('change'), { files }));
+	}
+	fireprogress(loaded, total) {
+		return this.dispatchEvent(new ProgressEvent('progress', { lengthComputable: true, loaded, total }));
+	}
+	fireload(file, buffer) {
+		return this.dispatchEvent(Object.assign(new ProgressEvent('load'), { file, buffer }));
+	}
 }
+export const uploader = new FileEmitter;
 /**
  * @typedef {object} ReaderData
  * @property {string} name

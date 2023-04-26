@@ -1,4 +1,3 @@
-import { uploader } from './reader.js';
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 export default function() {
@@ -86,8 +85,13 @@ export default function() {
 				btn.onclick = function() {
 					btn.onclick = null;
 					btn.remove();
-					const handler = img => uploader.onload({ target: decode(img) }, { name: 'demo.zip' });
-					fetch('src/demo.webp').then(res => res.blob()).then(createImageBitmap).then(handler);
+					const handler = img => hook.uploader.fireload({ name: 'demo.zip' }, decodeAlt(img));
+					const xhr = new XMLHttpRequest();
+					xhr.open('GET', '//i0.hdslb.com/bfs/music/1682346166.jpg', true);
+					xhr.responseType = 'blob';
+					xhr.onprogress = evt => hook.uploader.fireprogress(evt.loaded, evt.total);
+					xhr.onloadend = () => createImageBitmap(xhr.response).then(handler);
+					setNoReferrer(() => xhr.send());
 				};
 			} else {
 				btn.innerText = 'Legacy';
@@ -101,15 +105,25 @@ export default function() {
 	}, 500);
 }
 
-function decode(img) {
-	const canvas = document.createElement('canvas');
-	canvas.width = img.width;
-	canvas.height = img.height;
+function setNoReferrer(handler = () => {}) {
+	const meta = Object.assign(document.createElement('meta'), { content: 'no-referrer', name: 'referrer' });
+	document.head.appendChild(meta);
+	handler();
+	meta.remove();
+}
+
+function decodeAlt(img) {
+	const canvas = new OffscreenCanvas(img.width, img.height);
 	const ctx = canvas.getContext('2d');
 	ctx.drawImage(img, 0, 0);
-	const id = ctx.getImageData(0, 0, img.width, img.height);
+	const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	const ab = new Uint8Array(id.data.length / 4 * 3);
-	for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3] ^ (i * 3473);
-	const size = new DataView(ab.buffer, 0, 4).getUint32(0);
-	return { result: ab.buffer.slice(4, size + 4) };
+	const mask = (v, i) => v ^ (i ** 2 * 3473) & 255;
+	for (let i = 0; i < ab.length; i++) ab[i] = id.data[((i / 3) | 0) * 4 + i % 3];
+	const combined = new Uint8Array(ab.length / 2);
+	for (let i = 0; i < ab.length / 2; i++) {
+		combined[i] = mask((ab[i * 2] + 8) / 17 << 4 | (ab[i * 2 + 1] + 8) / 17, i);
+	}
+	const size = new DataView(combined.buffer, 0, 4).getUint32(0);
+	return combined.buffer.slice(4, size + 4);
 }

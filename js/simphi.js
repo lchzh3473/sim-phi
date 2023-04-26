@@ -32,7 +32,6 @@
  * @property {number} statOffset
  * @property {number} frameCount
  */
-// let energy = 0;
 class Stat {
 	constructor() {
 		this.level = 0;
@@ -162,8 +161,6 @@ class Stat {
 		if (this.combo > this.maxcombo) this.maxcombo = this.combo;
 		this.combos[0]++;
 		this.combos[type]++;
-		// if (qwq[4]) energy++;
-		// if (this.lineStatus !== 1) energy = 0;
 	}
 	addDisp(disp) {
 		this.curDisp = disp;
