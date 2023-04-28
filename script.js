@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b44'], 1611795955, 1682347041];
+self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b45'], 1611795955, 1682699376];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -1944,7 +1944,7 @@ async function qwqPause() {
 	}
 }
 //plugins
-function loadPlugin(searchValue, callback) {
+const loadPlugin = (searchValue, callback) => {
 	inputName.addEventListener('input', function() {
 		if (this.value === searchValue) setTimeout(() => {
 			if (this.value === searchValue) {
@@ -1955,21 +1955,17 @@ function loadPlugin(searchValue, callback) {
 		}, 1e3);
 	});
 }
-//plugin(phizone)
-loadPlugin('/pz', () => import('./extends/phizone.js').then(({ dialog }) => dialog()));
-loadPlugin('/random', () => import('./extends/phizone.js').then(({ random }) => random()));
-//plugin(tips)
-function fireTip(html) {
+main.fireModal = function(navHTML, contentHTML) {
 	const cover = document.createElement('div');
 	cover.classList.add('cover-dark', 'fade');
 	const container = document.createElement('div');
 	container.classList.add('cover-view', 'fade');
 	const nav = document.createElement('div');
 	nav.classList.add('view-nav');
-	nav.innerHTML = `<p>Tip</p>`;
+	nav.innerHTML = navHTML;
 	const content = document.createElement('div');
 	content.classList.add('view-content');
-	content.innerHTML = html;
+	content.innerHTML = contentHTML;
 	container.append(nav, content);
 	requestAnimationFrame(() => {
 		$('.main').append(cover, container);
@@ -1985,51 +1981,19 @@ function fireTip(html) {
 		container.addEventListener('transitionend', () => container.remove());
 	});
 }
-/**
- * @param {HTMLElement} elem 
- * @param {Function} activeFn 
- * @param {Function} doneFn 
- */
-function longPress(elem, activeFn, doneFn, failFn) {
-	let timer = null;
-	elem.addEventListener('mousedown', onrequest);
-	elem.addEventListener('mouseup', oncancel);
-	elem.addEventListener('mouseleave', oncancel);
-	elem.addEventListener('touchstart', onrequest, { passive: true });
-	elem.addEventListener('touchend', oncancel);
-	elem.addEventListener('touchcancel', oncancel);
-
-	function onrequest() {
-		timer = requestAnimationFrame(onrequest);
-		if (activeFn()) {
-			cancelAnimationFrame(timer);
-			doneFn();
-			elem.removeEventListener('mousedown', onrequest);
-			elem.removeEventListener('mouseup', oncancel);
-			elem.removeEventListener('mouseleave', oncancel);
-			elem.removeEventListener('touchstart', onrequest);
-			elem.removeEventListener('touchend', oncancel);
-			elem.removeEventListener('touchcancel', oncancel);
-		};
+main.define = (a) => { return a };
+main.use = async src => {
+	/** @type {{contents:{type:string,meta:[string,function]}[]}} */
+	const module = await import('' + src).then(m => m['default']);
+	for (const i of module.contents) {
+		if (i.type === 'command') loadPlugin(i.meta[0], i.meta[1]);
+		else if (i.type === 'script') i.meta[0]($('.title'));
+		else throw new TypeError(`Unknown Plugin Type: ${i.type}`);
 	}
-
-	function oncancel() {
-		cancelAnimationFrame(timer);
-		failFn();
-	}
-}
-main.brain = null;
-(function helloworld() {
-	let pressTime = null;
-	longPress($('.title'), () => {
-		if (pressTime === null) pressTime = performance.now();
-		if (performance.now() - pressTime > 3473) return 1;
-		return 0;
-	}, async () => {
-		if (!main.brain) main.brain = await import('./extends/tips.js').then(m => m['brain']);
-		helloworld(!fireTip(`<p>${main.brain.getTip()}</p>`));
-	}, () => pressTime = null);
-})();
+	return module;
+};
+main.use('./extends/phizone.js').then(console.log); //plugin(phizone))
+main.use('./extends/tips.js').then(console.log); //plugin(tips)
 //plugin(filter)
 const enableFilter = new Checkbox('启用滤镜').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFilter'));
 main.filter = null;
@@ -2038,9 +2002,9 @@ main.filter = null;
 	Object.assign(input, { placeholder: '在此输入着色器代码' });
 	input.style.cssText += ';width:150px;height:1em;margin-left:10px';
 	input.addEventListener('change', async function() {
-		const filter = await import('./extends/filter.js');
+		const Filter = await import('./extends/filter.js').then(m => m['default']);
 		try {
-			const filter0 = new filter.default(input.value);
+			const filter0 = new Filter(input.value);
 			main.filter = filter0;
 		} catch (e) {
 			console.error(e);
@@ -2056,11 +2020,9 @@ main.filter = null;
 	});
 	enableFilter.checkbox.dispatchEvent(new Event('change'));
 })();
-//plugin(skin)
-loadPlugin('/skin', () => import('./extends/skin.js').then(module => module.default()));
+main.use('./extends/skin.js').then(console.log); //plugin(skin)
 //debug
 export var hook = self.hook = main;
-main.fireTip = fireTip;
 main.stat = stat;
 main.app = app;
 main.res = res;

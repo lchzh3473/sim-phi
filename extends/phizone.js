@@ -1,9 +1,36 @@
 const vtext = 'PhiZone API v0.7';
 const vprompt = str => prompt(`${vtext}\n${str}`);
 const valert = str => alert(`${vtext}\n${str}`);
+export default hook.define({
+	name: 'PhiZone',
+	description: 'PhiZone API',
+	contents: [{
+		type: 'command',
+		meta: ['/pz', dialog]
+	}, {
+		type: 'command',
+		meta: ['/random', random]
+	}]
+});
+async function dialog(num) {
+	const id = num || vprompt('请输入歌曲ID');
+	if (id === '' || id === null) return valert('未输入歌曲ID，已取消操作');
+	const data = await query(id).catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
+	console.log(data);
+	if (!data) return;
+	if (!data.charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
+	await readData(data);
+}
+async function random() {
+	const data = await randomCore().catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
+	console.log(data);
+	if (!data) return;
+	if (!data.charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
+	await readData(data);
+}
 async function query(id) {
 	hook.msgHandler.sendMessage('等待服务器响应...');
-	const response = await fetch(`https://api.phi.zone/songs/${id|0}/?query_charts=1`);
+	const response = await fetch(`https://api.phi.zone/songs/${id | 0}/?query_charts=1`);
 	if (!response.ok) {
 		if (response.status === 404) return { charts: [] };
 		throw `${response.status} ${response.statusText}`;
@@ -33,30 +60,14 @@ function getData(base, song) {
 			chart: a.chart,
 			level: `${a.level}  Lv.${a.difficulty | 0}`,
 			charter: a.charter.replace(/\[PZUser:\d+:([^\]]+)\]/g, '$1'),
-			assets: a.assets,
+			assets: a.assets
 		})),
 		composer: song.composer,
 		illustration: song.illustration,
 		illustrator: song.illustrator,
 		name: song.name,
-		song: song.song,
+		song: song.song
 	};
-}
-export async function random() {
-	const data = await randomCore().catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
-	console.log(data);
-	if (!data) return;
-	if (!data.charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
-	await readData(data);
-}
-export async function dialog(num) {
-	const id = num || vprompt('请输入歌曲ID');
-	if (id === '' || id === null) return valert('未输入歌曲ID，已取消操作');
-	const data = await query(id).catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
-	console.log(data);
-	if (!data) return;
-	if (!data.charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
-	await readData(data);
 }
 async function readData(data) {
 	const /** @type {array} */ charts = data.charts;
@@ -68,11 +79,13 @@ async function readData(data) {
 	const downloader = new Downloader();
 	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
 	hook.msgHandler.sendMessage('获取资源列表...');
-	await downloader.add(urls, ({ url, status, statusText }) => valert(`资源 '${dstr(url)}' 加载失败\n错误代码：${status} ${statusText}`));
-	await downloader.start(hook.uploader.onprogress.bind(hook.uploader));
+	await downloader.add(urls, ({ url, status, statusText }) => {
+		valert(`资源 '${dstr(url)}' 加载失败\n错误代码：${status} ${statusText}`);
+	});
+	await downloader.start(hook.uploader.fireProgress.bind(hook.uploader));
 	const xhr4 = async (url, name) => {
-		const data = await downloader.getData(url) || new ArrayBuffer(0);
-		hook.uploader.onload({ name }, data); //以后添加catch
+		const data = (await downloader.getData(url)) || new ArrayBuffer(0);
+		hook.uploader.fireLoad({ name }, data); //以后添加catch
 	};
 	await xhr4(data.song, dstr(data.song));
 	await xhr4(data.illustration, dstr(data.illustration));
@@ -95,7 +108,7 @@ async function readData(data) {
 			Offset: ${offset}
 		`;
 		const info = encoder.encode(infoText);
-		hook.uploader.onload({ name: 'info.txt' }, info.buffer);
+		hook.uploader.fireLoad({ name: 'info.txt' }, info.buffer);
 	}
 }
 /**
@@ -132,11 +145,15 @@ function xhr2(url, onprogress = () => void 0) {
 // }
 async function getContentLength(url) {
 	try {
-		const res = await fetch(url, { method: 'HEAD' }).catch(() => { throw { url, status: 0, statusText: 'Network Error' } });
+		const res = await fetch(url, { method: 'HEAD' }).catch(() => {
+			throw { url, status: 0, statusText: 'Network Error' };
+		});
 		const length = Number(res.headers.get('content-length')) || 0;
 		if (res.ok && length) return length;
 	} finally {
-		const res = await fetch(url, { method: 'GET' }).catch(() => { throw { url, status: 0, statusText: 'Network Error' } });
+		const res = await fetch(url, { method: 'GET' }).catch(() => {
+			throw { url, status: 0, statusText: 'Network Error' };
+		});
 		res.body.cancel();
 		if (!res.ok) throw { url, status: res.status, statusText: res.statusText };
 		return Number(res.headers.get('content-length')) || 0;
@@ -161,7 +178,7 @@ class Downloader {
 		return Promise.all(entries.map(([url, xhr]) => xhr2(url, evt => {
 			xhr.event = evt;
 			onprogress(this.loaded, this.total);
-		}).then(evt => xhr.event = evt).catch(evt => xhr.event = evt)));
+		}).then(evt => (xhr.event = evt)).catch(evt => (xhr.event = evt))));
 	}
 	async getData(url) {
 		if (!this.xhrs[url]) return null;

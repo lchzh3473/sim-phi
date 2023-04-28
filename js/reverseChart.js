@@ -247,7 +247,7 @@ function longPress(elem, activeFn, doneFn, failFn) {
 		return 0;
 	}
 	longPress(tt, revolveWorld, () => {
-		!hook.fireTip(`<p>Reverse Mode is on...</p>`);
+		!hook.fireModal(`<p>Tip</p>`, `<p>Reverse Mode is on...</p>`);
 		kfcFkXqsVw50 = new Map;
 		setInterval(revolveWorld, 20);
 	}, () => {

@@ -11,12 +11,12 @@ class FileEmitter extends EventTarget {
 			multiple: true,
 			/**@this {HTMLInputElement} */
 			onchange() {
-				_this.firechange(this.files);
+				_this.fireChange(this.files);
 				for (const i of this.files) { //加载文件
 					const reader = new FileReader;
 					reader.readAsArrayBuffer(i);
-					reader.onprogress = evt => _this.fireprogress(evt.loaded, evt.total);
-					reader.onload = evt => _this.fireload(i, evt.target.result);
+					reader.onprogress = evt => _this.fireProgress(evt.loaded, evt.total);
+					reader.onload = evt => _this.fireLoad(i, evt.target.result);
 				}
 			}
 		});
@@ -29,13 +29,13 @@ class FileEmitter extends EventTarget {
 		uploader.input.webkitdirectory = true;
 		uploader.input.click();
 	}
-	firechange(files) {
+	fireChange(files) {
 		return this.dispatchEvent(Object.assign(new Event('change'), { files }));
 	}
-	fireprogress(loaded, total) {
+	fireProgress(loaded, total) {
 		return this.dispatchEvent(new ProgressEvent('progress', { lengthComputable: true, loaded, total }));
 	}
-	fireload(file, buffer) {
+	fireLoad(file, buffer) {
 		return this.dispatchEvent(Object.assign(new ProgressEvent('load'), { file, buffer }));
 	}
 }

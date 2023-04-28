@@ -1,7 +1,15 @@
+export default hook.define({
+	name: 'Skin',
+	description: 'Skin',
+	contents: [{
+		type: 'command',
+		meta: ['/skin', skin]
+	}]
+});
 /**
- * @typedef {import("./reader").ReaderData} ReaderData
+ * @typedef {import("js/reader").ReaderData} ReaderData
  */
-export default function() {
+function skin() {
 	const id = `skin${Date.now()}`;
 	const files = [];
 	const msgHandler = hook.msgHandler;
@@ -14,7 +22,7 @@ export default function() {
 		/**@this {HTMLInputElement} */
 		onchange() {
 			const file = this.files[0];
-			const reader = new FileReader;
+			const reader = new FileReader();
 			reader.readAsArrayBuffer(file);
 			reader.onload = evt => {
 				zip.read({
@@ -22,7 +30,7 @@ export default function() {
 					buffer: evt.target.result,
 					path: file.webkitRelativePath || file.name
 				});
-			}
+			};
 		}
 	});
 	input.click();
@@ -39,8 +47,8 @@ export default function() {
 			HoldHL: ['HoldHL.png', 'hold_mh.png', 'Hold.png', 'hold.png'],
 			Flick: ['Flick.png', 'flick.png'],
 			FlickHL: ['FlickHL.png', 'flick_mh.png', 'Flick.png', 'flick.png'],
-			HitFX: ['HitFX.png', 'hit_fx.png'],
-		}
+			HitFX: ['HitFX.png', 'hit_fx.png']
+		};
 		//根据别名补全文件列表
 		/**@type {Object<string, ReaderData>} */
 		const entries = {};
@@ -85,7 +93,13 @@ async function loadConfig(files = []) {
 }
 
 function yaml2json(text = '', split = /\r?\n/) {
-	const parse = value => { try { return JSON.parse(value) } catch (e) { return value } };
+	const parse = value => {
+		try {
+			return JSON.parse(value);
+		} catch (e) {
+			return value;
+		}
+	};
 	return text.split(split).reduce((i, j) => {
 		const [key, value] = j.split(/:(.+)/).map(i => i.trim());
 		if (key) i[key] = parse(value);

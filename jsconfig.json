@@ -13,6 +13,7 @@
 		"js/*",
 		"utils/*",
 		"worker/*",
+		"extends/*",
 		"./script.js"
 	],
 	"exclude": [
