@@ -13,7 +13,7 @@ class FileEmitter extends EventTarget {
 			onchange() {
 				_this.fireChange(this.files);
 				for (const i of this.files) { //加载文件
-					const reader = new FileReader;
+					const reader = new FileReader();
 					reader.readAsArrayBuffer(i);
 					reader.onprogress = evt => _this.fireProgress(evt.loaded, evt.total);
 					reader.onload = evt => _this.fireLoad(i, evt.target.result);
@@ -39,18 +39,22 @@ class FileEmitter extends EventTarget {
 		return this.dispatchEvent(Object.assign(new ProgressEvent('load'), { file, buffer }));
 	}
 }
-export const uploader = new FileEmitter;
+export const uploader = new FileEmitter();
 /**
- * @typedef {object} ReaderData
+ * @typedef {{type:'line'|'info',data:{}[]}} TextReaderData
+ * @typedef {{name:string,type:'image',data:ImageBitmap}} ImageReaderData
+ * @typedef {{name:string,type:'media'|'audio',data:AudioBuffer}} MediaReaderData
+ * @typedef {{name:string,type:'chart',msg:string[],info:{}[],line:{}[],md5:string,data:any}} ChartReaderData
+ * @typedef {TextReaderData|ImageReaderData|MediaReaderData|ChartReaderData} ReaderData
  * @property {string} name
  * @property {string} type
  * @property {ArrayBuffer|ImageBitmap|{}[]} data
- * 
+ *
  * @typedef {object} DataType
  * @property {string} name
  * @property {string} path
  * @property {ArrayBuffer} buffer
- * 
+ *
  * @typedef {object} ReaderOptions
  * @property {(data:DataType)=>Promise<ReaderData>} handler
  */
@@ -67,9 +71,7 @@ const stringify = async i => {
 };
 export class ZipReader extends EventTarget {
 	/** @param {ReaderOptions} options */
-	constructor({
-		handler = async data => data,
-	}) {
+	constructor({ handler = async data => data }) {
 		super();
 		this.worker = null;
 		this.total = 0;
@@ -94,13 +96,13 @@ export class ZipReader extends EventTarget {
 	}
 }
 /**
- * @param {DataType} i 
+ * @param {DataType} i
  * @returns {Promise<ReaderData>}
  */
 export async function readFile(i, {
 	createAudioBuffer = async arraybuffer => {
 		/** @type {AudioContext} */
-		const actx = new(window.AudioContext || window.webkitAudioContext);
+		const actx = new(window.AudioContext || window.webkitAudioContext)();
 		await actx.close();
 		return actx.decodeAudioData(arraybuffer);
 	}
@@ -198,8 +200,8 @@ function chart123(text, reviver) {
 				for (const j of i.judgeLineMoveEvents) {
 					j.start2 = j.start % 1e3 / 520;
 					j.end2 = j.end % 1e3 / 520;
-					j.start = parseInt(j.start / 1e3) / 880;
-					j.end = parseInt(j.end / 1e3) / 880;
+					j.start = Math.floor(j.start / 1e3) / 880;
+					j.end = Math.floor(j.end / 1e3) / 880;
 				}
 			}
 		}

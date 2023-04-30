@@ -17,20 +17,37 @@
  * @property {number} isAbove
  * @property {string} name
  * @property {number} isMulti
- * @property {Note[]} nearNotes
+ * @property {NoteExtends[]} nearNotes
  * @property {number} cosr
  * @property {number} sinr
  * @property {number} projectX
  * @property {number} projectY
  * @property {number} visible
  * @property {number} showPoint
+ * @property {number} badTime
  * @property {number} holdStatus
  * @property {number} holdTapTime
  * @property {boolean} holdBroken
  * @property {number} status
- * @property {number} scored
+ * @property {boolean} scored
  * @property {number} statOffset
  * @property {number} frameCount
+ *
+ * @typedef {Object} JudgelineExtends
+ * @property {number} cosr
+ * @property {number} sinr
+ * @property {number} offsetX
+ * @property {number} offsetY
+ * @property {number} alpha
+ * @property {number} lineId
+ * @property {boolean} imageD
+ * @property {boolean} imageU
+ * @property {number} imageS
+ * @property {number} imageW
+ * @property {number} imageA
+ * @property {number} imageH
+ * @property {ImageBitmap[]} imageL
+ * @property {boolean} imageC
  */
 class Stat {
 	constructor() {
@@ -64,7 +81,7 @@ class Stat {
 	}
 	get scoreStr() {
 		const a = this.scoreNum.toFixed(0);
-		return ('0').repeat(a.length < 7 ? 7 - a.length : 0) + a;
+		return '0'.repeat(a.length < 7 ? 7 - a.length : 0) + a;
 	}
 	get accNum() {
 		const a = (this.perfect + this.good * 0.65) / this.all;
@@ -75,11 +92,11 @@ class Stat {
 	}
 	get avgDispStr() {
 		const a = Math.trunc(this.cumDisp / this.numDisp * 1e3) || 0;
-		return `${a>0?'+':''}${a.toFixed(0)}ms`;
+		return `${a > 0 ? '+' : ''}${a.toFixed(0)}ms`;
 	}
 	get curDispStr() {
 		const a = Math.trunc(this.curDisp * 1e3);
-		return `${a>0?'+':''}${a.toFixed(0)}ms`;
+		return `${a > 0 ? '+' : ''}${a.toFixed(0)}ms`;
 	}
 	get lineStatus() {
 		if (this.bad) return 0;
@@ -109,7 +126,7 @@ class Stat {
 		const l2 = Math.round(this.scoreNum + 40672).toString(32).slice(-4);
 		const l3 = this.level.toString(36).slice(-1);
 		const a = (parseInt(s2, 32) - 40672).toFixed(0);
-		const scoreBest = ('0').repeat(a.length < 7 ? 7 - a.length : 0) + a;
+		const scoreBest = '0'.repeat(a.length < 7 ? 7 - a.length : 0) + a;
 		if (!isAuto) this.data[this.id] = (s1 > l1 ? s1 : l1) + (s2 > l2 ? s2 : l2) + l3;
 		const arr = [];
 		for (const i in this.data) arr.push(i + this.data[i]);
@@ -122,7 +139,7 @@ class Stat {
 			textAboveColor: '#65fe43',
 			textAboveStr: '  ( Speed {SPEED}x )',
 			textBelowColor: '#fe4365',
-			textBelowStr: 'AUTO PLAY',
+			textBelowStr: 'AUTO PLAY'
 		};
 		if (isAuto) return Object.assign(pbj, { newBestColor: '#fff', newBestStr: 'BEST', scoreDelta: '' });
 		if (this.lineStatus === 1) return Object.assign(pbj, { textBelowStr: 'ALL  PERFECT', textBelowColor: '#ffc500' });
@@ -146,7 +163,7 @@ class Stat {
 		}
 		if (localStorage.getItem(key) === null) localStorage.setItem(key, ''); //初始化存储
 		const str = localStorage.getItem(key);
-		for (let i = 0; i < parseInt(str.length / 40); i++) {
+		for (let i = 0; i < Math.floor(str.length / 40); i++) {
 			const data = str.slice(i * 40, i * 40 + 40);
 			this.data[data.slice(0, 32)] = data.slice(-8);
 		}
@@ -221,7 +238,7 @@ class Renderer {
 		this.bgImageBlur = null;
 		this.bgMusic = null;
 		this.bgVideo = null;
-		/** @type {JudgeLine[]} */
+		/** @type {JudgelineExtends[]} */
 		this.lines = [];
 		/** @type {NoteExtends[]} */
 		this.notes = [];
@@ -233,7 +250,7 @@ class Renderer {
 		this.flicks = [];
 		/** @type {NoteExtends[]} */
 		this.holds = [];
-		/** @type {NoteExtends[]} */
+		/** @type {JudgelineExtends[]} */
 		this.linesReversed = [];
 		/** @type {NoteExtends[]} */
 		this.notesReversed = [];
@@ -328,7 +345,7 @@ class Renderer {
 				if (i.startTime > 1 - 1e6 && i.startRealTime > maxTime) maxTime = i.startRealTime;
 				if (i.endTime < 1e9 && i.endRealTime > maxTime) maxTime = i.endRealTime;
 			}
-		}
+		};
 		//向Renderer添加Note
 		/** @param {NoteExtends} note */
 		const addNote = (note, beat32, line, noteId, isAbove) => {
@@ -348,7 +365,7 @@ class Renderer {
 			else if (note.type === 3) this.holds.push(note);
 			else if (note.type === 4) this.flicks.push(note);
 			if (note.type === 1 || note.type === 3) this.tapholds.push(note);
-		}
+		};
 		const sortNote = (a, b) => a.realTime - b.realTime || a.lineId - b.lineId || a.noteId - b.noteId;
 		//优化events
 		chartNew.judgeLineList.forEach((i, lineId) => i.lineId = lineId);
@@ -367,7 +384,7 @@ class Renderer {
 			addRealTime(i.judgeLineDisappearEvents, i.bpm);
 			addRealTime(i.judgeLineMoveEvents, i.bpm);
 			addRealTime(i.judgeLineRotateEvents, i.bpm);
-			this.lines.push(i); //qwq可以定义新类防止函数在循环里定义
+			this.lines.push(i); //qwq可以定义新类避免函数在循环里定义
 			i.notesAbove.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i, noteId, true));
 			i.notesBelow.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i, noteId, false));
 		}
@@ -437,17 +454,17 @@ class Renderer {
 				if (timeChart > i.endRealTime) continue;
 				line.positionY = (timeChart - i.startRealTime) * i.value * this.speed + (this.enableFR ? i.floorPosition2 : i.floorPosition);
 			}
-			const realgetY = (i) => {
+			const realgetY = i => {
 				if (i.type !== 3) return (i.floorPosition - line.positionY) * i.speed;
 				if (i.realTime < timeChart) return (i.realTime - timeChart) * i.speed * this.speed;
 				return i.floorPosition - line.positionY;
-			}
-			const getY = (i) => {
+			};
+			const getY = i => {
 				if (!i.badtime) return realgetY(i);
 				if (performance.now() - i.badtime > 500) delete i.badtime;
 				if (!i.badY) i.badY = realgetY(i);
 				return i.badY;
-			}
+			};
 			const setAlpha = (i, dx, dy) => {
 				i.projectX = line.offsetX + dx * i.cosr;
 				i.offsetX = i.projectX + dy * i.sinr;
@@ -458,7 +475,7 @@ class Renderer {
 				if (i.badtime);
 				else if (i.realTime > timeChart) {
 					i.showPoint = true;
-					i.alpha = (dy <= -1e-3 * this.scaleY || this.enableVP && realgetY(i) * 0.6 > 2) ? 0 : (i.type === 3 && i.speed === 0) ? 0 : 1;
+					i.alpha = dy <= -1e-3 * this.scaleY || this.enableVP && realgetY(i) * 0.6 > 2 ? 0 : i.type === 3 && i.speed === 0 ? 0 : 1;
 				} else {
 					i.frameCount = i.frameCount == null ? 0 : i.frameCount + 1;
 					if (i.type === 3) {
@@ -466,7 +483,7 @@ class Renderer {
 						i.alpha = i.speed === 0 ? 0 : i.status % 4 === 2 ? 0.45 : 1;
 					} else i.alpha = Math.max(1 - (timeChart - i.realTime) / 0.16, 0); //过线后0.16s消失
 				}
-			}
+			};
 			for (const i of line.notesAbove) {
 				i.cosr = line.cosr;
 				i.sinr = line.sinr;
@@ -482,10 +499,10 @@ class Renderer {
 }
 class HitEvent {
 	/**
-	 * @param {'mouse'|'keyboard'|'touch'} type 
-	 * @param {number} id 
-	 * @param {number} offsetX 
-	 * @param {number} offsetY 
+	 * @param {'mouse'|'keyboard'|'touch'} type
+	 * @param {number|string} id
+	 * @param {number} offsetX
+	 * @param {number} offsetY
 	 */
 	constructor(type, id, offsetX, offsetY) {
 		/** @type {string} */
@@ -507,8 +524,8 @@ class HitEvent {
 		this.flicked = false; //是否触发过Flick判定
 	}
 	/**
-	 * @param {number} offsetX 
-	 * @param {number} offsetY 
+	 * @param {number} offsetX
+	 * @param {number} offsetY
 	 */
 	move(offsetX, offsetY) {
 		this.lastDeltaX = this.nowDeltaX;
@@ -534,10 +551,10 @@ class HitManager {
 		this.list = [];
 	}
 	/**
-	 * @param {'mouse'|'keyboard'|'touch'} type 
-	 * @param {number} id 
-	 * @param {number} offsetX 
-	 * @param {number} offsetY 
+	 * @param {'mouse'|'keyboard'|'touch'} type
+	 * @param {number|string} id
+	 * @param {number} offsetX
+	 * @param {number} offsetY
 	 */
 	activate(type, id, offsetX, offsetY) {
 		const { list } = this;
@@ -546,18 +563,18 @@ class HitManager {
 		list.push(new HitEvent(type, id, offsetX, offsetY));
 	}
 	/**
-	 * @param {'mouse'|'keyboard'|'touch'} type 
-	 * @param {number} id 
-	 * @param {number} offsetX 
-	 * @param {number} offsetY 
+	 * @param {'mouse'|'keyboard'|'touch'} type
+	 * @param {number|string} id
+	 * @param {number} offsetX
+	 * @param {number} offsetY
 	 */
 	moving(type, id, offsetX, offsetY) {
 		const hitEl = this.list.find(hit => hit.type === type && hit.id === id);
 		if (hitEl) hitEl.move(offsetX, offsetY);
 	}
 	/**
-	 * @param {'mouse'|'keyboard'|'touch'} type 
-	 * @param {number} id 
+	 * @param {'mouse'|'keyboard'|'touch'} type
+	 * @param {number|string} id
 	 */
 	deactivate(type, id) {
 		const hitEl = this.list.find(hit => hit.type === type && hit.id === id);
@@ -574,7 +591,7 @@ class HitManager {
 		}
 	}
 	/**
-	 * @param {'mouse'|'keyboard'|'touch'} type 
+	 * @param {'mouse'|'keyboard'|'touch'} type
 	 */
 	clear(type) {
 		for (const i of this.list) {
@@ -719,7 +736,7 @@ function chartify(json) {
 		formatVersion: 3,
 		offset: json.offset,
 		numOfNotes: json.numOfNotes,
-		judgeLineList: [],
+		judgeLineList: []
 	};
 	for (const i of json.judgeLineList) {
 		const newLine = {
@@ -732,7 +749,7 @@ function chartify(json) {
 			notesBelow: [],
 			judgeLineDisappearEvents: [],
 			judgeLineMoveEvents: [],
-			judgeLineRotateEvents: [],
+			judgeLineRotateEvents: []
 		};
 		for (const j of i.speedEvents) {
 			if (j.startTime === j.endTime) continue;

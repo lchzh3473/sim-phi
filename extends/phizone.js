@@ -58,7 +58,7 @@ function getData(base, song) {
 		charts: base.map(a => ({
 			id: a.id,
 			chart: a.chart,
-			level: `${a.level}  Lv.${a.difficulty | 0}`,
+			level: `${a.level}\u2002Lv.${a.difficulty | 0}`,
 			charter: a.charter.replace(/\[PZUser:\d+:([^\]]+)\]/g, '$1'),
 			assets: a.assets
 		})),
@@ -116,7 +116,7 @@ async function readData(data) {
  * @param {string} url
  * @param {XHR} onprogress
  */
-function xhr2(url, onprogress = () => void 0) {
+function xhr2(url, onprogress = _ => {}) {
 	return new Promise((resolve, reject) => {
 		const xhr = new XMLHttpRequest();
 		xhr.open('GET', url, true);
@@ -127,7 +127,7 @@ function xhr2(url, onprogress = () => void 0) {
 		xhr.send();
 	});
 }
-// async function xhr2(url, onprogress = () => void 0) {
+// async function xhr2(url, onprogress = _ => {}) {
 // 	const data = [];
 // 	let loaded = 0;
 // 	const res = await fetch(url, { method: 'GET' });
@@ -163,7 +163,7 @@ class Downloader {
 	constructor() {
 		this.xhrs = Object.create(null);
 	}
-	async add(urls = [], onerror = () => void 0) {
+	async add(urls = [], onerror = _ => {}) {
 		return Promise.all(urls.filter(url => !this.xhrs[url]).map(async url => {
 			try {
 				const total = await getContentLength(url);
@@ -173,7 +173,7 @@ class Downloader {
 			}
 		}));
 	}
-	async start(onprogress = () => void 0) {
+	async start(onprogress = _ => {}) {
 		const entries = Object.entries(this.xhrs);
 		return Promise.all(entries.map(([url, xhr]) => xhr2(url, evt => {
 			xhr.event = evt;

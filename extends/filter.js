@@ -1,3 +1,41 @@
+export default hook.define({
+	name: 'Filter',
+	description: 'Apply filter to canvas',
+	contents: [{
+		type: 'config',
+		meta: ['启用滤镜', callback]
+	}]
+});
+/**
+ * @param {HTMLInputElement} checkbox
+ * @param {HTMLDivElement} container
+ */
+function callback(checkbox, container) {
+	const status = hook.status;
+	const input = document.createElement('textarea');
+	Object.assign(input, { placeholder: '在此输入着色器代码' });
+	input.style.cssText += ';width:150px;height:1em;margin-left:10px';
+	input.addEventListener('change', async function() {
+		try {
+			const filter0 = new Filter(input.value);
+			hook.filter = (ctx, time) => {
+				filter0.apply(ctx.canvas);
+				ctx.drawImage(filter0.getImage(time), 0, 0);
+			};
+		} catch (e) {
+			console.error(e);
+			hook.filter = null;
+		}
+	});
+	status.reg('filterText', input, false);
+	container.appendChild(input);
+	checkbox.addEventListener('change', function() {
+		input.classList.toggle('disabled', !this.checked);
+		if (!this.checked) hook.filter = null;
+		else input.dispatchEvent(new Event('change'));
+	});
+	checkbox.dispatchEvent(new Event('change'));
+}
 const vsSource = `
 	attribute vec2 a_position;
 	attribute vec2 a_texCoord;
@@ -17,7 +55,7 @@ const fsSource = `
 		vec4 color = texture2D(u_image, uv);
 	}
 `;
-export default class Filter {
+class Filter {
 	constructor(fsSource) {
 		this.fsSource = fsSource;
 		const canvas = document.createElement('canvas');

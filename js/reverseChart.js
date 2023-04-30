@@ -22,7 +22,7 @@ function arrangeLineEvent(events) {
 		const i1 = newEvents[newEvents.length - 1];
 		if (i2.startTime > i2.endTime) continue;
 		if (i1.endTime > i2.endTime);
-		else if (i1.endTime == i2.startTime) newEvents.push(i2);
+		else if (i1.endTime === i2.startTime) newEvents.push(i2);
 		else if (i1.endTime < i2.startTime) newEvents.push({
 			startTime: i1.endTime,
 			endTime: i2.startTime,
@@ -46,8 +46,8 @@ function arrangeLineEvent(events) {
 		const i1 = newEvents2[newEvents2.length - 1];
 		const d1 = i1.endTime - i1.startTime;
 		const d2 = i2.endTime - i2.startTime;
-		if (i2.startTime == i2.endTime);
-		else if (i1.end == i2.start && i1.end2 == i2.start2 && (i1.end - i1.start) * d2 == (i2.end - i2.start) * d1 && (i1.end2 - i1.start2) * d2 == (i2.end2 - i2.start2) * d1) {
+		if (i2.startTime === i2.endTime);
+		else if (i1.end === i2.start && i1.end2 === i2.start2 && (i1.end - i1.start) * d2 === (i2.end - i2.start) * d1 && (i1.end2 - i1.start2) * d2 === (i2.end2 - i2.start2) * d1) {
 			i1.endTime = i2.endTime;
 			i1.end = i2.end;
 			i1.end2 = i2.end2;
@@ -123,7 +123,7 @@ class JudgeLine {
 				qwqwq3 = j.time % 1e9 - k.startTime;
 			}
 			j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / this.bpm * 1.875;
-			//if (j.type == 3) j.speed *= qwqwq2;
+			//if (j.type === 3) j.speed *= qwqwq2;
 		}
 		for (const j of this.notesBelow) {
 			let qwqwq = 0;
@@ -137,7 +137,7 @@ class JudgeLine {
 				qwqwq3 = j.time % 1e9 - k.startTime;
 			}
 			j.floorPosition = qwqwq + qwqwq2 * qwqwq3 / this.bpm * 1.875;
-			//if (j.type == 3) j.speed *= qwqwq2;
+			//if (j.type === 3) j.speed *= qwqwq2;
 		}
 	}
 	updateDe() {
@@ -180,12 +180,12 @@ export function reverseChart(chart, duration) {
 		judgeLine.bpm = i.bpm;
 		for (const j of i.speedEvents) judgeLine.speedEvents.push(new SpeedEvent(j.value, tb - j.endTime, tb - j.startTime));
 		for (const j of i.notesAbove) {
-			if (j.type == 3) judgeLine.notesAbove.push(new Note(j.type, tb - j.time, j.positionX, 1, j.speed * j.holdTime));
+			if (j.type === 3) judgeLine.notesAbove.push(new Note(j.type, tb - j.time, j.positionX, 1, j.speed * j.holdTime));
 			else judgeLine.notesAbove.push(new Note(j.type, tb - j.time, j.positionX, j.holdTime, j.speed));
 			judgeLine.numOfNotesAbove++;
 		}
 		for (const j of i.notesBelow) {
-			if (j.type == 3) judgeLine.notesBelow.push(new Note(j.type, tb - j.time, j.positionX, 1, j.speed * j.holdTime));
+			if (j.type === 3) judgeLine.notesBelow.push(new Note(j.type, tb - j.time, j.positionX, 1, j.speed * j.holdTime));
 			else judgeLine.notesBelow.push(new Note(j.type, tb - j.time, j.positionX, j.holdTime, j.speed));
 			judgeLine.numOfNotesBelow++;
 		}

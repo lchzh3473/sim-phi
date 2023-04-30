@@ -1,11 +1,11 @@
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 export default function() {
-	! function() {
-		const t = new Date;
-		if (1 != t.getDate() || 3 != t.getMonth()) return;
+	(function() {
+		const t = new Date();
+		if (1 !== t.getDate() || 3 !== t.getMonth()) return;
 		import('./reverseChart.js');
-	}();
+	})();
 	hook.kfcFkXqsVw50.push(function() {
 		if (hook.chartsMD5.get(hook.selectchart.value) === 'ab9d2cc3eb569236ead459ad4caba109') {
 			console.log('好耶');
@@ -18,7 +18,7 @@ export default function() {
 				analyser.getByteFrequencyData(freq);
 				const avg = freq.reduce((a, b) => a + b) / bufferLength;
 				return Math.min(1, avg / 255 * 2.15); //qwq
-			}
+			};
 			let flagMusic = true;
 			let flagPerfect = NaN;
 			let flagGood = NaN;
@@ -29,7 +29,7 @@ export default function() {
 				flagEm = em;
 				flagN = n;
 				return flag;
-			}
+			};
 			hook['flag{qwq}'] = time => {
 				time *= hook.app.speed * 1.95;
 				const bgMusic = hook.tmps.bgMusic();
@@ -39,7 +39,7 @@ export default function() {
 				}
 				if (time < 168) {
 					hook.stat.numOfNotes = 305;
-					hook.tmps.level = 'lN  Lv.I2';
+					hook.tmps.level = 'lN\u2002Lv.I2';
 					hook.tmps.progress = time / 218;
 				} else if (time < 169) {
 					const progress = 1 - (169 - time) ** 3; //easeCubicOut
@@ -69,7 +69,7 @@ export default function() {
 					hook.tmps.combo = flagEm;
 				}
 			};
-		} else hook['flag{qwq}'] = () => {};
+		} else hook['flag{qwq}'] = _ => {};
 	});
 	const id = setInterval(function() {
 		if (!$('.title>small')) return;
@@ -105,7 +105,7 @@ export default function() {
 	}, 500);
 }
 
-function setNoReferrer(handler = () => {}) {
+function setNoReferrer(handler = _ => {}) {
 	const meta = Object.assign(document.createElement('meta'), { content: 'no-referrer', name: 'referrer' });
 	document.head.appendChild(meta);
 	handler();

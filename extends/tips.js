@@ -1,6 +1,6 @@
 export default hook.define({
-	name: 'tips',
-	description: 'tips',
+	name: 'Tips',
+	description: 'Just some tips',
 	contents: [{
 		type: 'script',
 		meta: [fireTip]
@@ -53,9 +53,9 @@ brain.addTip('<code style="white-space:pre;text-align:left;display:inline-block;
 
 function fireTip(elem) {
 	/**
-	 * @param {HTMLElement} elem 
-	 * @param {Function} activeFn 
-	 * @param {Function} doneFn 
+	 * @param {HTMLElement} elem
+	 * @param {Function} activeFn
+	 * @param {Function} doneFn
 	 */
 	function longPress(elem, activeFn, doneFn, failFn) {
 		let timer = null;
@@ -77,7 +77,7 @@ function fireTip(elem) {
 				elem.removeEventListener('touchstart', onrequest);
 				elem.removeEventListener('touchend', oncancel);
 				elem.removeEventListener('touchcancel', oncancel);
-			};
+			}
 		}
 
 		function oncancel() {

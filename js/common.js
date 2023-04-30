@@ -1,5 +1,5 @@
 'use strict';
-export const time2Str = time => `${parseInt(time / 60)}:${`00${parseInt(time % 60)}`.slice(-2)}`;
+export const time2Str = time => `${Math.floor(time / 60)}:${`00${Math.floor(time % 60)}`.slice(-2)}`;
 export class Timer {
 	constructor() {
 		this.reset();
@@ -49,10 +49,10 @@ export const frameTimer = { //计算fps
 	get disp() {
 		return 0.5 / frameTimer.fps || 0;
 	}
-}
+};
 export class FrameAnimater {
 	constructor() {
-		this.callback = () => {};
+		this.callback = _ => {};
 		this.lastTime = 0;
 		this.interval = Number.EPSILON;
 		this.id = null;
@@ -88,7 +88,7 @@ export class FrameAnimater {
 //全屏相关
 export const full = {
 	/**
-	 * @param {HTMLElement} elem 
+	 * @param {HTMLElement} [elem]
 	 * @returns {Promise}
 	 */
 	toggle(elem) {
@@ -97,7 +97,7 @@ export const full = {
 		const onFullscreen = () => new Promise((resolve, reject) => {
 			document.addEventListener(this.onchange, resolve, { once: true });
 			document.addEventListener(this.onerror, reject, { once: true });
-		})
+		});
 		if (this.element) {
 			if (document.exitFullscreen) return document.exitFullscreen(), onFullscreen();
 			if (document.webkitExitFullscreen) return document.webkitExitFullscreen(), onFullscreen();
@@ -139,9 +139,9 @@ export const orientation = {
 				await s.lock(s.type);
 				resolve(s.unlock());
 			} catch (e) {
-				if (e.name == 'SecurityError') resolve(true);
-				else if (e.name == 'NotSupportedError') resolve(false);
-				else if (e.name == 'TypeError') resolve(false); //Safari 16.4
+				if (e.name === 'SecurityError') resolve(true);
+				else if (e.name === 'NotSupportedError') resolve(false);
+				else if (e.name === 'TypeError') resolve(false); //Safari 16.4
 				else throw e;
 			}
 		});
@@ -237,13 +237,13 @@ export const urls = {
 	browser: ['//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js', '//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js' /* , '//passer-by.com/browser/Browser.js' */ ],
 	bitmap: ['//cdn.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js', '//fastly.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js'],
 	blur: ['//unpkg.com/stackblur-canvas/dist/stackblur.min.js', '//cdn.jsdelivr.net/npm/stackblur-canvas', '//fastly.jsdelivr.net/npm/stackblur-canvas'],
-	md5: ['//unpkg.com/md5-js/md5.min.js', '//cdn.jsdelivr.net/npm/md5-js', '//fastly.jsdelivr.net/npm/md5-js'],
-}
+	md5: ['//unpkg.com/md5-js/md5.min.js', '//cdn.jsdelivr.net/npm/md5-js', '//fastly.jsdelivr.net/npm/md5-js']
+};
 export const getConstructorName = obj => {
 	if (obj === null) return 'Null';
 	if (obj === undefined) return 'Undefined';
 	return obj.constructor.name;
-}
+};
 export const isUndefined = name => self[name] === undefined;
 //Legacy
 {
@@ -253,7 +253,7 @@ export const isUndefined = name => self[name] === undefined;
 			if (Error.captureStackTrace) {
 				Error.captureStackTrace(this, DOMException); //过滤自身stack
 			} else {
-				this.stack = (new Error).stack.replace(/.+\n/, '');
+				this.stack = new Error().stack.replace(/.+\n/, '');
 			}
 		}
 	}

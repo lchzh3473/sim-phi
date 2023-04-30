@@ -1,6 +1,6 @@
 export default hook.define({
 	name: 'Skin',
-	description: 'Skin',
+	description: 'Customize skin',
 	contents: [{
 		type: 'command',
 		meta: ['/skin', skin]
@@ -12,9 +12,8 @@ export default hook.define({
 function skin() {
 	const id = `skin${Date.now()}`;
 	const files = [];
-	const msgHandler = hook.msgHandler;
 	const zip = new hook.ZipReader({ handler: async data => files.push(data) });
-	zip.addEventListener('loadstart', () => msgHandler.sendMessage('加载zip组件...'));
+	zip.addEventListener('loadstart', () => hook.msgHandler.sendMessage('加载zip组件...'));
 	zip.addEventListener('read', evt => hook.handleFile(id, zip.total, null, done));
 	const input = Object.assign(document.createElement('input'), {
 		type: 'file',
@@ -88,7 +87,7 @@ async function loadConfig(files = []) {
 	if (config0) return yaml2json(await stringify(config0.buffer), /;?\r?\n/);
 	const config1 = files.find(i => String(i.name).endsWith('info.yml'));
 	if (config1) return yaml2json(await stringify(config1.buffer));
-	msgHandler.sendError('未找到config.txt或info.yml');
+	hook.msgHandler.sendError('未找到config.txt或info.yml');
 	return {};
 }
 

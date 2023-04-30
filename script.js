@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self._i = ['Phi\x67ros模拟器', [1, 4, 22, 'b45'], 1611795955, 1682699376];
+self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b46'], 1611795955, 1682839677];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -11,22 +11,24 @@ const createOffscreenCanvas = (width, height) => {
 	if (self.OffscreenCanvas) return new OffscreenCanvas(width, height);
 	const canvas = document.createElement('canvas');
 	return Object.assign(canvas, { width, height });
-}
+};
 const tween = {
 	easeInSine: pos => 1 - Math.cos(pos * Math.PI / 2),
 	easeOutSine: pos => Math.sin(pos * Math.PI / 2),
 	easeOutCubic: pos => 1 + (pos - 1) ** 3,
-}
+};
 const main = {};
 main.modify = a => a;
 main.pressTime = 0;
 main.kfcFkXqsVw50 = [];
-main['flag{qwq}'] = () => {};
+/** @type {(ctx:CanvasRenderingContext2D,time:number)=>void} */
+main.filter = null;
+main['flag{qwq}'] = _ => {};
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of $id('view-nav').children) {
 	i.addEventListener('click', function() {
 		for (const i of $id('view-nav').children) i.classList.toggle('active', i === this);
-		if (!$id('view-doc').src) $id('view-doc').src = 'docs/use.html'; //防止阻塞页面
+		if (!$id('view-doc').src) $id('view-doc').src = 'docs/use.html'; //避免阻塞页面
 		$id('view-doc').classList.toggle('hide', this.id !== 'nav-use');
 		$id('view-cfg').classList.toggle('hide', this.id !== 'nav-cfg');
 		$id('view-msg').classList.toggle('hide', this.id !== 'nav-msg');
@@ -66,7 +68,7 @@ const msgHandler = {
 		btn.onclick = () => {
 			msgbox.remove();
 			this.sendMessage(this.lastMessage);
-		}
+		};
 		if (fatal) btn.classList.add('disabled');
 		msgbox.appendChild(btn);
 		this.nodeView.appendChild(msgbox);
@@ -101,7 +103,7 @@ const msgHandler = {
 		this.sendMessage(msg, 'error');
 		return false;
 	}
-}
+};
 const stat = new simphi.Stat();
 const app = new simphi.Renderer($id('stage')); //test
 const { canvas, ctx, canvasos, ctxos } = app;
@@ -130,13 +132,13 @@ const status2 = {
 		const arr = this.list.map(String).filter(Boolean);
 		this.text = arr.length === 0 ? '' : `(${arr.join('+')})`;
 	}
-}
+};
 let levelText = '';
-const bgs = new Map;
-const bgsBlur = new Map;
-const bgms = new Map;
-const charts = new Map;
-const chartsMD5 = new Map;
+const bgs = new Map();
+const bgsBlur = new Map();
+const bgms = new Map();
+const charts = new Map();
+const chartsMD5 = new Map();
 const chartLineData = []; //line.csv
 const chartInfoData = []; //info.csv
 async function checkSupport() {
@@ -174,14 +176,13 @@ async function checkSupport() {
 	await Utils.addFont('Titillium Web', { alt: 'Custom' });
 	//兼容性检测
 	msgHandler.sendMessage('检查浏览器兼容性...');
-	const isMobile = navigator.standalone !== undefined || navigator.platform.indexOf('Linux') > -1 && navigator.maxTouchPoints === 5;
+	const isMobile = navigator['standalone'] !== undefined || navigator.platform.indexOf('Linux') > -1 && navigator.maxTouchPoints === 5;
 	if (isMobile) $id('uploader-select').style.display = 'none';
 	if (navigator.userAgent.indexOf('MiuiBrowser') > -1) {
 		//实测 v17.1.8 问题仍然存在，v17.4.80113 问题已修复
 		const version = navigator.userAgent.match(/MiuiBrowser\/(\d+\.\d+)/);
 		const text = '检测到小米浏览器且版本低于17.4，可能存在切后台声音消失的问题';
-		if (version && version[1] >= 17.4);
-		else msgHandler.sendWarning(text);
+		if (!version || parseFloat(version[1]) < 17.4) msgHandler.sendWarning(text);
 	}
 	if (!await loadLib('ImageBitmap兼容', urls.bitmap, () => isUndefined('createImageBitmap'))) return -1;
 	if (!await loadLib('StackBlur', urls.blur, () => isUndefined('StackBlur'))) return -2;
@@ -189,7 +190,7 @@ async function checkSupport() {
 	msgHandler.sendMessage('加载声音组件...');
 	const oggCompatible = !!(new Audio).canPlayType('audio/ogg');
 	if (!await loadLib('ogg格式兼容', '/lib/oggmented-bundle.js', () => !oggCompatible && isUndefined('oggmented'))) return -4;
-	audio.init(oggCompatible ? self.AudioContext || self.webkitAudioContext : oggmented.OggmentedAudioContext); //兼容Safari
+	audio.init(oggCompatible ? self.AudioContext || self['webkitAudioContext'] : self['oggmented'].OggmentedAudioContext); //兼容Safari
 	const orientSupported = await orientation.checkSupport();
 	if (!orientSupported) {
 		lockOri.checked = false;
@@ -265,7 +266,7 @@ self.addEventListener('resize', () => stage.resize());
 	 * @param {string} tag
 	 * @param {number} total
 	 */
-	const handleFile = async (tag, total, promise, oncomplete = () => {}) => {
+	const handleFile = async (tag, total, promise, oncomplete = _ => {}) => {
 		totals[tag] = total;
 		uploader_total = Object.values(totals).reduce((a, b) => a + b, 0);
 		if (!(promise instanceof Promise)) promise = Promise.resolve();
@@ -308,7 +309,7 @@ self.addEventListener('resize', () => stage.resize());
 	main.uploader = uploader;
 	/**
 	 * @typedef {import("./js/reader").ReaderData} ReaderData
-	 * @param {ReaderData} data 
+	 * @param {ReaderData} data
 	 */
 	async function pick(data) {
 		console.log(data);
@@ -340,8 +341,8 @@ self.addEventListener('resize', () => stage.resize());
 				selectchart.appendChild(createOption(basename, data.name));
 				break;
 			default:
-				console.error(data.data);
-				throw new Error(`Unsupported file: ${data.name}`, { cause: data });
+				console.error(data['data']);
+				throw new Error(`Unsupported file: ${data['name']}`, { cause: data });
 		}
 	}
 	/**
@@ -373,7 +374,7 @@ const exitFull = () => {
 	hitManager.clear('keyboard'); //esc退出全屏只有onchange事件能检测到
 	app.isFull = full.check();
 	stage.resize();
-}
+};
 //hit start
 const specialClick = {
 	time: [0, 0, 0, 0],
@@ -411,7 +412,7 @@ const specialClick = {
 		if (offsetX > canvasos.width - lineScale * 1.5 && offsetY > canvasos.height - lineScale * 1.5) this.click(3);
 		if (qwqEnd.second > 0) main.pressTime = main.pressTime > 0 ? -qwqEnd.second : qwqEnd.second;
 	}
-}
+};
 const hitManager = new simphi.HitManager();
 class JudgeEvent {
 	constructor(offsetX, offsetY, type, event) {
@@ -426,8 +427,8 @@ class JudgeEvent {
 /** @typedef {import('./js/simphi.js').NoteExtends} NoteExtends */
 /**
  * 判定和音符的水平距离
- * @param {JudgeEvent} judgeEvent 
- * @param {NoteExtends} note 
+ * @param {JudgeEvent} judgeEvent
+ * @param {NoteExtends} note
  */
 function getJudgeOffset(judgeEvent, note) {
 	const { offsetX, offsetY } = judgeEvent;
@@ -609,7 +610,7 @@ const judgeManager = {
 					if (deltaTime2 > 0.16) {
 						if (judgeEvent.preventBad) continue;
 						noteJudge.status = 6; //console.log('Bad', i.name);
-						noteJudge.badtime = performance.now();
+						noteJudge.badTime = performance.now();
 					} else {
 						const note = noteJudge;
 						stat.addDisp(Math.max(deltaTime2, (-1 - note.frameCount) * 0.04 || 0));
@@ -657,7 +658,10 @@ const judgeManager = {
 	}
 };
 class HitEvents extends Array {
-	constructor({ updateCallback, iterateCallback } = {}) {
+	constructor({
+		updateCallback = _ => {},
+		iterateCallback = _ => {}
+	} = {}) {
 		super();
 		this.update = this.defilter.bind(this, updateCallback);
 		this.animate = this.iterate.bind(this, iterateCallback);
@@ -700,7 +704,7 @@ const hitImageList = new HitEvents({ //存放点击特效
 		ctxos.globalAlpha = 1;
 		ctxos.setTransform(app.noteScaleRatio * 6, 0, 0, app.noteScaleRatio * 6, i.offsetX, i.offsetY); //缩放
 		// ctxos.rotate(i.rotation);
-		(effects[parseInt(tick * effects.length)] || effects[effects.length - 1]).full(ctxos); //停留约0.5秒
+		(effects[Math.floor(tick * effects.length)] || effects[effects.length - 1]).full(ctxos); //停留约0.5秒
 		ctxos.fillStyle = i.color;
 		ctxos.globalAlpha = 1 - tick; //不透明度
 		const r3 = 30 * (((0.2078 * tick - 1.6524) * tick + 1.6399) * tick + 0.4988); //方块大小
@@ -881,7 +885,7 @@ window.addEventListener('load', async function() {
 				img.close();
 				res[name] = await audio.decode(data).catch(async err => {
 					const blob = await fetch(raw.alternative[name], { referrerPolicy: 'no-referrer' }).then(i => i.blob());
-					return await createImageBitmap(blob).then(decodeAlt).then(audio.decode.bind(audio)).catch(err => {
+					return await createImageBitmap(blob).then(decodeAlt).then(ab => audio.decode(ab)).catch(err => {
 						msgHandler.sendWarning(`音频加载存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
 						return audio.mute(1);
 					});
@@ -908,8 +912,8 @@ window.addEventListener('load', async function() {
 			msgHandler.sendMessage(`加载资源：${Math.floor(++loadedNum / arr.length * 100)}%`);
 		}).catch(err => {
 			console.error(err);
-			msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url,location)}`, true);
-		}).finally(resolve);
+			msgHandler.sendError(`错误：${++errorNum}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url,location.toString())}`, true);
+		}).finally(() => resolve());
 	})));
 	if (errorNum) return msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
 	const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL'];
@@ -960,13 +964,20 @@ document.addEventListener('pagehide', () => document.visibilityState === 'hidden
 const qwqIn = new Timer();
 const qwqOut = new Timer();
 const qwqEnd = new Timer();
-//播放bgm
+/**
+ * 播放bgm
+ * @param {AudioBuffer} data
+ * @param {number} [offset]
+ */
 function playBgm(data, offset) {
 	if (!offset) offset = 0;
 	curTime_ms = performance.now();
-	tmps.bgMusic = audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: autoDelay.checked });
+	tmps.bgMusic = audio.play(data, { offset: offset, playbackrate: app.speed, gainrate: app.musicVolume, interval: autoDelay.checked ? 1 : 0 });
 }
-/** @param {HTMLVideoElement} data */
+/**
+ * @param {HTMLVideoElement} data
+ * @param {number} [offset]
+ */
 function playVideo(data, offset) {
 	if (!offset) offset = 0;
 	data.currentTime = offset;
@@ -975,11 +986,11 @@ function playVideo(data, offset) {
 	return data.play();
 }
 let fucktemp1 = false;
-let fucktemp2 = false;
+let fucktemp2 = null;
 const tmps = {
 	bgImage: null,
 	bgVideo: null,
-	bgMusic: () => {},
+	bgMusic: _ => {},
 	progress: 0,
 	name: '',
 	artist: '',
@@ -1013,7 +1024,7 @@ function mainLoop() {
 		ctxos.globalAlpha = app.brightness; //背景不透明度
 		ctxos.fillRect(0, 0, canvasos.width, canvasos.height);
 		setTimeout(() => {
-			if (!fucktemp1) return; //防止快速重开后直接结算
+			if (!fucktemp1) return; //避免快速重开后直接结算
 			const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(levelText.slice(0, 2).toLocaleLowerCase());
 			audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`], { loop: true });
 			qwqEnd.reset();
@@ -1036,7 +1047,7 @@ function mainLoop() {
 	ctx.fillStyle = '#ccc';
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = 'right';
-	ctx.fillText(`Phi\x67ros Simulator v${_i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
+	ctx.fillText(`Phi\x67ros Simulator v${self['_i'][1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
 }
 
 function loopNoCanvas() {
@@ -1127,7 +1138,7 @@ function loopCanvas() { //尽量不要在这里出现app
 				ctxos.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
 				ctxos.fillStyle = 'yellow';
 				ctxos.globalAlpha = (i.alpha + 0.5) / 1.5;
-				ctxos.fillText(i.lineId, 0, -lineScale * 0.3);
+				ctxos.fillText(i.lineId.toString(), 0, -lineScale * 0.3);
 			}
 			for (const i of app.notesReversed) {
 				if (!i.visible) continue;
@@ -1147,7 +1158,7 @@ function loopCanvas() { //尽量不要在这里出现app
 	if (showCE2.checked) hitWordList.animate(); //绘制打击特效2
 	ctxos.globalAlpha = 1;
 	//绘制进度条
-	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
+	ctxos.setTransform(canvasos.width / 1920, 0, 0, canvasos.width / 1920, 0, lineScale * (qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) - 1 : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.drawImage(res['ProgressBar'], tmps.progress * 1920 - 1920, 0);
 	//绘制文字
 	ctxos.resetTransform();
@@ -1172,7 +1183,7 @@ function loopCanvas() { //尽量不要在这里出现app
 	}
 	//绘制分数和combo
 	ctxos.globalAlpha = 1;
-	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (tween.easeOutSine(qwqIn.second * 1.5) - 1) : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
+	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) - 1 : -tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.font = `${lineScale * 0.95}px Custom,Noto Sans SC`;
 	ctxos.textAlign = 'right';
 	ctxos.fillText(stat.scoreStr, canvasos.width - lineScale * 0.65, lineScale * 1.375);
@@ -1183,22 +1194,18 @@ function loopCanvas() { //尽量不要在这里出现app
 	ctxos.textAlign = 'center';
 	ctxos.font = `${lineScale * 1.32}px Custom,Noto Sans SC`;
 	ctxos.fillText(tmps.combo, app.wlen, lineScale * 1.375);
-	ctxos.globalAlpha = qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) : (1 - tween.easeOutSine(qwqOut.second * 1.5));
+	ctxos.globalAlpha = qwqIn.second < 0.67 ? tween.easeOutSine(qwqIn.second * 1.5) : 1 - tween.easeOutSine(qwqOut.second * 1.5);
 	ctxos.font = `${lineScale * 0.66}px Custom,Noto Sans SC`;
 	ctxos.fillText(tmps.combo2, app.wlen, lineScale * 2.05);
 	//绘制曲名和等级
 	ctxos.globalAlpha = 1;
-	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? (1 - tween.easeOutSine(qwqIn.second * 1.5)) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
+	ctxos.setTransform(1, 0, 0, 1, 0, lineScale * (qwqIn.second < 0.67 ? 1 - tween.easeOutSine(qwqIn.second * 1.5) : tween.easeOutSine(qwqOut.second * 1.5)) * 1.75);
 	ctxos.textAlign = 'right';
 	fillTextNode(tmps.level, canvasos.width - lineScale * 0.75, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
 	ctxos.textAlign = 'left';
 	fillTextNode(tmps.name, lineScale * 0.65, canvasos.height - lineScale * 0.66, lineScale * 0.63, app.wlen - lineScale);
 	ctxos.resetTransform();
-	//滤镜处理
-	if (qwqIn.second > 3 && main.filter) {
-		main.filter.apply(canvasos);
-		ctxos.drawImage(main.filter.getImage(nowTime_ms / 1e3), 0, 0);
-	}
+	if (qwqIn.second > 3 && main.filter) main.filter(ctxos, nowTime_ms / 1e3); //滤镜处理
 	if ($id('feedback').checked) hitFeedbackList.animate(); //绘制打击特效0
 	ctxos.resetTransform();
 	//绘制时间和帧率以及note打击数
@@ -1215,7 +1222,7 @@ function loopCanvas() { //尽量不要在这里出现app
 		[stat.noteRank[6], stat.noteRank[7], stat.noteRank[5], stat.noteRank[4], stat.noteRank[1], stat.noteRank[3], stat.noteRank[2]].forEach((val, idx) => {
 			const comboColor = ['#fe7b93', '#0ac3ff', 'lime', '#f0ed69', 'lime', '#0ac3ff', '#999'];
 			ctxos.fillStyle = comboColor[idx];
-			ctxos.fillText(val, canvasos.width - lineScale * 0.05, canvasos.height / 2 + lineScale * (idx - 2.8) * 0.5);
+			ctxos.fillText(val.toString(), canvasos.width - lineScale * 0.05, canvasos.height / 2 + lineScale * (idx - 2.8) * 0.5);
 		});
 		ctxos.fillStyle = '#fff';
 		ctxos.textAlign = 'left';
@@ -1225,7 +1232,7 @@ function loopCanvas() { //尽量不要在这里出现app
 		stat.combos.forEach((val, idx) => {
 			const comboColor = ['#fff', '#0ac3ff', '#f0ed69', '#a0e9fd', '#fe4365'];
 			ctxos.fillStyle = comboColor[idx];
-			ctxos.fillText(val, lineScale * (idx + 0.55) * 1.1, canvasos.height - lineScale * 0.1);
+			ctxos.fillText(val.toString(), lineScale * (idx + 0.55) * 1.1, canvasos.height - lineScale * 0.1);
 		});
 	}
 }
@@ -1234,7 +1241,7 @@ function drawLine(bool, lineScale) {
 	ctxos.globalAlpha = 1;
 	const tw = 1 - tween.easeOutSine(qwqOut.second * 1.5);
 	for (const i of app.linesReversed) {
-		if (bool ^ i.imageD && qwqOut.second < 0.67) {
+		if (bool ^ Number(i.imageD) && qwqOut.second < 0.67) {
 			ctxos.globalAlpha = i.alpha;
 			ctxos.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, app.wlen + (i.offsetX - app.wlen) * tw, i.offsetY); //hiahiah
 			const imgS = (i.imageU ? lineScale * 18.75 : canvasos.height) * i.imageS / 1080;
@@ -1302,7 +1309,7 @@ function qwqdraw3(statData) {
 	ctxos.globalAlpha = clip((qwqEnd.second - 0.95) * 1.50);
 	ctxos.textAlign = 'left';
 	ctxos.fillText(stat.accStr, 352, 550);
-	ctxos.fillText(stat.maxcombo, 1528, 550);
+	ctxos.fillText(stat.maxcombo.toString(), 1528, 550);
 	ctxos.fillStyle = statData.textAboveColor;
 	ctxos.fillText(app.speed === 1 ? '' : statData.textAboveStr.replace('{SPEED}', app.speed.toFixed(2)), 383 + Math.min(lw, 750), 212);
 	ctxos.fillStyle = statData.textBelowColor;
@@ -1314,13 +1321,13 @@ function qwqdraw3(statData) {
 	ctxos.fillText(stat.scoreStr, 1075, 569);
 	ctxos.font = '26px Custom,Noto Sans SC';
 	ctxos.globalAlpha = clip((qwqEnd.second - 0.87) * 2.50);
-	ctxos.fillText(stat.perfect, 891, 650);
+	ctxos.fillText(stat.perfect.toString(), 891, 650);
 	ctxos.globalAlpha = clip((qwqEnd.second - 1.07) * 2.50);
-	ctxos.fillText(stat.good, 1043, 650);
+	ctxos.fillText(stat.good.toString(), 1043, 650);
 	ctxos.globalAlpha = clip((qwqEnd.second - 1.27) * 2.50);
-	ctxos.fillText(stat.noteRank[6], 1196, 650);
+	ctxos.fillText(stat.noteRank[6].toString(), 1196, 650);
 	ctxos.globalAlpha = clip((qwqEnd.second - 1.47) * 2.50);
-	ctxos.fillText(stat.noteRank[2], 1349, 650);
+	ctxos.fillText(stat.noteRank[2].toString(), 1349, 650);
 	ctxos.font = '22px Custom,Noto Sans SC';
 	const qwq4 = clip((main.pressTime > 0 ? qwqEnd.second - main.pressTime : 0.2 - qwqEnd.second - main.pressTime) * 5.00);
 	ctxos.globalAlpha = 0.8 * clip((qwqEnd.second - 0.87) * 2.50) * qwq4;
@@ -1385,8 +1392,8 @@ const noteRender = {
 	note: {},
 	/** @type {Object<string,HitFX>} */
 	hitFX: {},
-	/** 
-	 * @param {string} name 
+	/**
+	 * @param {string} name
 	 * @param {ImageBitmap} img
 	 * @param {number} scale
 	 */
@@ -1402,13 +1409,13 @@ const noteRender = {
 		this.hitFX['Perfect'] = {
 			effects: await Promise.all(hitPerfect),
 			numOfParts: hideParts ? 0 : 4,
-			duration: (duration | 0) || 500
+			duration: duration | 0 || 500
 		};
 		this.hitFX['Good'] = {
 			effects: await Promise.all(hitGood),
 			numOfParts: hideParts ? 0 : 3,
-			duration: (duration | 0) || 500
-		}
+			duration: duration | 0 || 500
+		};
 		hitRaw.forEach(img => img.close());
 	}
 };
@@ -1486,7 +1493,7 @@ function adjustSize(source, dest, scale) {
 	return [(dw - dh * sw / sh * scale) / 2, dh * (1 - scale) / 2, dh * sw / sh * scale, dh * scale];
 }
 /**@type {Map<ImageBitmap,LineImage>} */
-const lineImages = new Map;
+const lineImages = new Map();
 class LineImage {
 	/**@param {ImageBitmap} image */
 	constructor(image) {
@@ -1510,7 +1517,7 @@ class LineImage {
 }
 /**
  * 图片模糊(StackBlur)
- * @param {ImageBitmap} img 
+ * @param {ImageBitmap} img
  */
 function imgBlur(img) {
 	const canvas = createOffscreenCanvas(img.width, img.height);
@@ -1522,7 +1529,7 @@ function imgBlur(img) {
 }
 /**
  * 给图片上色(limit用于解决iOS的InvalidStateError)
- * @param {ImageBitmap} img 
+ * @param {ImageBitmap} img
  */
 function imgShader(img, color, limit = 512) {
 	const dataRGBA = hex2rgba(color);
@@ -1568,13 +1575,13 @@ function imgPainter(img, color, limit = 512) {
 }
 /**
  * 切割图片
- * @param {ImageBitmap} img 
+ * @param {ImageBitmap} img
  * @param {number} [limitX]
  * @param {number} [limitY]
  */
 function imgSplit(img, limitX, limitY) {
-	limitX = parseInt(limitX) || Math.min(img.width, img.height);
-	limitY = parseInt(limitY) || limitX;
+	limitX = Math.floor(limitX) || Math.min(img.width, img.height);
+	limitY = Math.floor(limitY) || limitX;
 	const arr = [];
 	for (let dy = 0; dy < img.height; dy += limitY) {
 		for (let dx = 0; dx < img.width; dx += limitX) {
@@ -1686,8 +1693,9 @@ class Checkbox {
 	toggle() {
 		this.checked = !this.checkbox.checked;
 	}
-	hook(callback = () => {}) {
-		callback(this.checkbox);
+	/** @param {Function} callback */
+	hook(callback = _ => {}) {
+		callback(this.checkbox, this.container);
 		return this;
 	}
 }
@@ -1740,12 +1748,12 @@ const selectLevel = $id('select-level');
 const updateLevelText = type => {
 	const table = { SP: [0, 0], EZ: [1, 7], HD: [3, 12], IN: [6, 15], AT: [13, 16] };
 	let diffStr = selectDifficulty.value || 'SP';
-	let levelNum = selectLevel.value | 0;
+	let levelNum = Number(selectLevel.value) | 0;
 	if (type === 0) {
 		const diff = table[diffStr];
 		if (levelNum < diff[0]) levelNum = diff[0];
 		if (levelNum > diff[1]) levelNum = diff[1];
-		selectLevel.value = levelNum;
+		selectLevel.value = levelNum.toString();
 		selectLevel.value = selectLevel.value;
 	} else if (type === 1) {
 		const keys = Object.keys(table);
@@ -1767,7 +1775,7 @@ const updateLevelText = type => {
 	}
 	const diffString = selectDifficulty.value || 'SP';
 	const levelString = selectLevel.value || '?';
-	return [diffString, levelString].join('  Lv.');
+	return [diffString, levelString].join('\u2002Lv.');
 };
 levelText = updateLevelText();
 selectDifficulty.addEventListener('change', () => levelText = updateLevelText(0));
@@ -1801,8 +1809,8 @@ selectchart.addEventListener('change', adjustInfo);
 	Object.assign(input, { type: 'number', min: 25, max: 1000, value: 60 });
 	input.style.cssText += ';width:50px;margin-left:10px';
 	input.addEventListener('change', function() {
-		if (this.value < 25) this.value = 25;
-		if (this.value > 1000) this.value = 1000;
+		if (Number(this.value) < 25) this.value = '25';
+		if (Number(this.value) > 1000) this.value = '1000';
 		frameAnimater.setFrameRate(this.value);
 	});
 	status.reg('maxFrameNumber', input, false);
@@ -1849,11 +1857,11 @@ async function qwqStop() {
 		if (!selectchart.value) return msgHandler.sendError('错误：未选择任何谱面');
 		if (!selectbgm.value) return msgHandler.sendError('错误：未选择任何音乐');
 		for (const kfc of main.kfcFkXqsVw50) await kfc();
-		audio.play(res['mute'], { loop: true, isOut: false }); //播放空音频(防止音画不同步)
+		audio.play(res['mute'], { loop: true, isOut: false }); //播放空音频(避免音画不同步)
 		app.prerenderChart(main.modify(charts.get(selectchart.value))); //fuckqwq
-		app.md5 = chartsMD5.get(selectchart.value);
+		const md5 = chartsMD5.get(selectchart.value);
 		stat.level = Number(levelText.match(/\d+$/));
-		stat.reset(app.chart.numOfNotes, app.md5, selectspeed.value);
+		stat.reset(app.chart.numOfNotes, md5, selectspeed.value);
 		await loadLineData();
 		app.bgImage = bgs.get(selectbg.value) || res['NoImageWhite'];
 		app.bgImageBlur = bgsBlur.get(selectbg.value) || res['NoImageWhite'];
@@ -1877,7 +1885,7 @@ async function qwqStop() {
 		frameAnimater.stop();
 		//清除原有数据
 		fucktemp1 = false;
-		fucktemp2 = false;
+		fucktemp2 = null;
 		hitFeedbackList.clear();
 		hitImageList.clear();
 		hitWordList.clear();
@@ -1954,7 +1962,8 @@ const loadPlugin = (searchValue, callback) => {
 			}
 		}, 1e3);
 	});
-}
+};
+const appendCfg = (name, callback) => new Checkbox(name).appendBefore(resetCfg.container).hook(callback);
 main.fireModal = function(navHTML, contentHTML) {
 	const cover = document.createElement('div');
 	cover.classList.add('cover-dark', 'fade');
@@ -1982,47 +1991,30 @@ main.fireModal = function(navHTML, contentHTML) {
 	});
 }
 main.define = (a) => { return a };
+/**
+ * @typedef {{type:'command',meta:[string,function]}} PluginCommand
+ * @typedef {{type:'script',meta:[function]}} PluginScript
+ * @typedef {{type:'config',meta:[string,function]}} PluginConfig
+ * @typedef {PluginCommand|PluginScript|PluginConfig} Plugin
+ * @typedef {{contents:Plugin[]}} PluginModule
+ */
 main.use = async src => {
-	/** @type {{contents:{type:string,meta:[string,function]}[]}} */
+	/** @type {PluginModule}} */
 	const module = await import('' + src).then(m => m['default']);
 	for (const i of module.contents) {
 		if (i.type === 'command') loadPlugin(i.meta[0], i.meta[1]);
 		else if (i.type === 'script') i.meta[0]($('.title'));
-		else throw new TypeError(`Unknown Plugin Type: ${i.type}`);
+		else if (i.type === 'config') appendCfg(i.meta[0], i.meta[1]);
+		else throw new TypeError(`Unknown Plugin Type: ${i['type']}`);
 	}
 	return module;
 };
 main.use('./extends/phizone.js').then(console.log); //plugin(phizone))
 main.use('./extends/tips.js').then(console.log); //plugin(tips)
-//plugin(filter)
-const enableFilter = new Checkbox('启用滤镜').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFilter'));
-main.filter = null;
-(function() {
-	const input = document.createElement('textarea');
-	Object.assign(input, { placeholder: '在此输入着色器代码' });
-	input.style.cssText += ';width:150px;height:1em;margin-left:10px';
-	input.addEventListener('change', async function() {
-		const Filter = await import('./extends/filter.js').then(m => m['default']);
-		try {
-			const filter0 = new Filter(input.value);
-			main.filter = filter0;
-		} catch (e) {
-			console.error(e);
-			main.filter = null;
-		}
-	});
-	status.reg('filterText', input, false);
-	enableFilter.container.appendChild(input);
-	enableFilter.checkbox.addEventListener('change', function() {
-		input.classList.toggle('disabled', !this.checked);
-		if (!this.checked) main.filter = null;
-		else input.dispatchEvent(new Event('change'));
-	});
-	enableFilter.checkbox.dispatchEvent(new Event('change'));
-})();
+main.use('./extends/filter.js').then(console.log); //plugin(filter)
 main.use('./extends/skin.js').then(console.log); //plugin(skin)
 //debug
-export var hook = self.hook = main;
+export const hook = self['hook'] = main;
 main.stat = stat;
 main.app = app;
 main.res = res;
@@ -2036,13 +2028,14 @@ main.selectchart = selectchart;
 main.chartsMD5 = chartsMD5;
 main.noteRender = noteRender;
 main.ZipReader = ZipReader;
+main.status = status;
 main.tmps = tmps;
 main.qwq = qwq;
 main.qwqwq = false;
 main.pause = () => emitter.eq('play') && qwqPause();
 Object.defineProperty(main, 'time', {
 	get: () => timeBgm,
-	set: async (v) => {
+	set: async v => {
 		if (emitter.eq('stop') || fucktemp1) return;
 		const isPlaying = emitter.eq('play');
 		if (isPlaying) await qwqPause();
@@ -2053,4 +2046,4 @@ Object.defineProperty(main, 'time', {
 		// stat.reset();
 		if (isPlaying) await qwqPause();
 	}
-})
+});
