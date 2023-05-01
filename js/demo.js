@@ -113,7 +113,8 @@ function setNoReferrer(handler = _ => {}) {
 }
 
 function decodeAlt(img) {
-	const canvas = new OffscreenCanvas(img.width, img.height);
+	const canvas = document.createElement('canvas');
+	Object.assign(canvas, { width: img.width, height: img.height });
 	const ctx = canvas.getContext('2d');
 	ctx.drawImage(img, 0, 0);
 	const id = ctx.getImageData(0, 0, canvas.width, canvas.height);

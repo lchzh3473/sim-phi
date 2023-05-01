@@ -3,12 +3,11 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b46'], 1611795955, 1682839677];
+self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b47'], 1611795955, 1682915677];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
-const createOffscreenCanvas = (width, height) => {
-	if (self.OffscreenCanvas) return new OffscreenCanvas(width, height);
+const createCanvas = (width, height) => {
 	const canvas = document.createElement('canvas');
 	return Object.assign(canvas, { width, height });
 };
@@ -891,7 +890,7 @@ window.addEventListener('load', async function() {
 					});
 
 					function decodeAlt(img) {
-						const canvas = createOffscreenCanvas(img.width, img.height);
+						const canvas = createCanvas(img.width, img.height);
 						const ctx = canvas.getContext('2d');
 						ctx.drawImage(img, 0, 0);
 						const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -927,7 +926,7 @@ window.addEventListener('load', async function() {
 	res['Rank'].close();
 	res['mute'] = audio.mute(1);
 	if (!(() => {
-			const b = createOffscreenCanvas(1, 1).getContext('2d');
+			const b = createCanvas(1, 1).getContext('2d');
 			b.drawImage(res['JudgeLine'], 0, 0);
 			return b.getImageData(0, 0, 1, 1).data[0];
 		})()) return msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
@@ -937,7 +936,7 @@ window.addEventListener('load', async function() {
 	emitter.dispatchEvent(new CustomEvent('change'));
 
 	function decode(img, border = 0) {
-		const canvas = createOffscreenCanvas(img.width - border * 2, img.height - border * 2);
+		const canvas = createCanvas(img.width - border * 2, img.height - border * 2);
 		const ctx = canvas.getContext('2d');
 		ctx.drawImage(img, -border, -border);
 		const id = ctx.getImageData(0, 0, canvas.width, canvas.width);
@@ -1520,7 +1519,7 @@ class LineImage {
  * @param {ImageBitmap} img
  */
 function imgBlur(img) {
-	const canvas = createOffscreenCanvas(img.width, img.height);
+	const canvas = createCanvas(img.width, img.height);
 	const { width: w, height: h } = canvas;
 	const ctx = canvas.getContext('2d');
 	ctx.drawImage(img, 0, 0);
@@ -1533,7 +1532,7 @@ function imgBlur(img) {
  */
 function imgShader(img, color, limit = 512) {
 	const dataRGBA = hex2rgba(color);
-	const canvas = createOffscreenCanvas(img.width, img.height);
+	const canvas = createCanvas(img.width, img.height);
 	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
 	ctx.drawImage(img, 0, 0);
 	for (let dy = 0; dy < img.height; dy += limit) {
@@ -1556,7 +1555,7 @@ function imgShader(img, color, limit = 512) {
  */
 function imgPainter(img, color, limit = 512) {
 	const dataRGBA = hex2rgba(color);
-	const canvas = createOffscreenCanvas(img.width, img.height);
+	const canvas = createCanvas(img.width, img.height);
 	const ctx = canvas.getContext('2d', { willReadFrequently: true }); //warning
 	ctx.drawImage(img, 0, 0);
 	for (let dy = 0; dy < img.height; dy += limit) {
@@ -1592,7 +1591,7 @@ function imgSplit(img, limitX, limitY) {
 }
 //十六进制color转rgba数组
 function hex2rgba(color) {
-	const ctx = createOffscreenCanvas(1, 1).getContext('2d');
+	const ctx = createCanvas(1, 1).getContext('2d');
 	ctx.fillStyle = color;
 	ctx.fillRect(0, 0, 1, 1);
 	return ctx.getImageData(0, 0, 1, 1).data;
