@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b47'], 1611795955, 1682915677];
+self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b48'], 1611795955, 1683291486];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -759,11 +759,11 @@ class HitImage {
 		this.color = String(n3);
 	}
 	static perfect(offsetX, offsetY, note) {
-		console.log(note);
+		// console.log(note);
 		return new HitImage(offsetX, offsetY, 'Perfect', '#ffeca0');
 	}
 	static good(offsetX, offsetY, note) {
-		console.log(note);
+		// console.log(note);
 		return new HitImage(offsetX, offsetY, 'Good', '#b4e1ff');
 	}
 }
@@ -1989,6 +1989,7 @@ main.fireModal = function(navHTML, contentHTML) {
 		container.addEventListener('transitionend', () => container.remove());
 	});
 }
+main.toast = msg => main.fireModal('<p>提示</p>', `<p>${msg}</p>`);
 main.define = (a) => { return a };
 /**
  * @typedef {{type:'command',meta:[string,function]}} PluginCommand
@@ -2006,12 +2007,14 @@ main.use = async src => {
 		else if (i.type === 'config') appendCfg(i.meta[0], i.meta[1]);
 		else throw new TypeError(`Unknown Plugin Type: ${i['type']}`);
 	}
+	console.log(module);
 	return module;
 };
-main.use('./extends/phizone.js').then(console.log); //plugin(phizone))
-main.use('./extends/tips.js').then(console.log); //plugin(tips)
-main.use('./extends/filter.js').then(console.log); //plugin(filter)
-main.use('./extends/skin.js').then(console.log); //plugin(skin)
+main.use('./extends/phizone.js');
+main.use('./extends/tips.js');
+main.use('./extends/filter.js');
+main.use('./extends/skin.js');
+main.use('./extends/export.js');
 //debug
 export const hook = self['hook'] = main;
 main.stat = stat;

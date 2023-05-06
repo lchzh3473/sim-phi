@@ -1,6 +1,3 @@
-const vtext = 'PhiZone API v0.7';
-const vprompt = str => prompt(`${vtext}\n${str}`);
-const valert = str => alert(`${vtext}\n${str}`);
 export default hook.define({
 	name: 'PhiZone',
 	description: 'PhiZone API',
@@ -12,6 +9,9 @@ export default hook.define({
 		meta: ['/random', random]
 	}]
 });
+const vtext = 'PhiZone API v0.7';
+const vprompt = str => prompt(`${vtext}\n${str}`);
+const valert = str => alert(`${vtext}\n${str}`);
 async function dialog(num) {
 	const id = num || vprompt('请输入歌曲ID');
 	if (id === '' || id === null) return valert('未输入歌曲ID，已取消操作');

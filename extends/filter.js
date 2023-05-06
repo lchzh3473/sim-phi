@@ -34,7 +34,7 @@ function callback(checkbox, container) {
 		if (!this.checked) hook.filter = null;
 		else input.dispatchEvent(new Event('change'));
 	});
-	checkbox.dispatchEvent(new Event('change'));
+	status.reg('enableFilter', checkbox);
 }
 const vsSource = `
 	attribute vec2 a_position;
