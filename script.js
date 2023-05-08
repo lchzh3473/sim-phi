@@ -3,25 +3,31 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b49'], 1611795955, 1683479490];
+self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b50'], 1611795955, 1683559733];
+/** @type {(arg0:string)=>any} */
 const $id = query => document.getElementById(query);
+/** @type {(arg0:string)=>any} */
 const $ = query => document.body.querySelector(query);
+/** @type {(arg0:string)=>any} */
 const $$ = query => document.body.querySelectorAll(query);
+/** @type {(width:number,height:number)=>HTMLCanvasElement} */
 const createCanvas = (width, height) => {
 	const canvas = document.createElement('canvas');
 	return Object.assign(canvas, { width, height });
 };
+/** @type {Object<string,(pos:number)=>number>} */
 const tween = {
 	easeInSine: pos => 1 - Math.cos(pos * Math.PI / 2),
 	easeOutSine: pos => Math.sin(pos * Math.PI / 2),
 	easeOutCubic: pos => 1 + (pos - 1) ** 3,
 };
 const main = {};
+/** @type {(arg0:any)=>any} */
 main.modify = a => a;
 main.pressTime = 0;
 /** @type {Map<string,()=>any>} */
 main.before = new Map();
-/** @type {Map<string,()=>any>} */
+/** @type {Map<string,(...arg0:any[])=>any>} */
 main.now = new Map();
 /** @type {Map<string,()=>any>} */
 main.after = new Map();
@@ -285,14 +291,14 @@ self.addEventListener('resize', () => stage.resize());
 	const options = { createAudioBuffer() { return audio.decode(...arguments) } };
 	const zip = new ZipReader({ handler: data => readFile(data, options) });
 	zip.addEventListener('loadstart', () => msgHandler.sendMessage('加载zip组件...'));
-	zip.addEventListener('read', evt => handleFile('zip', zip.total, pick(evt.detail)));
+	zip.addEventListener('read', ( /** @type {CustomEvent<ReaderData>} */ evt) => handleFile('zip', zip.total, pick(evt.detail)));
 	$id('uploader-upload').addEventListener('click', uploader.uploadFile);
 	$id('uploader-file').addEventListener('click', uploader.uploadFile);
 	$id('uploader-dir').addEventListener('click', uploader.uploadDir);
 	/** @type {((_:FileList) => void)} */
 	uploader.addEventListener('change', loadComplete);
 	/** @type {((_:ProgressEvent<FileReader>) => void)} */
-	uploader.addEventListener('progress', function(evt) { //显示加载文件进度
+	uploader.addEventListener('progress', function( /** @type {ProgressEvent} */ evt) { //显示加载文件进度
 		if (!evt.total) return;
 		const percent = Math.floor(evt.loaded / evt.total * 100);
 		msgHandler.sendMessage(`加载文件：${percent}% (${bytefm(evt.loaded)}/${bytefm(evt.total)})`);
@@ -821,7 +827,7 @@ interact.setKeyboardEvent({
 	keydownCallback(evt) {
 		if (emitter.eq('stop')) return;
 		if (evt.key === 'Shift') btnPause.click();
-		else if (hitManager.list.find(i => i.type === 'keyboard' && i.id === evt.code)); //按住一个键时，会触发多次keydown事件
+		else if (hitManager.list.find(i => i.type === 'keyboard' && i.id === evt.code)) {} //按住一个键时，会触发多次keydown事件
 		else hitManager.activate('keyboard', evt.code, NaN, NaN);
 	},
 	keyupCallback(evt) {
@@ -1430,14 +1436,14 @@ function drawNotes() {
 	for (const i of app.tapsReversed) drawTap(i);
 	for (const i of app.flicksReversed) drawFlick(i);
 }
-
+/** @param {NoteExtends} note */
 function drawTap(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
-	if (!note.visible || note.scored && !note.badtime) return;
+	if (!note.visible || note.scored && !note.badTime) return;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
-	if (note.badtime) {
-		ctxos.globalAlpha = 1 - clip((performance.now() - note.badtime) / 500);
+	if (note.badTime) {
+		ctxos.globalAlpha = 1 - clip((performance.now() - note.badTime) / 500);
 		noteRender.note['TapBad'].full(ctxos);
 	} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
@@ -1445,20 +1451,19 @@ function drawTap(note) {
 		noteRender.note[HL ? 'TapHL' : 'Tap'].full(ctxos);
 	}
 }
-
+/** @param {NoteExtends} note */
 function drawDrag(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
-	if (!note.visible || note.scored && !note.badtime) return;
+	if (!note.visible || note.scored && !note.badTime) return;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
-	if (note.badtime);
-	else {
+	if (note.badTime) {} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
 		noteRender.note[HL ? 'DragHL' : 'Drag'].full(ctxos);
 	}
 }
-
+/** @param {NoteExtends} note */
 function drawHold(note, realTime) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
@@ -1476,20 +1481,20 @@ function drawHold(note, realTime) {
 	}
 	noteRender.note['HoldEnd'].tail(ctxos, -holdLength);
 }
-
+/** @param {NoteExtends} note */
 function drawFlick(note) {
 	const HL = note.isMulti && app.multiHint;
 	const nsr = app.noteScaleRatio;
-	if (!note.visible || note.scored && !note.badtime) return;
+	if (!note.visible || note.scored && !note.badTime) return;
 	ctxos.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
-	if (note.badtime);
-	else {
+	if (note.badTime) {} else {
 		ctxos.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
 		if (main.qwqwq) ctxos.globalAlpha *= Math.max(1 + (timeChart - note.realTime) / 1.5, 0);
 		noteRender.note[HL ? 'FlickHL' : 'Flick'].full(ctxos);
 	}
 }
 //调节画面尺寸和全屏相关(返回source播放aegleseeker会出现迷之error)
+/** @type {(arg0:{width:number,height:number},arg1:{width:number,height:number},arg2:number)=>[number,number,number,number]} */
 function adjustSize(source, dest, scale) {
 	const { width: sw, height: sh } = source;
 	const { width: dw, height: dh } = dest;
@@ -1697,7 +1702,7 @@ class Checkbox {
 	toggle() {
 		this.checked = !this.checkbox.checked;
 	}
-	/** @param {(_:Checkbox,_)=>void} callback */
+	/** @param {(arg0:HTMLInputElement,arg1:HTMLDivElement)=>void} callback */
 	hook(callback = _ => {}) {
 		callback(this.checkbox, this.container);
 		return this;
@@ -1724,10 +1729,10 @@ const lockOri = new Checkbox('横屏锁定', true).appendBefore(resetCfg.contain
 const maxFrame = new Checkbox('限制帧率').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'maxFrame'));
 const autoDelay = new Checkbox('音画实时同步(若声音卡顿则建议关闭)', true).appendBefore(resetCfg.container).hook(status.reg.bind(status, 'autoDelay'));
 const enableVP = new Checkbox('隐藏距离较远的音符').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableVP'));
-enableVP.checkbox.addEventListener('change', evt => app.enableVP = evt.target.checked);
+enableVP.checkbox.addEventListener('change', ( /** @type {Event&{target:HTMLInputElement}} */ evt) => app.enableVP = evt.target.checked);
 enableVP.checkbox.dispatchEvent(new Event('change'));
 const enableFR = new Checkbox('使用单精度浮点运算').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFR'));
-enableFR.checkbox.addEventListener('change', evt => app.enableFR = evt.target.checked);
+enableFR.checkbox.addEventListener('change', ( /** @type {Event&{target:HTMLInputElement}} */ evt) => app.enableFR = evt.target.checked);
 enableFR.checkbox.dispatchEvent(new Event('change'));
 const selectbg = $id('select-bg');
 const btnPlay = $id('btn-play');
@@ -1735,10 +1740,10 @@ const btnPause = $id('btn-pause');
 const selectbgm = $id('select-bgm');
 const selectchart = $id('select-chart');
 const selectflip = $id('select-flip');
-selectflip.addEventListener('change', evt => app.mirrorView(evt.target.value));
+selectflip.addEventListener('change', ( /** @type {Event&{target:HTMLInputElement}} */ evt) => app.mirrorView(parseInt(evt.target.value)));
 status.reg('selectFlip', selectflip);
 const selectspeed = $id('select-speed');
-selectspeed.addEventListener('change', evt => {
+selectspeed.addEventListener('change', ( /** @type {Event&{target:HTMLInputElement}} */ evt) => {
 	const dict = { Slowest: -9, Slower: -4, '': 0, Faster: 3, Fastest: 5 };
 	app.speed = 2 ** (dict[evt.target.value] / 12);
 });
@@ -1784,7 +1789,7 @@ const updateLevelText = type => {
 levelText = updateLevelText();
 selectDifficulty.addEventListener('change', () => levelText = updateLevelText(0));
 selectLevel.addEventListener('change', () => levelText = updateLevelText(1));
-$id('select-volume').addEventListener('change', evt => {
+$id('select-volume').addEventListener('change', ( /** @type {Event&{target:HTMLSelectElement}} */ evt) => {
 	const volume = Number(evt.target.value);
 	app.musicVolume = Math.min(1, 1 / volume);
 	app.soundVolume = Math.min(1, volume);
@@ -1793,12 +1798,12 @@ $id('select-volume').addEventListener('change', evt => {
 status.reg('selectVolume', $id('select-volume'));
 const inputOffset = $id('input-offset');
 const lineColor = $id('lineColor');
-$id('autoplay').addEventListener('change', evt => {
+$id('autoplay').addEventListener('change', ( /** @type {Event&{target:HTMLInputElement}} */ evt) => {
 	app.playMode = evt.target.checked ? 1 : 0;
 });
 $id('autoplay').dispatchEvent(new Event('change'));
 const showTransition = $id('showTransition');
-lowRes.checkbox.addEventListener('change', evt => {
+lowRes.checkbox.addEventListener('change', ( /** @type {Event&{target:HTMLInputElement}} */ evt) => {
 	app.setLowResFactor(evt.target.checked ? 0.5 : 1);
 });
 lowRes.checkbox.dispatchEvent(new Event('change'));
@@ -1849,8 +1854,9 @@ btnPause.addEventListener('click', async function() {
 	this.classList.remove('disabled');
 });
 inputOffset.addEventListener('input', function() {
-	if (this.value < -400) this.value = -400;
-	if (this.value > 600) this.value = 600;
+	const value = Number(this.value);
+	if (value < -400) this.value = -400;
+	if (value > 600) this.value = 600;
 });
 status2.reg(emitter, 'change', _ => main.qwqwq ? 'Reversed' : ''); //qwq
 status2.reg(selectflip, 'change', target => ['', 'FlipX', 'FlipY', 'FlipX&Y'][target.value]);
@@ -1956,13 +1962,15 @@ async function qwqPause() {
 	}
 }
 //plugins
+/** @type {(arg0:string,arg1:Function)=>void} */
 const loadPlugin = (searchValue, callback) => {
-	inputName.addEventListener('input', function() {
-		if (this.value === searchValue) setTimeout(() => {
-			if (this.value === searchValue) {
+	const _this = inputName;
+	_this.addEventListener('input', function() {
+		if (_this.value === searchValue) setTimeout(() => {
+			if (_this.value === searchValue) {
 				callback();
-				this.value = '';
-				this.dispatchEvent(new Event('input'));
+				_this.value = '';
+				_this.dispatchEvent(new Event('input'));
 			}
 		}, 1e3);
 	});
@@ -1994,7 +2002,7 @@ main.fireModal = function(navHTML, contentHTML) {
 		container.addEventListener('transitionend', () => container.remove());
 	});
 }
-main.toast = msg => main.fireModal('<p>提示</p>', `<p>${msg}</p>`);
+main.toast = msg => main.fireModal('<p>提示</p>', `<p style="white-space:pre;text-align:left;display:inline-block;">${msg}</p>`);
 main.define = (a) => { return a };
 /**
  * @typedef {{type:'command',meta:[string,function]}} PluginCommand

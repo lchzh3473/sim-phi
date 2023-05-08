@@ -6,7 +6,7 @@ export default hook.define({
 		meta: ['启用收集条', callback]
 	}]
 });
-const { status, stat } = hook;
+const { status, stat, app } = hook;
 /**
  * @param {HTMLInputElement} checkbox
  * @param {HTMLDivElement} container
@@ -28,26 +28,26 @@ let factor = 0;
 let lastTime = 0;
 
 function initGauge() {
-	const chart = hook.app.chart;
+	const chart = app.chart;
 	gauge.reset();
 	factor = calcGaugeFactor(chart.numOfNotes, stat.level >= 16);
-	gauge.speedInit = -factor * chart.numOfNotes / (hook.app.bgMusic.duration + 0.5);
+	gauge.speedInit = -factor * chart.numOfNotes / (app.bgMusic.duration + 0.5);
 	console.log('initGauge');
 	flags[0] = chart;
 	for (let i = 1; i < 8; i++) flags[i] = stat.noteRank[i];
 }
 
 function calcGauge(time) {
-	if (flags[0] !== hook.app.chart) initGauge();
+	if (flags[0] !== app.chart) initGauge();
 	if (gauge.dead) {
-		for (const note of hook.app.notes) {
+		for (const note of app.notes) {
 			if (!note.scored) {
 				note.status = 2;
 				stat.addCombo(2, note.type);
 				note.scored = true;
 			}
 		}
-		hook.time = hook.app.bgMusic.duration;
+		hook.time = app.bgMusic.duration;
 		// gauge.reset();
 		return;
 	}
@@ -77,7 +77,7 @@ function drawGauge() {
 }
 
 function drawGaugeBar(c, p) {
-	const { app: { ctxos, canvasos, lineScale } } = hook;
+	const { ctxos, canvasos, lineScale } = app;
 	ctxos.fillStyle = c;
 	ctxos.fillRect(canvasos.width / 2 - lineScale * 6 * clip(p), lineScale * 0.2, lineScale * 12 * clip(p), lineScale * 0.2);
 }

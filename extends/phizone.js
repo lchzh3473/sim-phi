@@ -9,13 +9,17 @@ export default hook.define({
 		meta: ['/random', random]
 	}]
 });
-const vtext = 'PhiZone API v0.7';
+const { msgHandler, uploader } = hook;
+const vtext = 'PhiZone API v0.7.1';
 const vprompt = str => prompt(`${vtext}\n${str}`);
-const valert = str => alert(`${vtext}\n${str}`);
+const valert = str => hook.toast(`${vtext}\n${str}`);
 async function dialog(num) {
 	const id = num || vprompt('请输入歌曲ID');
 	if (id === '' || id === null) return valert('未输入歌曲ID，已取消操作');
-	const data = await query(id).catch(err => valert(`无法连接至服务器\n错误代码：${err}`));
+	const data = await query(id).catch(err => {
+		valert(`无法连接至服务器\n错误代码：${err}`);
+		msgHandler.sendMessage('无法连接至服务器');
+	});
 	console.log(data);
 	if (!data) return;
 	if (!data.charts.length) return valert(`歌曲ID ${id} 对应的谱面不存在`);
@@ -29,7 +33,7 @@ async function random() {
 	await readData(data);
 }
 async function query(id) {
-	hook.msgHandler.sendMessage('等待服务器响应...');
+	msgHandler.sendMessage('等待服务器响应...');
 	const response = await fetch(`https://api.phi.zone/songs/${id | 0}/?query_charts=1`);
 	if (!response.ok) {
 		if (response.status === 404) return { charts: [] };
@@ -40,7 +44,7 @@ async function query(id) {
 	return getData(song.charts.filter(a => a.chart), song);
 }
 async function randomCore() {
-	hook.msgHandler.sendMessage('等待服务器响应...');
+	msgHandler.sendMessage('等待服务器响应...');
 	const response = await fetch(`https://api.phi.zone/charts/?pagination=0&query_charts=1`);
 	if (!response.ok) {
 		if (response.status === 404) return { charts: [] };
@@ -78,14 +82,14 @@ async function readData(data) {
 	}
 	const downloader = new Downloader();
 	const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
-	hook.msgHandler.sendMessage('获取资源列表...');
+	msgHandler.sendMessage('获取资源列表...');
 	await downloader.add(urls, ({ url, status, statusText }) => {
 		valert(`资源 '${dstr(url)}' 加载失败\n错误代码：${status} ${statusText}`);
 	});
-	await downloader.start(hook.uploader.fireProgress.bind(hook.uploader));
+	await downloader.start(uploader.fireProgress.bind(uploader));
 	const xhr4 = async (url, name) => {
 		const data = (await downloader.getData(url)) || new ArrayBuffer(0);
-		hook.uploader.fireLoad({ name }, data); //以后添加catch
+		uploader.fireLoad({ name }, data); //以后添加catch
 	};
 	await xhr4(data.song, dstr(data.song));
 	await xhr4(data.illustration, dstr(data.illustration));
@@ -108,7 +112,7 @@ async function readData(data) {
 			Offset: ${offset}
 		`;
 		const info = encoder.encode(infoText);
-		hook.uploader.fireLoad({ name: 'info.txt' }, info.buffer);
+		uploader.fireLoad({ name: 'info.txt' }, info.buffer);
 	}
 }
 /**
