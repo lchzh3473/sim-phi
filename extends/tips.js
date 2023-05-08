@@ -54,8 +54,8 @@ brain.addTip('<code style="white-space:pre;text-align:left;display:inline-block;
 function fireTip(elem) {
 	/**
 	 * @param {HTMLElement} elem
-	 * @param {Function} activeFn
-	 * @param {Function} doneFn
+	 * @param {()=>void} activeFn
+	 * @param {()=>void} doneFn
 	 */
 	function longPress(elem, activeFn, doneFn, failFn) {
 		let timer = null;

@@ -159,7 +159,7 @@ class Chart {
 	}
 }
 let /** @type {Map} */ kfcFkXqsVw50 = null;
-hook.kfcFkXqsVw50.push(async function() {
+hook.before.set('kfcFkXqsVw50', async function() {
 	if (!(kfcFkXqsVw50 instanceof Map)) return;
 	const /** @type {AudioBuffer} */ bgm = hook.bgms.get(hook.selectbgm.value).audio;
 	for (let i = 0; i < bgm.numberOfChannels; i++) bgm.getChannelData(i).reverse();
@@ -206,8 +206,8 @@ export function reverseChart(chart, duration) {
 }
 /**
  * @param {HTMLElement} elem 
- * @param {Function} activeFn 
- * @param {Function} doneFn 
+ * @param {()=>void} activeFn 
+ * @param {()=>void} doneFn 
  */
 function longPress(elem, activeFn, doneFn, failFn) {
 	let timer = null;

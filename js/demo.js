@@ -6,7 +6,7 @@ export default function() {
 		if (1 !== t.getDate() || 3 !== t.getMonth()) return;
 		import('./reverseChart.js');
 	})();
-	hook.kfcFkXqsVw50.push(function() {
+	hook.before.set('flag{qwq}', function() {
 		if (hook.chartsMD5.get(hook.selectchart.value) === 'ab9d2cc3eb569236ead459ad4caba109') {
 			console.log('好耶');
 			const analyser = hook.audio.actx.createAnalyser();
@@ -30,7 +30,7 @@ export default function() {
 				flagN = n;
 				return flag;
 			};
-			hook['flag{qwq}'] = time => {
+			hook.now.set('flag{qwq}', time => {
 				time *= hook.app.speed * 1.95;
 				const bgMusic = hook.tmps.bgMusic();
 				if (bgMusic && bgMusic !== flagMusic) {
@@ -68,8 +68,8 @@ export default function() {
 					else if (!flagN) flagEm = '(\u2299ω\u2299)';
 					hook.tmps.combo = flagEm;
 				}
-			};
-		} else hook['flag{qwq}'] = _ => {};
+			});
+		} else hook.now.delete('flag{qwq}');
 	});
 	const id = setInterval(function() {
 		if (!$('.title>small')) return;

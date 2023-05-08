@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b48'], 1611795955, 1683291486];
+self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b49'], 1611795955, 1683479490];
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const $$ = query => document.body.querySelectorAll(query);
@@ -19,10 +19,14 @@ const tween = {
 const main = {};
 main.modify = a => a;
 main.pressTime = 0;
-main.kfcFkXqsVw50 = [];
+/** @type {Map<string,()=>any>} */
+main.before = new Map();
+/** @type {Map<string,()=>any>} */
+main.now = new Map();
+/** @type {Map<string,()=>any>} */
+main.after = new Map();
 /** @type {(ctx:CanvasRenderingContext2D,time:number)=>void} */
 main.filter = null;
-main['flag{qwq}'] = _ => {};
 document.oncontextmenu = e => e.preventDefault(); //qwq
 for (const i of $id('view-nav').children) {
 	i.addEventListener('click', function() {
@@ -1008,7 +1012,7 @@ function mainLoop() {
 	//计算时间
 	if (qwqOut.second < 0.67) {
 		loopNoCanvas();
-		main['flag{qwq}'](timeBgm);
+		for (const i of main.now.values()) i(timeBgm);
 		loopCanvas();
 	} else if (!fucktemp1) {
 		fucktemp1 = true;
@@ -1161,6 +1165,7 @@ function loopCanvas() { //尽量不要在这里出现app
 	ctxos.drawImage(res['ProgressBar'], tmps.progress * 1920 - 1920, 0);
 	//绘制文字
 	ctxos.resetTransform();
+	for (const i of main.after.values()) i();
 	ctxos.fillStyle = '#fff';
 	//开头过渡动画
 	if (qwqIn.second < 3) {
@@ -1692,7 +1697,7 @@ class Checkbox {
 	toggle() {
 		this.checked = !this.checkbox.checked;
 	}
-	/** @param {Function} callback */
+	/** @param {(_:Checkbox,_)=>void} callback */
 	hook(callback = _ => {}) {
 		callback(this.checkbox, this.container);
 		return this;
@@ -1855,7 +1860,7 @@ async function qwqStop() {
 	if (emitter.eq('stop')) {
 		if (!selectchart.value) return msgHandler.sendError('错误：未选择任何谱面');
 		if (!selectbgm.value) return msgHandler.sendError('错误：未选择任何音乐');
-		for (const kfc of main.kfcFkXqsVw50) await kfc();
+		for (const i of main.before.values()) await i();
 		audio.play(res['mute'], { loop: true, isOut: false }); //播放空音频(避免音画不同步)
 		app.prerenderChart(main.modify(charts.get(selectchart.value))); //fuckqwq
 		const md5 = chartsMD5.get(selectchart.value);
@@ -2015,6 +2020,7 @@ main.use('./extends/tips.js');
 main.use('./extends/filter.js');
 main.use('./extends/skin.js');
 main.use('./extends/export.js');
+main.use('./extends/gauge.js');
 //debug
 export const hook = self['hook'] = main;
 main.stat = stat;
@@ -2035,6 +2041,10 @@ main.tmps = tmps;
 main.qwq = qwq;
 main.qwqwq = false;
 main.pause = () => emitter.eq('play') && qwqPause();
+Object.defineProperty(main, 'playing', {
+	get: () => emitter.eq('play'),
+	// set: v => v ? qwqPause() : qwqPause()
+});
 Object.defineProperty(main, 'time', {
 	get: () => timeBgm,
 	set: async v => {
