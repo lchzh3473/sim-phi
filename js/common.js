@@ -235,7 +235,7 @@ export function csv2array(data, isObject) {
 export const urls = {
 	jszip: ['//unpkg.com/jszip/dist/jszip.min.js', '//cdn.jsdelivr.net/npm/jszip', '//fastly.jsdelivr.net/npm/jszip'],
 	browser: ['//cdn.jsdelivr.net/gh/mumuy/browser/Browser.js', '//fastly.jsdelivr.net/gh/mumuy/browser/Browser.js' /* , '//passer-by.com/browser/Browser.js' */ ],
-	bitmap: ['//cdn.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js', '//fastly.jsdelivr.net/gh/Kaiido/createImageBitmap/dist/createImageBitmap.js'],
+	bitmap: ['//cdn.jsdelivr.net/gh/lchz\x683\x3473/createImageBitmap/dist/createImageBitmap.js', '//fastly.jsdelivr.net/gh/lchz\x683\x3473/createImageBitmap/dist/createImageBitmap.js'],
 	blur: ['//unpkg.com/stackblur-canvas/dist/stackblur.min.js', '//cdn.jsdelivr.net/npm/stackblur-canvas', '//fastly.jsdelivr.net/npm/stackblur-canvas'],
 	md5: ['//unpkg.com/md5-js/md5.min.js', '//cdn.jsdelivr.net/npm/md5-js', '//fastly.jsdelivr.net/npm/md5-js']
 };
@@ -247,6 +247,51 @@ export const getConstructorName = obj => {
 export const isUndefined = name => self[name] === undefined;
 //Legacy
 {
+	//兼容EventTarget() for Safari 14-
+	try {
+		new EventTarget();
+	} catch (e) {
+		self.EventTarget = function() {
+			this.listeners = {};
+		};
+		EventTarget.prototype = {
+			constructor: EventTarget,
+			addEventListener(type, callback) {
+				if (!(type in this.listeners)) this.listeners[type] = [];
+				this.listeners[type].push(callback);
+			},
+			removeEventListener(type, callback) {
+				if (!(type in this.listeners)) return;
+				const stack = this.listeners[type];
+				for (let i = 0, l = stack.length; i < l; i++) {
+					if (stack[i] === callback) {
+						stack.splice(i, 1);
+						return;
+					}
+				}
+			},
+			dispatchEvent(event) {
+				if (!(event.type in this.listeners)) return true;
+				const stack = this.listeners[event.type];
+				// event.target = this;
+				for (let i = 0, l = stack.length; i < l; i++) {
+					stack[i].call(this, event);
+				}
+				return !event.defaultPrevented;
+			}
+		};
+	}
+	//兼容Error.cause for Safari 15-
+	if (new Error('', { cause: 'qwq' }).cause !== 'qwq') {
+		class Error extends self.Error {
+			constructor(message, { cause } = {}) {
+				super(message);
+				this.cause = cause;
+			}
+		}
+		self.Error = Error;
+	}
+	//兼容DOMException.stack for qwq
 	class DOMException extends self.DOMException {
 		constructor(message, name) {
 			super(message, name);
@@ -268,7 +313,7 @@ export function loadJS(urls) {
 		script.onload = () => resolve(script);
 		script.onerror = () => load(args.next().value).then(script => resolve(script)).catch(e => reject(e));
 		script.src = url;
-		script.crossOrigin = 'anonymous';
+		if (!location.port) script.crossOrigin = 'anonymous';
 		document.head.appendChild(script);
 	});
 	return load(args.next().value);

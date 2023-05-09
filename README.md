@@ -16,7 +16,7 @@ lchz&#104; 并不拥有官方素材(如音符贴图/打击音效/结算UI)的版
 
 - [@Mac-Fus](https://space.bilibili.com/319384496) 提供Mac虚拟机支持
 - [@星星awa](https://space.bilibili.com/111933676) 提供Safari兼容方案
-- [@luch4736](https://space.bilibili.com/481266830) 提供直接的iOS设备和支持qwq
+- [@luch4736](https://space.bilibili.com/481266830) [@cgluWxh](https://space.bilibili.com/343672879) 提供直接的iOS设备和支持qwq
 - 以及看到这个页面的你！
 
 ## 许可证
@@ -46,6 +46,8 @@ lchz&#104; 并不拥有官方素材(如音符贴图/打击音效/结算UI)的版
 
 #### 优化
 
+- 兼容Safari 12.5.7+ (仅运行/不保证性能)
+  - 感谢 [@cgluWxh](https://space.bilibili.com/343672879) 提供 `iPhone 6 (2014)` 设备支持
 - 重构谱面预处理和判定模块，也许会提升性能
 - 重构pec谱面读取模块，为支持导入RPE格式的谱面做准备
 - 针对判定区域重叠的情况进行优化：
@@ -120,6 +122,7 @@ lchz&#104; 并不拥有官方素材(如音符贴图/打击音效/结算UI)的版
 - 优化不支持类型错误信息的显示
 - 为不支持或禁用全屏功能的浏览器提供兼容 (充满屏幕)
 - 优化图片着色，避免 iOS 15.6+ 出现`InvalidStateError`错误信息
+  - 感谢 [@luch4736](https://space.bilibili.com/481266830) 提供 `iPad Pro (2016)` 设备支持
 
 #### 更改
 

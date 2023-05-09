@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b50'], 1611795955, 1683559733];
+self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b51'], 1611795955, 1683631022];
 /** @type {(arg0:string)=>any} */
 const $id = query => document.getElementById(query);
 /** @type {(arg0:string)=>any} */
@@ -193,7 +193,7 @@ async function checkSupport() {
 		const text = '检测到小米浏览器且版本低于17.4，可能存在切后台声音消失的问题';
 		if (!version || parseFloat(version[1]) < 17.4) msgHandler.sendWarning(text);
 	}
-	if (!await loadLib('ImageBitmap兼容', urls.bitmap, () => isUndefined('createImageBitmap'))) return -1;
+	if (!await loadLib('ImageBitmap兼容', '/lib/createImageBitmap.js', () => isUndefined('createImageBitmap'))) return -1;
 	if (!await loadLib('StackBlur', urls.blur, () => isUndefined('StackBlur'))) return -2;
 	if (!await loadLib('md5', urls.md5, () => isUndefined('md5'))) return -3;
 	msgHandler.sendMessage('加载声音组件...');
