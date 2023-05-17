@@ -3,7 +3,7 @@ import { audio } from '/utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
 import { InteractProxy } from '/utils/interact.js';
-self['_i'] = ['Phi\x67ros模拟器', [1, 4, 22, 'b51'], 1611795955, 1683631022];
+self['_i'] = ['PhigrosPlayer', [1, 4, 22, 'b51'], 1611795955, 1683631022];
 /** @type {(arg0:string)=>any} */
 const $id = query => document.getElementById(query);
 /** @type {(arg0:string)=>any} */
@@ -89,7 +89,7 @@ const msgHandler = {
 			this.nodeText.innerText = msg;
 		} else {
 			this.nodeText.className = num ? 'warning' : 'accept';
-			this.nodeText.innerText = msg + (num ? `（发现${num}个问题，点击查看）` : '');
+			this.nodeText.innerText = msg + (num ? `（发现${num}个问题，你可以选择忽略）` : '');
 			this.lastMessage = msg;
 		}
 	},
@@ -881,7 +881,7 @@ window.addEventListener('load', async function() {
 	msgHandler.sendMessage('初始化...');
 	if (await checkSupport()) return;
 	const res0 = {};
-	const raw = await fetch(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).then(i => i.json());
+	const raw = await fetch(atob('Li9kYXRhL3BhY2suanNvbg==')).then(i => i.json());
 	for (const j in raw.image || {}) res0[j] = raw.image[j];
 	for (const j in raw.audio || {}) res0[j] = raw.audio[j];
 	//加载资源
@@ -1056,7 +1056,7 @@ function mainLoop() {
 	ctx.fillStyle = '#ccc';
 	ctx.globalAlpha = 0.8;
 	ctx.textAlign = 'right';
-	ctx.fillText(`Phi\x67ros Simulator v${self['_i'][1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
+	ctx.fillText(`lchz\x683\x3473`, (canvas.width + canvasos.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
 }
 
 function loopNoCanvas() {

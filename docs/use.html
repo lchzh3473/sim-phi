@@ -2,297 +2,315 @@
 <html>
 
 <head>
-	<meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1">
-	<base target="_blank">
-	<title>(っ °Д °;)っ</title>
-	<link rel="stylesheet" href="/utils/style.css">
-	<link rel="stylesheet" href="./style.css">
-	<script src="/utils/main.js"></script>
+    <meta charset="utf-8" content="width=device-width,initial-scale=1" name="viewport">
+    <base target="_blank">
+    <title>(っ °Д °;)っ</title>
+    <link href="/utils/style.css" rel="stylesheet">
+    <link href="./style.css" rel="stylesheet">
+    <script src="/utils/main.js"></script>
 </head>
 
 <body>
-	<details>
-		<summary><strong>关于Phi&#103;ros模拟器</strong></summary>
-		<p>如题，用 js/canvas 还原 Phi&#103;ros 游戏画面，属于个人兴趣项目，仅用于学习和测试；</p>
-		<p>模拟器代码部分为 <a href="//space.bilibili.com/274753872">@lchz&#104;3473</a> 独立编写，与《<a href="//www.taptap.com/app/165287">Phi&#103;ros</a>》游戏本体无关，您因使用或修改代码所造成的一切后果由您自己承担；</p>
-		<p>不提供游戏本体安装包及逆向工具/教程，也不提供谱面下载；</p>
-		<p>模拟器并不拥有官方素材(如音符贴图/打击音效/结算UI)的版权，如有侵权请<a href="mailto:lchz%683473@163.com?subject=[GitHub]lchz%683473/sim-phi">联系模拟器作者</a>下架相关内容。</p>
-		<p>特别感谢 <a href="//space.bilibili.com/319384496" title="Mac虚拟机支持">@Mac-Fus</a>
-			<a href="//space.bilibili.com/111933676" title="Safari兼容方案">@星星awa</a>
-			<a href="//space.bilibili.com/481266830" title="直接的iOS设备和支持qwq">@luch4736</a> <a href="//space.bilibili.com/343672879" title="直接的iOS设备和支持qwq">@cgluWxh</a> 提供针对苹果设备的技术支持！
-		</p>
-		<p>相关页面：<a href="//www.wjx.cn/vj/OIIAfIG.aspx">问题反馈</a>
-			<a href="//shimo.im/docs/wV3VVYm21EummE3y">宣传规则</a>
-		</p>
-	</details>
-	<details>
-		<summary><strong>资源文件说明</strong></summary>
-		<table class="real-table view-table">
-			<tr>
-				<th class="left">内容<a name="content1" href="#content2" target="_self"><sup>[1]</sup></a></th>
-				<th class="left">必要性</th>
-				<th class="right">支持的文件格式<a name="format1" href="#format2" target="_self"><sup>[2]</sup></a></th>
-			</tr>
-			<tr>
-				<th class="left">谱面文件</th>
-				<th class="left">必需</th>
-				<th class="right">json<a name="json1" href="#json2" target="_self"><sup>[3]</sup></a>/pec<a name="pec1" href="#pec2" target="_self"><sup>[4]</sup></a></th>
-			</tr>
-			<tr>
-				<th class="left">背景音乐</th>
-				<th class="left">必需</th>
-				<th class="right">aac/flac/mp3/ogg/wav/webm</th>
-			</tr>
-			<tr>
-				<th class="left">背景图片</th>
-				<th class="left">可选</th>
-				<th class="right">jpeg/jpg/gif<a name="gif1" href="#gif2" target="_self"><sup>[5]</sup></a>/png/webp</th>
-			</tr>
-			<tr>
-				<th class="left">配置文件</th>
-				<th class="left">可选</th>
-				<th class="right">info.csv<a name="info1" href="#info2" target="_self"><sup>[6]</sup></a>/line.csv<a name="line1" href="#line2" target="_self"><sup>[7]</sup></a></th>
-			</tr>
-		</table>
-		<hr>
-		<table class="view-table">
-			<tr>
-				<td class="left"><a name="content2" href="#content1" target="_self">[1]</a></td>
-				<td class="right">以.开头的文件和文件夹将被隐藏，不会显示在选项框</td>
-			</tr>
-			<tr>
-				<td class="left"><a name="format2" href="#format1" target="_self">[2]</a></td>
-				<td class="right">仅供参考，实际上部分浏览器可能支持更多格式(若不确定是否可用亦可尝试上传，模拟器支持过滤无效文件)</td>
-			</tr>
-			<tr>
-				<td class="left"><a name="json2" href="#json1" target="_self">[3]</a></td>
-				<td class="right">json即官方谱面，模拟器几乎完全支持(不提供谱面下载)</td>
-			</tr>
-			<tr>
-				<td class="left"><a name="pec2" href="#pec1" target="_self">[4]</a></td>
-				<td class="right">pec即PhiEditer谱面，由于模拟器先将其转换为官谱格式再进行播放，将不可避免地存在以下问题：<br>&bull;&ensp;不显示下落方向与垂直位置位于判定线同侧的Note(可勾选显示定位点以半透明显示);<br>&bull;&ensp;FakeNote可能存在显示错误;<br>&bull;&ensp;Hold打击时无法变速;<br>&bull;&ensp;不支持Alpha扩展(负数);<br>其他PhiEditer独有特性也有可能无法正常显示</td>
-			</tr>
-			<tr>
-				<td class="left"><a name="gif2" href="#gif1" target="_self">[5]</a></td>
-				<td class="right">动态图片将取第一帧以静态图显示</td>
-			</tr>
-			<tr>
-				<td class="left"><a name="info2" href="#info1" target="_self">[6]</a></td>
-				<td class="right">info.csv：置于zip文件根目录，用于自动填写谱面信息 (参考:<a href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,Music,Image,Name,Artist,Level,Illustrator,Charter,AspectRatio,NoteScale,BackgroundDim<br>
-					<table class="real-table">
-						<tr>
-							<th class="left">属性</th>
-							<th class="right">说明</th>
-						</tr>
-						<tr>
-							<td class="left">Chart</td>
-							<td class="right">谱面(zip文件内完整路径)</td>
-						</tr>
-						<tr>
-							<td class="left">Music</td>
-							<td class="right">音乐(zip文件内完整路径)</td>
-						</tr>
-						<tr>
-							<td class="left">Image</td>
-							<td class="right">图片(zip文件内完整路径)</td>
-						</tr>
-						<tr>
-							<td class="left">Name</td>
-							<td class="right">名称(显示在画面左下角)</td>
-						</tr>
-						<tr>
-							<td class="left">Artist</td>
-							<td class="right">曲师(显示位置待定)</td>
-						</tr>
-						<tr>
-							<td class="left">Level</td>
-							<td class="right">等级(显示在画面右下角)</td>
-						</tr>
-						<tr>
-							<td class="left">Illustrator</td>
-							<td class="right">曲绘(显示于过渡动画)</td>
-						</tr>
-						<tr>
-							<td class="left">Charter</td>
-							<td class="right">谱师(显示于过渡动画)</td>
-						</tr>
-						<tr>
-							<td class="left">AspectRatio</td>
-							<td class="right">宽高比(画面宽度与高度的比值，默认1.777778，即16:9)</td>
-						</tr>
-						<tr>
-							<td class="left">NoteScale</td>
-							<td class="right">按键缩放(数值越大Note越大，默认1)</td>
-						</tr>
-						<tr>
-							<td class="left">BackgroundDim</td>
-							<td class="right">背景变暗(背景不透明度，默认0.6)</td>
-						</tr>
-					</table>
-				</td>
-			</tr>
-			<tr>
-				<td class="left"><a name="line2" href="#line1" target="_self">[7]</a></td>
-				<td class="right">line.csv：置于zip文件根目录，用于替换指定判定线贴图 (参考:<a href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,LineId,Image,Scale,Aspect,UseBackgroundDim,UseLineColor,UseLineScale<br>
-					<table class="real-table">
-						<tr>
-							<th class="left">属性</th>
-							<th class="right">说明</th>
-						</tr>
-						<tr>
-							<td class="left">Chart</td>
-							<td class="right">谱面(zip文件内完整路径)</td>
-						</tr>
-						<tr>
-							<td class="left">LineId</td>
-							<td class="right">判定线id(即判定线数组下标，从0开始)</td>
-						</tr>
-						<tr>
-							<td class="left">Image</td>
-							<td class="right">图片(zip文件内完整路径)</td>
-						</tr>
-						<tr>
-							<td class="left">Scale</td>
-							<td class="right">缩放(将图片以画面单位高度(画面高度/1080)整体缩放，默认1)</td>
-						</tr>
-						<tr>
-							<td class="left">Aspect</td>
-							<td class="right">拉伸(将图片水平拉伸至原来的若干倍，默认1)</td>
-						</tr>
-						<tr>
-							<td class="left">UseBackgroundDim</td>
-							<td class="right">跟随背景变暗(1:是；0:否，即图片亮度不受背景变暗的影响；默认0)</td>
-						</tr>
-						<tr>
-							<td class="left">UseLineColor</td>
-							<td class="right">跟随FC/AP指示器着色(1:是，即图片随FC/AP指示器着色；0:否；默认1)</td>
-						</tr>
-						<tr>
-							<td class="left">UseLineScale</td>
-							<td class="right">使用判定线缩放策略(1:是，即宽高比小于3:4时缩放受画面宽度影响；0:否；默认1)</td>
-						</tr>
-					</table>
-				</td>
-			</tr>
-		</table>
-	</details>
-	<details>
-		<summary><strong>常见问题</strong></summary>
-		<table class="view-table">
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">现在支持哪些浏览器？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">
-					<table class="real-table">
-						<tr>
-							<th class="left">系统</th>
-							<th class="right">可能支持的浏览器</th>
-						</tr>
-						<tr>
-							<td class="left">Windows</td>
-							<td class="right">Chrome 80+/Edge 80+/Firefox 86+/Opera 67+</td>
-						</tr>
-						<tr>
-							<td class="left">MacOS</td>
-							<td class="right">Safari 14.1+</td>
-						</tr>
-						<tr>
-							<td class="left">iOS</td>
-							<td class="right">Safari 14.5+</td>
-						</tr>
-						<tr>
-							<td class="left">Android</td>
-							<td class="right">数据暂缺</td>
-						</tr>
-					</table>
-				</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">读取文件时浏览器闪退/自动刷新？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">可能是文件大小超过浏览器内存限制所致，可尝试精简文件大小、更换设备或浏览器重试。</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">部分浏览器全屏时滑动意外地调节亮度或音量怎么办？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">由于全屏附加操作不属于任何浏览器标准，若浏览器没有相应的设置或开关，建议更换浏览器。</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">部分浏览器点击上传按钮无反应？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">建议更换设备或浏览器。</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">iPad全屏连续点击画面时出现“不允许在全屏显示的网站键入”？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">系统级提示无法关闭，建议退出全屏、缩放界面进行交互。</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">iOS设备从其他App选择文件时出现“无法与帮助程序通信”？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">由于苹果系统限制，不同应用的文件无法直接传输；建议通过网页链接从浏览器下载。特别地，<a href="//apps.apple.com/app/id1441621965">ES文件浏览器</a>可以在应用内登录百度账号，从而将百度网盘文件下载到本地；从百度网盘传输的文件可以考虑这种方式。</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">如何获取自制谱或制谱软件？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">参考：<a href="//red.lchz%68.xyz/bili_space_top?mid=24172195">网页链接</a>
-				</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">移动端多指同时放在屏幕上容易断触，如何解决？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">可能是触发手势操作引起的；为规避此类问题，请尝试固定一根手指在屏幕上；如果触摸仍然中断，则需要考虑浏览器是否支持多指。</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">移动端点击重置时会跳转到新页面？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">部分浏览器点击重置可能会加载新页面，此时点击浏览器自带的刷新即可。</td>
-			</tr>
-			<tr>
-				<th class="left">Q:</th>
-				<th class="right">屏幕支持高刷新率(如120fps)，画面却显示60fps甚至更低？</th>
-			</tr>
-			<tr>
-				<td class="left">A:</td>
-				<td class="right">屏幕支持高刷新率不代表浏览器支持，可使用在线工具<a href="//www.testufo.com">UFO Test</a>测试浏览器支持的最高刷新率；此外设备设置（如低电量模式）与自身性能和其他应用的运行以及浏览器多页面同时运行也可能影响画面的刷新率。</td>
-			</tr>
-			<tr>
-				<th class="left"></th>
-				<th class="right">(最后更新于2022/09/09 22:11)</th>
-			</tr>
-		</table>
-	</details>
-	<details>
-		<summary><strong>更多</strong></summary>
-		<p>内容正在建设中...</p>
-	</details>
+<details>
+    <summary><strong>关于Phi&#103;ros模拟器</strong></summary>
+    <p>如题，用 js/canvas 还原 Phi&#103;ros 游戏画面，属于个人兴趣项目，仅用于学习和测试；</p>
+    <p>模拟器代码部分为 <a href="//space.bilibili.com/274753872">@lchz&#104;3473</a> 独立编写，与《<a
+            href="//www.taptap.com/app/165287">Phi&#103;ros</a>》游戏本体无关，您因使用或修改代码所造成的一切后果由您自己承担；
+    </p>
+    <p>不提供游戏本体安装包及逆向工具/教程，也不提供谱面下载；</p>
+    <p>模拟器并不拥有官方素材(如音符贴图/打击音效/结算UI)的版权，如有侵权请<a
+            href="mailto:lchz%683473@163.com?subject=[GitHub]lchz%683473/sim-phi">联系模拟器作者</a>下架相关内容。</p>
+    <p>特别感谢 <a href="//space.bilibili.com/319384496" title="Mac虚拟机支持">@Mac-Fus</a>
+        <a href="//space.bilibili.com/111933676" title="Safari兼容方案">@星星awa</a>
+        <a href="//space.bilibili.com/481266830" title="直接的iOS设备和支持qwq">@luch4736</a> <a
+                href="//space.bilibili.com/343672879" title="直接的iOS设备和支持qwq">@cgluWxh</a> 提供针对苹果设备的技术支持！
+    </p>
+    <p>相关页面：<a href="//www.wjx.cn/vj/OIIAfIG.aspx">问题反馈</a>
+        <a href="//shimo.im/docs/wV3VVYm21EummE3y">宣传规则</a>
+    </p>
+</details>
+<details>
+    <summary><strong>资源文件说明</strong></summary>
+    <table class="real-table view-table">
+        <tr>
+            <th class="left">内容<a href="#content2" name="content1" target="_self"><sup>[1]</sup></a></th>
+            <th class="left">必要性</th>
+            <th class="right">支持的文件格式<a href="#format2" name="format1" target="_self"><sup>[2]</sup></a></th>
+        </tr>
+        <tr>
+            <th class="left">谱面文件</th>
+            <th class="left">必需</th>
+            <th class="right">json<a href="#json2" name="json1" target="_self"><sup>[3]</sup></a>/pec<a href="#pec2"
+                                                                                                        name="pec1"
+                                                                                                        target="_self"><sup>[4]</sup></a>
+            </th>
+        </tr>
+        <tr>
+            <th class="left">背景音乐</th>
+            <th class="left">必需</th>
+            <th class="right">aac/flac/mp3/ogg/wav/webm</th>
+        </tr>
+        <tr>
+            <th class="left">背景图片</th>
+            <th class="left">可选</th>
+            <th class="right">jpeg/jpg/gif<a href="#gif2" name="gif1" target="_self"><sup>[5]</sup></a>/png/webp</th>
+        </tr>
+        <tr>
+            <th class="left">配置文件</th>
+            <th class="left">可选</th>
+            <th class="right">info.csv<a href="#info2" name="info1" target="_self"><sup>[6]</sup></a>/line.csv<a
+                    href="#line2" name="line1" target="_self"><sup>[7]</sup></a></th>
+        </tr>
+    </table>
+    <hr>
+    <table class="view-table">
+        <tr>
+            <td class="left"><a href="#content1" name="content2" target="_self">[1]</a></td>
+            <td class="right">以.开头的文件和文件夹将被隐藏，不会显示在选项框</td>
+        </tr>
+        <tr>
+            <td class="left"><a href="#format1" name="format2" target="_self">[2]</a></td>
+            <td class="right">
+                仅供参考，实际上部分浏览器可能支持更多格式(若不确定是否可用亦可尝试上传，模拟器支持过滤无效文件)
+            </td>
+        </tr>
+        <tr>
+            <td class="left"><a href="#json1" name="json2" target="_self">[3]</a></td>
+            <td class="right">json即官方谱面，模拟器几乎完全支持(不提供谱面下载)</td>
+        </tr>
+        <tr>
+            <td class="left"><a href="#pec1" name="pec2" target="_self">[4]</a></td>
+            <td class="right">pec即PhiEditer谱面，由于模拟器先将其转换为官谱格式再进行播放，将不可避免地存在以下问题：<br>&bull;&ensp;不显示下落方向与垂直位置位于判定线同侧的Note(可勾选显示定位点以半透明显示);<br>&bull;&ensp;FakeNote可能存在显示错误;<br>&bull;&ensp;Hold打击时无法变速;<br>&bull;&ensp;不支持Alpha扩展(负数);<br>其他PhiEditer独有特性也有可能无法正常显示
+            </td>
+        </tr>
+        <tr>
+            <td class="left"><a href="#gif1" name="gif2" target="_self">[5]</a></td>
+            <td class="right">动态图片将取第一帧以静态图显示</td>
+        </tr>
+        <tr>
+            <td class="left"><a href="#info1" name="info2" target="_self">[6]</a></td>
+            <td class="right">info.csv：置于zip文件根目录，用于自动填写谱面信息 (参考:<a
+                    href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,Music,Image,Name,Artist,Level,Illustrator,Charter,AspectRatio,NoteScale,BackgroundDim<br>
+                <table class="real-table">
+                    <tr>
+                        <th class="left">属性</th>
+                        <th class="right">说明</th>
+                    </tr>
+                    <tr>
+                        <td class="left">Chart</td>
+                        <td class="right">谱面(zip文件内完整路径)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Music</td>
+                        <td class="right">音乐(zip文件内完整路径)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Image</td>
+                        <td class="right">图片(zip文件内完整路径)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Name</td>
+                        <td class="right">名称(显示在画面左下角)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Artist</td>
+                        <td class="right">曲师(显示位置待定)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Level</td>
+                        <td class="right">等级(显示在画面右下角)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Illustrator</td>
+                        <td class="right">曲绘(显示于过渡动画)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Charter</td>
+                        <td class="right">谱师(显示于过渡动画)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">AspectRatio</td>
+                        <td class="right">宽高比(画面宽度与高度的比值，默认1.777778，即16:9)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">NoteScale</td>
+                        <td class="right">按键缩放(数值越大Note越大，默认1)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">BackgroundDim</td>
+                        <td class="right">背景变暗(背景不透明度，默认0.6)</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td class="left"><a href="#line1" name="line2" target="_self">[7]</a></td>
+            <td class="right">line.csv：置于zip文件根目录，用于替换指定判定线贴图 (参考:<a
+                    href="//www.rfc-editor.org/rfc/rfc4180" target="_blank">csv标准文档</a>)<br>格式：Chart,LineId,Image,Scale,Aspect,UseBackgroundDim,UseLineColor,UseLineScale<br>
+                <table class="real-table">
+                    <tr>
+                        <th class="left">属性</th>
+                        <th class="right">说明</th>
+                    </tr>
+                    <tr>
+                        <td class="left">Chart</td>
+                        <td class="right">谱面(zip文件内完整路径)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">LineId</td>
+                        <td class="right">判定线id(即判定线数组下标，从0开始)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Image</td>
+                        <td class="right">图片(zip文件内完整路径)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Scale</td>
+                        <td class="right">缩放(将图片以画面单位高度(画面高度/1080)整体缩放，默认1)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Aspect</td>
+                        <td class="right">拉伸(将图片水平拉伸至原来的若干倍，默认1)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">UseBackgroundDim</td>
+                        <td class="right">跟随背景变暗(1:是；0:否，即图片亮度不受背景变暗的影响；默认0)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">UseLineColor</td>
+                        <td class="right">跟随FC/AP指示器着色(1:是，即图片随FC/AP指示器着色；0:否；默认1)</td>
+                    </tr>
+                    <tr>
+                        <td class="left">UseLineScale</td>
+                        <td class="right">使用判定线缩放策略(1:是，即宽高比小于3:4时缩放受画面宽度影响；0:否；默认1)</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</details>
+<details>
+    <summary><strong>常见问题</strong></summary>
+    <table class="view-table">
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">现在支持哪些浏览器？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">
+                <table class="real-table">
+                    <tr>
+                        <th class="left">系统</th>
+                        <th class="right">可能支持的浏览器</th>
+                    </tr>
+                    <tr>
+                        <td class="left">Windows</td>
+                        <td class="right">Chrome 80+/Edge 80+/Firefox 86+/Opera 67+</td>
+                    </tr>
+                    <tr>
+                        <td class="left">MacOS</td>
+                        <td class="right">Safari 14.1+</td>
+                    </tr>
+                    <tr>
+                        <td class="left">iOS</td>
+                        <td class="right">Safari 14.5+</td>
+                    </tr>
+                    <tr>
+                        <td class="left">Android</td>
+                        <td class="right">数据暂缺</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">读取文件时浏览器闪退/自动刷新？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">可能是文件大小超过浏览器内存限制所致，可尝试精简文件大小、更换设备或浏览器重试。</td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">部分浏览器全屏时滑动意外地调节亮度或音量怎么办？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">由于全屏附加操作不属于任何浏览器标准，若浏览器没有相应的设置或开关，建议更换浏览器。</td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">部分浏览器点击上传按钮无反应？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">建议更换设备或浏览器。</td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">iPad全屏连续点击画面时出现“不允许在全屏显示的网站键入”？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">系统级提示无法关闭，建议退出全屏、缩放界面进行交互。</td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">iOS设备从其他App选择文件时出现“无法与帮助程序通信”？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">由于苹果系统限制，不同应用的文件无法直接传输；建议通过网页链接从浏览器下载。特别地，<a
+                    href="//apps.apple.com/app/id1441621965">ES文件浏览器</a>可以在应用内登录百度账号，从而将百度网盘文件下载到本地；从百度网盘传输的文件可以考虑这种方式。
+            </td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">如何获取自制谱或制谱软件？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">参考：<a href="//red.lchz%68.xyz/bili_space_top?mid=24172195">网页链接</a>
+            </td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">移动端多指同时放在屏幕上容易断触，如何解决？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">
+                可能是触发手势操作引起的；为规避此类问题，请尝试固定一根手指在屏幕上；如果触摸仍然中断，则需要考虑浏览器是否支持多指。
+            </td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">移动端点击重置时会跳转到新页面？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">部分浏览器点击重置可能会加载新页面，此时点击浏览器自带的刷新即可。</td>
+        </tr>
+        <tr>
+            <th class="left">Q:</th>
+            <th class="right">屏幕支持高刷新率(如120fps)，画面却显示60fps甚至更低？</th>
+        </tr>
+        <tr>
+            <td class="left">A:</td>
+            <td class="right">屏幕支持高刷新率不代表浏览器支持，可使用在线工具<a href="//www.testufo.com">UFO Test</a>测试浏览器支持的最高刷新率；此外设备设置（如低电量模式）与自身性能和其他应用的运行以及浏览器多页面同时运行也可能影响画面的刷新率。
+            </td>
+        </tr>
+        <tr>
+            <th class="left"></th>
+            <th class="right">(最后更新于2022/09/09 22:11)</th>
+        </tr>
+    </table>
+</details>
+<details>
+    <summary><strong>更多</strong></summary>
+    <p>内容正在建设中...</p>
+</details>
 </body>
 
 </html>

@@ -1,23 +1,23 @@
 {
-	"compilerOptions": {
-		"module": "CommonJS",
-		"target": "ESNext",
-		"baseUrl": ".",
-		"paths": {
-			"/utils/*": [
-				"utils/*"
-			]
-		},
-	},
-	"include": [
-		"js/*",
-		"utils/*",
-		"worker/*",
-		"extends/*",
-		"./script.js"
-	],
-	"exclude": [
-		"**/*-min.*",
-		"**/* copy.*"
-	]
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ESNext",
+    "baseUrl": ".",
+    "paths": {
+      "/utils/*": [
+        "utils/*"
+      ]
+    }
+  },
+  "include": [
+    "js/*",
+    "utils/*",
+    "worker/*",
+    "extends/*",
+    "./script.js"
+  ],
+  "exclude": [
+    "**/*-min.*",
+    "**/* copy.*"
+  ]
 }

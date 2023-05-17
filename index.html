@@ -1,169 +1,299 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-	<!--viewport-fit=cover:Fill the whole screen on iPhone X-->
-	<meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-	<title>(っ °Д °;)っ</title>
-	<link rel="manifest" href="./manifest.json">
-	<link rel="stylesheet" href="/utils/style.css">
-	<link rel="stylesheet" href="style.css?v=142241">
-	<script>
-		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.register('/service-worker.js').then(() => { console.log('Service Worker Registered'); });
-		}
-	</script>
-	<script>
-		; (function () {
-			var src = '//fastly.jsdelivr.net/npm/eruda';
-			if (!(new URLSearchParams(location.search)).has('test')) return;
-			document.write('<scr' + 'ipt src="' + src + '"></scr' + 'ipt>');
-			document.write('<scr' + 'ipt>eruda.init();</scr' + 'ipt>');
-		})();
-	</script>
-	<script>if (!window.Promise) location.href = '/412.html';</script>
-	<script src="/utils/main.js"></script>
-	<script type="module" src="script.js?v=142251"></script>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>PhigrosPlayer</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="./utils/main.js"></script>
+    <script src="./script.js" type="module"></script>
 </head>
-
 <body>
-	<noscript><strong style="color:#f00">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
-	<div class="index">
-		<div class="main">
-			<h1 class="title"></h1>
-			<p class="info"></p>
-			<p class="profile">上传<a id="qwq">谱面和资源文件</a>或将其打包成zip然后上传；<br>读取完成后调节相关参数，最后点击“播放”按钮。<br>播放时双击画面：左上角暂停；右上角重新开始；右下角全屏。</p>
-			<div id="uploader" class="disabled">
-				<input type="button" id="uploader-upload" value="上传">
-				<div id="uploader-select">
-					<label id="uploader-file">上传文件</label>
-					<label id="uploader-dir">上传文件夹</label>
-				</div>
-			</div>
-			<input type="button" value="重置" onclick="location.reload(true)">
-			<input type="button" id="btn-more" value="更多设置">
-			<div id="select" class="disabled">
-				<div>谱面：<select id="select-chart" style="width:6em"></select></div>
-				<div>音乐：<select id="select-bgm" style="width:6em"></select></div>
-				<div>图片：<select id="select-bg" style="width:6em"></select></div><br>
-				<div>宽高比：<select id="select-aspect-ratio" style="width:4em">
-						<option value="1.25">5:4</option>
-						<option value="1.333333">4:3</option>
-						<option value="1.4316546762589928">10:7</option>
-						<option value="1.461538">19:13</option>
-						<option value="1.6">8:5</option>
-						<option value="1.666667">5:3</option>
-						<option value="1.692308">22:13</option>
-						<option value="1.777778" selected>16:9</option>
-					</select>
-				</div>
-				<div>按键缩放：<select id="select-note-scale" style="width:4em">
-						<option value="0.8">极小</option>
-						<option value="0.9">较小</option>
-						<option value="1" selected>默认</option>
-						<option value="1.15">较大</option>
-						<option value="1.3">极大</option>
-					</select>
-				</div>
-				<div>背景变暗：<select id="select-background-dim" style="width:4em">
-						<option value="1">黑暗</option>
-						<option value="0.8">昏暗</option>
-						<option value="0.6" selected>默认</option>
-						<option value="0.4">较亮</option>
-						<option value="0.2">明亮</option>
-					</select>
-				</div><br>
-				<div>曲名：<input id="input-name" class="input" style="width:7em" placeholder="&#60; Untitled &#62;"></div>
-				<div>曲师：<input id="input-artist" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div><br>
-				<div>曲绘：<input id="input-illustrator" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div>
-				<div>谱师：<input id="input-charter" class="input" style="width:7em" placeholder="&#60; nameless &#62;"></div><br>
-				<div>难度：<select id="select-difficulty" style="width:3em">
-						<option value="" selected>SP</option>
-						<option value="EZ">EZ</option>
-						<option value="HD">HD</option>
-						<option value="IN">IN</option>
-						<option value="AT">AT</option>
-					</select>
-				</div>
-				<div>等级：<select id="select-level" style="width:3em">
-						<option value="" selected>?</option>
-						<option value="1">1</option>
-						<option value="2">2</option>
-						<option value="3">3</option>
-						<option value="4">4</option>
-						<option value="5">5</option>
-						<option value="6">6</option>
-						<option value="7">7</option>
-						<option value="8">8</option>
-						<option value="9">9</option>
-						<option value="10">10</option>
-						<option value="11">11</option>
-						<option value="12">12</option>
-						<option value="13">13</option>
-						<option value="14">14</option>
-						<option value="15">15</option>
-						<option value="16">16</option>
-					</select>
-				</div>
-				<div>音效音量：<select id="select-volume" style="width:5em">
-						<option value="0">0%</option>
-						<option value="0.25">25%</option>
-						<option value="0.5">50%</option>
-						<option value="1" selected>100%</option>
-						<option value="2.5">250%</option>
-						<option value="5">500%</option>
-					</select>
-				</div><br>
-				<div><input type="checkbox" id="feedback" checked><label for="feedback">触摸反馈</label></div>
-				<div><input type="checkbox" id="imageBlur" checked><label for="imageBlur">背景模糊</label></div>
-				<div><input type="checkbox" id="highLight" checked><label for="highLight">多押高亮</label></div><br>
-				<div><input type="checkbox" id="lineColor" checked><label for="lineColor">FC/AP指示器</label></div>
-				<div class="disabled-when-playing"><input type="checkbox" id="autoplay" checked><label for="autoplay">自动演示</label></div>
-				<div class="disabled-when-playing"><input type="checkbox" id="showTransition" checked><label for="showTransition">过渡动画</label></div><br>
-				<div class="">谱面镜像：<select id="select-flip" style="width:4em">
-						<option value="0" selected>无</option>
-						<option value="1">X轴</option>
-						<option value="2">Y轴</option>
-						<option value="3">X&Y</option>
-					</select>
-				</div>
-				<div class="disabled-when-playing">音乐变速：<select id="select-speed" style="width:4em">
-						<option value="Slowest">极慢</option>
-						<option value="Slower">较慢</option>
-						<option value="" selected>正常</option>
-						<option value="Faster">较快</option>
-						<option value="Fastest">极快</option>
-					</select>
-				</div><br>
-				<div class="disabled-when-playing">谱面延时(ms)：<input id="input-offset" type="number" step="5" class="input" style="width:4em" placeholder="0"></div>
-				<div>
-					<input type="button" id="btn-play" value="播放">
-					<input type="button" id="btn-pause" value="暂停">
-				</div>
-			</div>
-			<div><strong id="msg-out">初始化...</strong></div>
-			<div id="stage">
-				<i class="tl">&#xe900;</i><i class="tr">&#xe902;</i><i class="bl">&#xe909;</i><i class="br">&#xe904;</i>
-				<div id="mask">
-					<div>GitHub: lchz&#104;3473/sim-phi</div>
-				</div>
-			</div>
-			<div id="cover-dark" class="cover-dark fade"></div>
-			<div id="cover-view" class="cover-view fade" qwq>
-				<div id="view-nav" class="view-nav">
-					<a id="nav-use">模拟器使用说明</a>
-					<a id="nav-cfg">更多设置</a>
-					<a id="nav-msg">信息</a>
-				</div>
-				<div id="view-content" class="view-content">
-					<iframe id="view-doc" frameborder="0"></iframe>
-					<div id="view-cfg"></div>
-					<div id="view-msg"></div>
-				</div>
-			</div>
-		</div>
-		<p class="footer">&copy;&nbsp;2020-2023&nbsp;lchz&#104;3473</p>
-	</div>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">PhigrosPlayer</a>
+    <button aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler"
+            data-target="#navbarNav" data-toggle="collapse" type="button">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="#">主页</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="https://xzai.cloud">关于</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="https://afdian.net/a/XzaiCloud">赞助</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+<div class="container mt-4">
+    <div class="alert alert-danger" role="alert">
+        播放器作者：lchzh3473&ensp;网页作者：B8Y
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-3"><h1 class="title"></h1></div>
+            <form id="uploader-form">
+                <div class="form-row">
+                    <div class="col-md-6 mb-3">
+                        <div class="dropdown" id="uploader">
+                            <button aria-expanded="false" aria-haspopup="true" class="btn btn-primary dropdown-toggle"
+                                    data-toggle="dropdown" id="uploader-upload" type="button">
+                                上传
+                            </button>
+                            <div aria-labelledby="uploader-upload" class="dropdown-menu">
+                                <label class="dropdown-item" for="uploader-file-input"
+                                       id="uploader-file">上传文件</label>
+                                <input id="uploader-file-input" style="display:none;" type="file">
+                                <label class="dropdown-item" for="uploader-dir-input"
+                                       id="uploader-dir">上传文件夹</label>
+                                <input directory="" id="uploader-dir-input" mozdirectory="" style="display:none;"
+                                       type="file" webkitdirectory="">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3 d-none">
+                        <input class="btn btn-secondary float-right" id="btn-more" type="button" value="更多设置">
+                    </div>
+                </div>
+            </form>
+            <div class="disabled" id="select">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="select-chart">谱面：</label>
+                        <select class="form-control" id="select-chart">
+                            <!-- options -->
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-bgm">音乐：</label>
+                        <select class="form-control" id="select-bgm">
+                            <!-- options -->
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-bg">图片：</label>
+                        <select class="form-control" id="select-bg">
+                            <!-- options -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="select-aspect-ratio">宽高比：</label>
+                        <select class="form-control" id="select-aspect-ratio">
+                            <option value="1.25">5:4</option>
+                            <option value="1.333333">4:3</option>
+                            <option value="1.4316546762589928">10:7</option>
+                            <option value="1.461538">19:13</option>
+                            <option value="1.6">8:5</option>
+                            <option value="1.666667">5:3</option>
+                            <option value="1.692308">22:13</option>
+                            <option selected value="1.777778">16:9</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-note-scale">按键缩放：</label>
+                        <select class="form-control" id="select-note-scale">
+                            <option value="0.8">极小</option>
+                            <option value="0.9">较小</option>
+                            <option selected value="1">默认</option>
+                            <option value="1.15">较大</option>
+                            <option value="1.3">极大</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-background-dim">背景变暗：</label>
+                        <select class="form-control" id="select-background-dim">
+                            <option value="1">黑暗</option>
+                            <option value="0.8">昏暗</option>
+                            <option selected value="0.6">默认</option>
+                            <option value="0.4">较亮</option>
+                            <option value="0.2">明亮</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="input-name">曲名：</label>
+                        <input class="form-control" id="input-name">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="input-artist">曲师：</label>
+                        <input class="form-control" id="input-artist">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="input-illustrator">曲绘：</label>
+                        <input class="form-control" id="input-illustrator">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="input-charter">谱师：</label>
+                        <input class="form-control" id="input-charter">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-difficulty">难度：</label>
+                        <select class="form-control" id="select-difficulty">
+                            <option selected value="">SP</option>
+                            <option value="EZ">EZ</option>
+                            <option value="HD">HD</option>
+                            <option value="IN">IN</option>
+                            <option value="AT">AT</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-level">等级：</label>
+                        <select class="form-control" id="select-level">
+                            <option selected value="">?</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="select-volume">音效音量：</label>
+                        <select class="form-control" id="select-volume">
+                            <option value="0">0%</option>
+                            <option value="0.25">25%</option>
+                            <option value="0.5">50%</option>
+                            <option selected value="1">100%</option>
+                            <option value="2.5">250%</option>
+                            <option value="5">500%</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-flip">谱面镜像</label>
+                        <select class="form-control" id="select-flip">
+                            <option selected value="0">无</option>
+                            <option value="1">X轴</option>
+                            <option value="2">Y轴</option>
+                            <option value="3">X&Y</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="select-speed">音乐变速</label>
+                        <select class="form-control" id="select-speed">
+                            <option value="Slowest">极慢</option>
+                            <option value="Slower">较慢</option>
+                            <option selected value="">正常</option>
+                            <option value="Faster">较快</option>
+                            <option value="Fastest">极快</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="input-offset">谱面延时(ms)：</label>
+                        <input class="form-control" id="input-offset" placeholder="0"
+                               step="5" type="number">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-2">
+                        <div class="form-check">
+                            <input checked class="form-check-input" id="feedback" type="checkbox">
+                            <label class="form-check-label" for="feedback">触摸反馈</label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <div class="form-check">
+                            <input checked class="form-check-input" id="imageBlur" type="checkbox">
+                            <label class="form-check-label" for="imageBlur">背景模糊</label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <div class="form-check">
+                            <input checked class="form-check-input" id="highLight" type="checkbox">
+                            <label class="form-check-label" for="highLight">多押高亮</label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <div class="form-check">
+                            <input checked class="form-check-input" id="autoplay" type="checkbox">
+                            <label class="form-check-label" for="highLight">自动演示</label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <div class="form-check">
+                            <input class="form-check-input" id="select-random" type="checkbox">
+                            <label class="form-check-label" for="select-random">随机谱面</label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <div class="form-check">
+                            <input class="form-check-input" id="showTransition" type="checkbox">
+                            <label class="form-check-label" for="showTransition">过渡动画</label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <div class="form-check">
+                            <input checked class="form-check-input" id="lineColor" type="checkbox">
+                            <label class="form-check-label" for="lineColor">FC/AP指示器</label>
+                        </div>
+                    </div>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-3">
+        <div class="card-body">
+            <input class="btn btn-primary" id="btn-play" type="button" value="播放">
+            <input class="btn btn-primary" id="btn-pause" type="button" value="暂停">
+            <div class="mt-2"><strong id="msg-out">初始化...</strong></div>
+        </div>
+    </div>
+    <div class="card mt-3 mb-5">
+        <div id="stage">
+            <div id="mask">
+            </div>
+        </div>
+    </div>
+    <div class="card mt-3 d-none">
+        <div class="card-body">
+            <div class="view-content" id="view-content">
+                <iframe frameborder="0" id="view-doc"></iframe>
+                <div id="view-cfg"></div>
+                <div id="view-msg"></div>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-3 mb-5 d-none">
+        <div class="card-body">
+            <a id="qwq">谱面和资源文件</a>
+            <div class="cover-dark fade" id="cover-dark"></div>
+            <div class="cover-view fade" id="cover-view" qwq>
+                <div class="view-nav" id="view-nav">
+                    <a id="nav-use">模拟器使用说明</a>
+                    <a id="nav-cfg">更多设置</a>
+                    <a id="nav-msg">信息</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<link href="./style.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </body>
-
 </html>
