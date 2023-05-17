@@ -14,7 +14,7 @@ const $$ = query => document.body.querySelectorAll(query);
 const createCanvas = (width, height) => {
 	const canvas = document.createElement('canvas');
 	return Object.assign(canvas, { width, height });
-}; 
+};
 /** @type {Object<string,(pos:number)=>number>} */
 const tween = {
 	easeInSine: pos => 1 - Math.cos(pos * Math.PI / 2),
