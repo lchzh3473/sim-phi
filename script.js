@@ -1,8 +1,8 @@
 import simphi from './js/simphi.js';
-import { audio } from '/utils/aup.js';
+import { audio } from './utils/aup.js';
 import { full, Timer, getConstructorName, urls, isUndefined, loadJS, frameTimer, time2Str, orientation, FrameAnimater } from './js/common.js';
 import { uploader, ZipReader, readFile } from './js/reader.js';
-import { InteractProxy } from '/utils/interact.js';
+import { InteractProxy } from './utils/interact.js';
 self['_i'] = ['PhigrosPlayer', [1, 4, 22, 'b51'], 1611795955, 1683631022];
 /** @type {(arg0:string)=>any} */
 const $id = query => document.getElementById(query);
