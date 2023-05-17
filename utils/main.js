@@ -238,10 +238,10 @@ Utils.lazyload(function() {
   const s = new URLSearchParams(location.search);
   const t = dct[1] === 'ok' || location.port || Utils.checkED(s.get('ss'));
   if (!location.port && !s.has('test')) setInterval(Function.constructor(atob('ZGVidWdnZXI7')));
-  if (s.has('agree') && rct[1]) return location.replace(rct[1], document.cookie = `dct=ok;path=/;max-age=${2e6}`);
-  if (s.has('disagree')) return location.replace('/403.html', document.cookie = `dct=;rct=;path=/;max-age=0`);
-  if (typeof _i == 'undefined' || _i.length != 4) return;
-  if (!t) return location.replace('/401-.html', document.cookie = `rct=${location.href};path=/;max-age=${2e6}`);
+//  if (s.has('agree') && rct[1]) return location.replace(rct[1], document.cookie = `dct=ok;path=/;max-age=${2e6}`);
+//  if (s.has('disagree')) return location.replace('/403.html', document.cookie = `dct=;rct=;path=/;max-age=0`);
+//  if (typeof _i == 'undefined' || _i.length != 4) return;
+//  if (!t) return location.replace('/401-.html', document.cookie = `rct=${location.href};path=/;max-age=${2e6}`);
   document.cookie = `dct=ok;path=/;max-age=${2e6}`;
   document.title = `${_i[0]}`;
   for (const i of document.querySelectorAll('.title')) i.innerHTML = `${_i[0]}&nbsp;<small>v${_i[1].join('.')}</small>`;
