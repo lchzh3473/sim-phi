@@ -1,0 +1,2 @@
+const e=hook.define({name:"Dynamic Score",description:"Apply dynamic score",contents:[{type:"config",meta:["启用动态分数",function(e,n){e.addEventListener("change",(()=>{e.checked?hook.now.set("dynamic-score",r):hook.now.delete("dynamic-score")})),o.reg("enable-dynamic-score",e)}]}]}),{status:o,stat:n,app:c}=hook;let t=0,s=0,a=0;function r(){const{numOfNotes:e}=c.chart;n.numOfNotes=e,n.scoreNum!==s&&(t=s,s=n.scoreNum,a=performance.now());const o=Math.min(1,(performance.now()-a)/500);n.numOfNotes/=t/s*(1-o)+o}export{e as default};
+//# sourceMappingURL=dynamic-score-5019d82a.js.map
