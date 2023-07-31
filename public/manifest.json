@@ -1,0 +1,13 @@
+{
+  "name": "Phixos",
+  "short_name": "Phixos",
+  "theme_color": "#7b1fa2",
+  "background_color": "#f1eff6",
+  "icons": [{
+    "src": "icon_192x192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }],
+  "start_url": ".",
+  "display": "standalone"
+}

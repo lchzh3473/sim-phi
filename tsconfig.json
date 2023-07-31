@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "CommonJS",
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
+    "skipLibCheck": true,
+    /* Bundler mode */
+    // "moduleResolution": "bundler",
+    // "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    /* Linting */
+    "strict": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "noImplicitReturns": true,
+    /* qwq */
+    "baseUrl": "./",
+    "paths": {
+      "/utils/*": ["public/utils/*"],
+      "@/*": ["src/plugins/*"]
+    },
+    "allowJs": true
+    // "checkJs": true
+  },
+  "include": ["**/*", ".eslintrc.cjs"],
+  "exclude": ["node_modules", "dist", "public/lib"]
+}
