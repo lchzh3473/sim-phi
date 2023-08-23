@@ -37,7 +37,7 @@ function isLinear(index) {
 }
 /**
  * @param {number} index
- * @returns {(t: number) => number}
+ * @returns {((t: number) => number) | null}
  */
 function easing(index) {
   index = Math.trunc(index);

@@ -45,26 +45,36 @@ interface LineEventRPE2 {
   end: number;
   easingFn?: (t: number) => number;
 }
-function getEasingFn(le: LineEventRPE, startTime: number, endTime: number) {
+const enum EasingCode {
+  NoError = 0,
+  StartEqualsEnd = -1,
+  EasingTypeNotSupported = -2,
+  LinearBezier = -3
+}
+interface EasingResult {
+  code: EasingCode;
+  fn?: (t: number) => number;
+}
+function getEasingFn(le: LineEventRPE, startTime: number, endTime: number): EasingResult {
   const { start, end, bezier = 0 } = le;
-  if (start === end) return undefined;
+  if (start === end) return { code: EasingCode.StartEqualsEnd };
   if (bezier === 0) {
     const { easingType, easingLeft = 0, easingRight = 1 } = le;
-    if (easingType === 1) return undefined;
     const easingFn = easing(easingType);
+    if (easingFn == null) return { code: EasingCode.EasingTypeNotSupported };
     const eHead = easingFn(easingLeft);
     const eTail = easingFn(easingRight);
     const eSpeed = (easingRight - easingLeft) / (endTime - startTime);
     const eDelta = (eTail - eHead) / (end - start);
-    return (t: number) => (easingFn((t - startTime) * eSpeed + easingLeft) - eHead) / eDelta;
+    return { code: EasingCode.NoError, fn: (t: number) => (easingFn((t - startTime) * eSpeed + easingLeft) - eHead) / eDelta };
   }
   if (bezier !== 0) {
     const { bezierPoints: [p1x, p1y, p2x, p2y] = [0, 0, 0, 0] } = le;
-    if (p1x === p1y && p2x === p2y) return undefined;
+    if (p1x === p1y && p2x === p2y) return { code: EasingCode.LinearBezier };
     const eSpeed = 1 / (endTime - startTime);
     const eDelta = 1 / (end - start);
     const easingFn = cubicBezier(p1x, p1y, p2x, p2y);
-    return (t: number) => easingFn((t - startTime) * eSpeed) / eDelta;
+    return { code: EasingCode.NoError, fn: (t: number) => easingFn((t - startTime) * eSpeed) / eDelta };
   }
   throw new Error('Not implemented');
 }
@@ -91,9 +101,13 @@ function pushLineEvent(ls: LineEventPecDelta[], le: LineEventRPE2) {
     }
   }
   // 插入新事件
+  if (startTime >= endTime) {
+    ls.push({ startTime, endTime: startTime, start: end, end, delta: 0 });
+    return;
+  }
   if (easingFn == null) {
     ls.push({ startTime, endTime, start, end, delta });
-  } else { // 暂未考虑开始时间大于结束时间的情况
+  } else {
     let v1 = 0;
     let v2 = 0;
     for (let j = startTime; j < endTime; j++) {
@@ -311,11 +325,11 @@ class LineRPE1 {
       const rotateEvents: LineEventPecDelta[] = [];
       const alphaEvents: LineEventPecDelta[] = [];
       const speedEvents: LineEventPecDelta[] = [];
-      for (const i of e.moveXEvents.sort(sortFn2)) { pushLineEvent(moveXEvents, i) }
-      for (const i of e.moveYEvents.sort(sortFn2)) { pushLineEvent(moveYEvents, i) }
-      for (const i of e.rotateEvents.sort(sortFn2)) { pushLineEvent(rotateEvents, i) }
-      for (const i of e.alphaEvents.sort(sortFn2)) { pushLineEvent(alphaEvents, i) }
-      for (const i of e.speedEvents.sort(sortFn2)) { pushLineEvent(speedEvents, i) }
+      for (const i of e.moveXEvents.sort(sortFn2)) pushLineEvent(moveXEvents, i);
+      for (const i of e.moveYEvents.sort(sortFn2)) pushLineEvent(moveYEvents, i);
+      for (const i of e.rotateEvents.sort(sortFn2)) pushLineEvent(rotateEvents, i);
+      for (const i of e.alphaEvents.sort(sortFn2)) pushLineEvent(alphaEvents, i);
+      for (const i of e.speedEvents.sort(sortFn2)) pushLineEvent(speedEvents, i); // TODO: 特殊处理
       events.push({ moveXEvents, moveYEvents, rotateEvents, alphaEvents, speedEvents });
     }
     const moveXEvents = combineMultiEvents(events.map(i => i.moveXEvents));
@@ -480,7 +494,8 @@ export function parse(pec: string, filename: string): {
   if (!meta?.RPEVersion) throw new Error('Invalid rpe file');
   const result = { formatVersion: 3, offset: 0, numOfNotes: 0, judgeLineList: [] as JudgeLine[] };
   const warnings = [];
-  warnings.push(`RPE谱面兼容建设中...\n检测到RPE版本:${meta.RPEVersion}\n来自${filename}`); // 谱面信息
+  warnings.push(`RPE谱面兼容建设中...\n检测到RPE版本:${meta.RPEVersion}\n来自${filename}`);
+  // 谱面信息
   const info: ChartInfoData = {};
   info.Chart = filename;
   info.Music = meta.song;
@@ -544,8 +559,7 @@ export function parse(pec: string, filename: string): {
       }
     }
     for (const e of i.eventLayers) {
-      if (!e) continue;
-      // 有可能是null
+      if (!e) continue; // 有可能是null
       const layer = new EventLayer1();
       for (const j of e.moveXEvents ?? []) {
         if (j.linkgroup === undefined) j.linkgroup = 0;
@@ -554,7 +568,11 @@ export function parse(pec: string, filename: string): {
         }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        layer.pushMoveXEvent(startTime, endTime, j.start, j.end, getEasingFn(j, startTime, endTime));
+        const easingResult = getEasingFn(j, startTime, endTime);
+        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
+          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+        }
+        layer.pushMoveXEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.moveYEvents ?? []) {
         if (j.linkgroup === undefined) j.linkgroup = 0;
@@ -563,7 +581,11 @@ export function parse(pec: string, filename: string): {
         }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        layer.pushMoveYEvent(startTime, endTime, j.start, j.end, getEasingFn(j, startTime, endTime));
+        const easingResult = getEasingFn(j, startTime, endTime);
+        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
+          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+        }
+        layer.pushMoveYEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.rotateEvents ?? []) {
         if (j.linkgroup === undefined) j.linkgroup = 0;
@@ -572,7 +594,11 @@ export function parse(pec: string, filename: string): {
         }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        layer.pushRotateEvent(startTime, endTime, j.start, j.end, getEasingFn(j, startTime, endTime));
+        const easingResult = getEasingFn(j, startTime, endTime);
+        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
+          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+        }
+        layer.pushRotateEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.alphaEvents ?? []) {
         if (j.linkgroup === undefined) j.linkgroup = 0;
@@ -581,7 +607,11 @@ export function parse(pec: string, filename: string): {
         }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        layer.pushAlphaEvent(startTime, endTime, j.start, j.end, getEasingFn(j, startTime, endTime));
+        const easingResult = getEasingFn(j, startTime, endTime);
+        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
+          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+        }
+        layer.pushAlphaEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.speedEvents ?? []) {
         if (j.linkgroup === undefined) j.linkgroup = 0;

@@ -1,4 +1,4 @@
-import { easing, isLinear } from './easing.js';
+import { easing } from './easing.js';
 interface SpeedEventPec {
   time: number;
   value: number;
@@ -128,16 +128,17 @@ export class LinePec {
     let d1 = 0;
     for (const e of this.alphaEvents.sort(sortFn2)) {
       pushDisappearEvent(dt, e.startTime, d1, d1);
-      if (!isLinear(e.motionType)) {
+      const easingFn = easing(e.motionType);
+      if (easingFn != null) {
         const t1 = e.value - d1;
         let x1 = 0;
         let x2 = 0;
         for (let i = e.startTime; i < e.endTime; i++) {
           x1 = x2;
-          x2 = easing(e.motionType)((i + 1 - e.startTime) / (e.endTime - e.startTime));
+          x2 = easingFn((i + 1 - e.startTime) / (e.endTime - e.startTime));
           pushDisappearEvent(i, i + 1, d1 + x1 * t1, d1 + x2 * t1);
         }
-      } else if (e.motionType) { pushDisappearEvent(e.startTime, e.endTime, d1, e.value) }
+      } else if (e.motionType) pushDisappearEvent(e.startTime, e.endTime, d1, e.value);
       dt = e.endTime;
       d1 = e.value;
     }
@@ -148,17 +149,18 @@ export class LinePec {
     let m2 = 0;
     for (const e of this.moveEvents.sort(sortFn2)) {
       pushMoveEvent(mt, e.startTime, m1, m1, m2, m2);
-      if (e.motionType === 1) { pushMoveEvent(e.startTime, e.endTime, m1, e.value, m2, e.value2) } else {
+      const easingFn = easing(e.motionType);
+      if (easingFn != null) {
         const t1 = e.value - m1;
         const t2 = e.value2 - m2;
         let x1 = 0;
         let x2 = 0;
         for (let i = e.startTime; i < e.endTime; i++) {
           x1 = x2;
-          x2 = easing(e.motionType)((i + 1 - e.startTime) / (e.endTime - e.startTime));
+          x2 = easingFn((i + 1 - e.startTime) / (e.endTime - e.startTime));
           pushMoveEvent(i, i + 1, m1 + x1 * t1, m1 + x2 * t1, m2 + x1 * t2, m2 + x2 * t2);
         }
-      }
+      } else if (e.motionType === 1) pushMoveEvent(e.startTime, e.endTime, m1, e.value, m2, e.value2);
       mt = e.endTime;
       m1 = e.value;
       m2 = e.value2;
@@ -169,16 +171,17 @@ export class LinePec {
     let r1 = 0;
     for (const e of this.rotateEvents.sort(sortFn2)) {
       pushRotateEvent(rt, e.startTime, r1, r1);
-      if (e.motionType === 1) { pushRotateEvent(e.startTime, e.endTime, r1, e.value) } else {
+      const easingFn = easing(e.motionType);
+      if (easingFn != null) {
         const t1 = e.value - r1;
         let x1 = 0;
         let x2 = 0;
         for (let i = e.startTime; i < e.endTime; i++) {
           x1 = x2;
-          x2 = easing(e.motionType)((i + 1 - e.startTime) / (e.endTime - e.startTime));
+          x2 = easingFn((i + 1 - e.startTime) / (e.endTime - e.startTime));
           pushRotateEvent(i, i + 1, r1 + x1 * t1, r1 + x2 * t1);
         }
-      }
+      } else if (e.motionType === 1) pushRotateEvent(e.startTime, e.endTime, r1, e.value);
       rt = e.endTime;
       r1 = e.value;
     }

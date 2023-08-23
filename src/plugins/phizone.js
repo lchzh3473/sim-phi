@@ -14,7 +14,7 @@ export default hook.define({
 });
 const { msgHandler, uploader } = hook;
 const host = 'https://api.phi.zone';
-const ver = 'PhiZone API v0.7.2';
+const ver = 'PhiZone API v0.7.3';
 // eslint-disable-next-line no-alert
 const vprompt = str => prompt(`${ver}\n${str}`);
 const valert = str => hook.toast(`${ver}\n${str}`);
@@ -31,7 +31,7 @@ async function dialog(num) {
   await readData(data);
 }
 async function random() {
-  const data = await randomCore().catch(err => valert(`无法连接至服务器\n错误代码：${err.message}`));
+  const data = await queryRandom().catch(err => valert(`无法连接至服务器\n错误代码：${err.message}`));
   console.log(data);
   if (!data) return;
   if (!data.charts.length) { valert(`歌曲ID ${'<random>'} 对应的谱面不存在`); return }
@@ -39,29 +39,30 @@ async function random() {
 }
 async function query(id) {
   msgHandler.sendMessage('等待服务器响应...');
-  const response = await fetch(`${host}/songs/${id | 0}/?query_charts=1`);
-  if (!response.ok) {
-    if (response.status === 404) return { charts: [] };
-    throw new Error(`${response.status} ${response.statusText}`);
+  const resS = await fetch(`${host}/songs/${id | 0}/?query_charts=1`);
+  if (!resS.ok) {
+    if (resS.status === 404) return { charts: [] };
+    throw new Error(`${resS.status} ${resS.statusText}`);
   }
-  const song = await response.json();
-  console.log(song);
+  const song = await resS.json();
   return getData(song.charts.filter(a => a.chart), song);
 }
-async function randomCore() {
+async function queryRandom() {
   msgHandler.sendMessage('等待服务器响应...');
-  const response = await fetch(`${host}/charts/?pagination=0&query_charts=1`);
-  if (!response.ok) {
-    if (response.status === 404) return { charts: [] };
-    throw new Error(`${response.status} ${response.statusText}`);
+  const resC = await fetch(`${host}/charts/?pagination=0&query_charts=1`);
+  if (!resC.ok) {
+    if (resC.status === 404) return { charts: [] };
+    throw new Error(`${resC.status} ${resC.statusText}`);
   }
-  const data = await response.json();
+  const data = await resC.json();
   const charts = data.filter(a => a.chart).sort(_ => Math.random() - 0.5);
   const chart = charts[0];
   const song = await fetch(`${host}/songs/${chart.song}/`).then(res => res.json());
   return getData([chart], song);
 }
 function getData(base, song) {
+  console.log('getData::base', ...base);
+  console.log('getData::song', song);
   return {
     charts: base.map(a => ({
       id: a.id,
@@ -102,7 +103,7 @@ async function readData(data) {
     if (chart.assets) await xhr4(chart.assets, dstr(chart.assets));
     await xhr4(chart.chart, dstr(chart.chart));
     const encoder = new TextEncoder();
-    const offset = getOffset(chart.id);
+    const offset = getChartOffset(chart.id);
     const infoText = `
       #
       Name: ${data.name}
@@ -156,8 +157,9 @@ async function getContentLength(url) {
     const res = await fetch(url, { method: 'HEAD' }).catch(() => {
       throw Object.assign(new Error(), { url, status: 0, statusText: 'Network Error' });
     });
-    const length = Number(res.headers.get('content-length')) || 0;
-    if (res.ok && length) return length;
+    const length = res.headers.get('content-length'); // 踩坑：这里的length是字符串
+    if (length == null) throw new Error('No Content-Length Header');
+    if (res.ok) return Number(length);
   } catch (_) {
     const res = await fetch(url, { method: 'GET' }).catch(() => {
       throw Object.assign(new Error(), { url, status: 0, statusText: 'Network Error' });
@@ -204,7 +206,7 @@ Object.defineProperty(Downloader.prototype, 'total', { get() {
   const values = Object.values(this.xhrs);
   return values.reduce((total, xhr) => total + Math.max(xhr.event.loaded, xhr.event.total), 0);
 } });
-function getOffset(id) {
+function getChartOffset(id) {
   if (id === 29) return 200; // 45
   if (id === 31) return 100; // 24
   if (id === 38) return 175; // 64
