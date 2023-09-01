@@ -19,7 +19,7 @@ module.exports = {
     '@typescript-eslint/no-confusing-void-expression': 'off', // qwq
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-explicit-any': ['error', { fixToUnknown: true, ignoreRestArgs: true }],
-    '@typescript-eslint/no-extra-parens': ['error', 'all', { returnAssign: false }],
+    '@typescript-eslint/no-extra-parens': ['error', 'all', { enforceForSequenceExpressions: false }],
     '@typescript-eslint/no-floating-promises': 'off',
     '@typescript-eslint/no-magic-numbers': 'off', // qwq
     '@typescript-eslint/no-namespace': 'off',

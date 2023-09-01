@@ -347,9 +347,10 @@ class LineRPE1 {
       stack.map(i => i.setFather(null));
       return;
     }
-    if (this.father) {
-      this.father.fitFather(stack.concat(this), onwarning);
-      if (!this.merged) mergeFather(this, this.father);
+    if (this.father) this.father.fitFather(stack.concat(this), onwarning);
+    // this.father可能会在上一行被修改成null
+    if (this.father && !this.merged) {
+      mergeFather(this, this.father);
       this.merged = true;
     }
   }
@@ -562,10 +563,6 @@ export function parse(pec: string, filename: string): {
       if (!e) continue; // 有可能是null
       const layer = new EventLayer1();
       for (const j of e.moveXEvents ?? []) {
-        if (j.linkgroup === undefined) j.linkgroup = 0;
-        if (j.linkgroup !== 0) {
-          warnings.push(`未兼容linkgroup=${j.linkgroup}(可能无法正常显示)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
-        }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
@@ -575,10 +572,6 @@ export function parse(pec: string, filename: string): {
         layer.pushMoveXEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.moveYEvents ?? []) {
-        if (j.linkgroup === undefined) j.linkgroup = 0;
-        if (j.linkgroup !== 0) {
-          warnings.push(`未兼容linkgroup=${j.linkgroup}(可能无法正常显示)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
-        }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
@@ -588,10 +581,6 @@ export function parse(pec: string, filename: string): {
         layer.pushMoveYEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.rotateEvents ?? []) {
-        if (j.linkgroup === undefined) j.linkgroup = 0;
-        if (j.linkgroup !== 0) {
-          warnings.push(`未兼容linkgroup=${j.linkgroup}(可能无法正常显示)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
-        }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
@@ -601,10 +590,6 @@ export function parse(pec: string, filename: string): {
         layer.pushRotateEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.alphaEvents ?? []) {
-        if (j.linkgroup === undefined) j.linkgroup = 0;
-        if (j.linkgroup !== 0) {
-          warnings.push(`未兼容linkgroup=${j.linkgroup}(可能无法正常显示)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
-        }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
@@ -614,10 +599,6 @@ export function parse(pec: string, filename: string): {
         layer.pushAlphaEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
       for (const j of e.speedEvents ?? []) {
-        if (j.linkgroup === undefined) j.linkgroup = 0;
-        if (j.linkgroup !== 0) {
-          warnings.push(`未兼容linkgroup=${j.linkgroup}(可能无法正常显示)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
-        }
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         layer.pushSpeedEvent(startTime, endTime, j.start, j.end);

@@ -262,7 +262,7 @@ export function chart123(text: string, reviver?: (this: unknown, key: string, va
           j.floorPosition = y;
           j.floorPosition2 = y2;
           y += (j.endTime - j.startTime) / i.bpm * 1.875 * j.value;
-          y2 += Math.fround((j.endTime - j.startTime) / i.bpm * 1.875) * j.value;
+          y2 += Math.fround(Math.fround((j.endTime - j.startTime) / i.bpm * 1.875) * j.value);
           y = Math.fround(y);
           y2 = Math.fround(y2);
         }

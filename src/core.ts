@@ -75,6 +75,7 @@ class Note {
   }
 }
 export interface NoteExtends extends Note {
+  maxVisiblePos: number;
   offsetX: number;
   offsetY: number;
   alpha: number;
@@ -154,6 +155,7 @@ export interface JudgeLineExtends extends JudgeLine {
   alpha: number;
   rotation: number;
   positionY: number;
+  positionY2: number;
   speedEvents: SpeedEventExtends[];
   notesAbove: NoteExtends[];
   notesBelow: NoteExtends[];
@@ -419,6 +421,19 @@ export class Renderer {
         if (i.endTime < 1e9) aniUpdate(i.endSeconds);
       }
     };
+    // 获取note最大可见位置
+    const getMaxVisiblePos = (x: number) => {
+      const n = Math.fround(x);
+      if (!isFinite(n)) throw new TypeError('Argument must be a finite number');
+      const magic = 11718.75;
+      const prime = n >= magic ? 2 ** Math.floor(1 + Math.log2(n / magic)) : 1;
+      const a = n / prime + 0.001;
+      const r = Math.fround(a);
+      if (r <= a) return r * prime;
+      const a_ = new Float32Array([a]);
+      new Uint32Array(a_.buffer)[0] += a_[0] <= 0 ? 1 : -1;
+      return a_[0] * prime;
+    };
     // 向Renderer添加Note
     const addNote = (note: NoteExtends, beat32: number, line: JudgeLineExtends, noteId: number, isAbove: boolean) => {
       note.offsetX = 0;
@@ -426,6 +441,7 @@ export class Renderer {
       note.alpha = 0;
       note.seconds = note.time * beat32;
       note.holdSeconds = note.holdTime * beat32;
+      note.maxVisiblePos = getMaxVisiblePos(note.floorPosition);
       if (note.time < 1e9) {
         hitUpdate(note.seconds);
         hitUpdate(note.seconds + note.holdSeconds);
@@ -452,6 +468,7 @@ export class Renderer {
       i.alpha = 0;
       i.rotation = 0;
       i.positionY = 0; // 临时过渡用
+      i.positionY2 = 0;
       i.speedEvents = normalizeSpeedEvent(i.speedEvents) as SpeedEventExtends[];
       i.judgeLineDisappearEvents = normalizeLineEvent(i.judgeLineDisappearEvents) as LineEventExtends[];
       i.judgeLineMoveEvents = normalizeLineEvent(i.judgeLineMoveEvents) as LineEventExtends[];
@@ -530,6 +547,7 @@ export class Renderer {
         if (time > evt.endSeconds) continue;
         const dt = (time - evt.startSeconds) / (evt.endSeconds - evt.startSeconds);
         line.alpha = evt.start + (evt.end - evt.start) * dt;
+        if (line.alpha > 1) line.alpha = 1;
         line.disappearEventsIndex = i;
         break;
       }
@@ -555,13 +573,14 @@ export class Renderer {
       for (let i = line.speedEventsIndex, len = line.speedEvents.length; i < len; i++) {
         const evt = line.speedEvents[i];
         if (time > evt.endSeconds) continue;
-        line.positionY = (time - evt.startSeconds) * evt.value * this.speed + (this.enableFR ? evt.floorPosition2 : evt.floorPosition);
+        line.positionY = (time - evt.startSeconds) * this.speed * evt.value + (this.enableFR ? evt.floorPosition2 : evt.floorPosition);
+        line.positionY2 = (time - evt.startSeconds) * this.speed * evt.value + evt.floorPosition2;
         line.speedEventsIndex = i;
         break;
       }
       const getGoodY = (i: NoteExtends) => {
         if (i.type !== 3) return (i.floorPosition - line.positionY) * i.speed;
-        if (i.seconds < time) return (i.seconds - time) * i.speed * this.speed;
+        if (i.seconds < time) return (i.seconds - time) * this.speed * i.speed;
         return i.floorPosition - line.positionY;
       };
       const getBadY = (i: NoteExtends) => {
@@ -575,13 +594,14 @@ export class Renderer {
         i.offsetX = i.projectX + dy * i.sinr;
         i.projectY = line.offsetY + dx * i.sinr;
         i.offsetY = i.projectY - dy * i.cosr;
-        i.visible = (i.offsetX - this.wlen) ** 2 + (i.offsetY - this.hlen) ** 2 < (this.wlen * 1.23625 + this.hlen + this.scaleY * i.holdSeconds * i.speed * this.speed) ** 2; // Math.hypot实测性能较低
+        i.visible = (i.offsetX - this.wlen) ** 2 + (i.offsetY - this.hlen) ** 2 < (this.wlen * 1.23625 + this.hlen + this.scaleY * i.holdSeconds * this.speed * i.speed) ** 2; // Math.hypot实测性能较低
         i.showPoint = false;
         if (i.badTime != null) {
           // Not bad
         } else if (i.seconds > time) {
           i.showPoint = true;
-          i.alpha = dy <= -1e-3 * this.scaleY || this.enableVP && getGoodY(i) * 0.6 > 2 ? 0 : i.type === 3 && i.speed === 0 ? 0 : 1;
+          const isHidden = i.maxVisiblePos < line.positionY2;
+          i.alpha = isHidden || this.enableVP && getGoodY(i) * 0.6 > 2 ? 0 : i.type === 3 && i.speed === 0 ? 0 : 1;
         } else {
           i.frameCount = i.frameCount == null ? 0 : i.frameCount + 1;
           if (i.type === 3) {

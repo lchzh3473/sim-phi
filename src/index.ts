@@ -222,10 +222,10 @@ const lockOri = new Checkbox('横屏锁定', true).appendBefore(resetCfg.contain
 const maxFrame = new Checkbox('限制帧率').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'maxFrame'));
 const autoDelay = new Checkbox('音画实时同步(若声音卡顿则建议关闭)', true).appendBefore(resetCfg.container).hook(status.reg.bind(status, 'autoDelay'));
 const enableVP = new Checkbox('隐藏距离较远的音符').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableVP'));
-enableVP.checkbox.addEventListener('change', evt => (app.enableVP = (evt.target as HTMLInputElement).checked));
+enableVP.checkbox.addEventListener('change', evt => app.enableVP = (evt.target as HTMLInputElement).checked);
 enableVP.checkbox.dispatchEvent(new Event('change'));
 const enableFR = new Checkbox('使用单精度浮点运算').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFR'));
-enableFR.checkbox.addEventListener('change', evt => (app.enableFR = (evt.target as HTMLInputElement).checked));
+enableFR.checkbox.addEventListener('change', evt => app.enableFR = (evt.target as HTMLInputElement).checked);
 enableFR.checkbox.dispatchEvent(new Event('change'));
 selectflip.addEventListener('change', evt => { app.mirrorView(Number((evt.target as HTMLInputElement).value)) });
 status.reg('selectFlip', selectflip);

@@ -10,6 +10,7 @@ pnpm-lock.yaml
 rubbish
 * copy
 * copy.*
+public/local
 public/lib
 public/utils
 public/service-worker.js
