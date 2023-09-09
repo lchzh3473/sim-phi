@@ -96,12 +96,19 @@ interface MediaReaderData {
   type: 'audio' | 'media';
   data: MediaData;
 }
+interface BetterMessage {
+  host: string;
+  code: number;
+  name: string;
+  message: string;
+  target: string;
+}
 interface ChartReaderData {
   name: string;
   type: 'chart';
   data: Chart;
   md5: string;
-  msg?: string[];
+  msg?: (BetterMessage | string)[];
   info?: ChartInfoData;
   line?: ChartLineData[];
 }
@@ -178,40 +185,10 @@ interface StatData {
   textBelowColor: string;
   textBelowStr: string;
 }
-interface MainOptions {
-  modify: (chart: Chart) => Chart;
-  pressTime: number;
-  before: Map<string, () => Promise<void> | void>;
-  now: Map<string, (time: number) => void>;
-  after: Map<string, () => void>;
-  customDraw: ((ctx: CanvasRenderingContext2D) => void) | null;
-  filter: ((ctx: CanvasRenderingContext2D, time: number, now: number) => CanvasImageSource) | null;
-  filterOptions: Record<string, unknown>;
-  handleFile: (tag: string, total: number, promise: Promise<unknown>, oncomplete?: () => void) => Promise<unknown>;
-  uploader: typeof import('./index').uploader;
-  awawa: boolean;
-  fireModal: (navHTML: string, contentHTML: string) => HTMLDivElement;
-  toast: (msg: string) => HTMLDivElement;
-  define: (name: string) => string;
-  use: (module: Promise<ModuleBase>) => Promise<unknown>;
-  stat: import('./components/Stat').Stat;
-  app: unknown;
-  res: unknown;
-  audio: unknown;
-  msgHandler: unknown;
-  frameAnimater: unknown;
-  timeEnd: unknown;
-  bgms: unknown;
-  inputName: HTMLInputElement;
-  selectbgm: HTMLSelectElement;
-  selectchart: HTMLSelectElement;
-  chartsMD5: unknown;
-  noteRender: unknown;
-  fileReader: unknown;
-  ZipReader: ZipReader;
-  status: unknown;
-  tmps: typeof import('./index').tmps;
-  pause: unknown;
+interface ModuleConfig {
+  name: string;
+  description: string;
+  contents: ModuleContent[];
 }
 interface ModuleBase {
   default: {
@@ -224,7 +201,7 @@ interface CommandModuleContent {
 }
 interface ScriptModuleContent {
   type: 'script';
-  meta: [(arg0: HTMLElement) => void];
+  meta: [(arg0: (query: string) => Element | null) => void];
 }
 interface ConfigModuleContent {
   type: 'config';

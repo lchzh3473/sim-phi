@@ -231,6 +231,11 @@ body {
   -moz-user-select: text;
 }
 
+.msgbox[type='notice'] {
+  background-color: #ecf4ff;
+  color: #003681;
+}
+
 .msgbox[type='warn'] {
   background-color: #fffbe5;
   color: #5c3c00;
@@ -239,4 +244,21 @@ body {
 .msgbox[type='error'] {
   background-color: #fee;
   color: #e10000;
+}
+
+.bm-item {
+  clear: both;
+  border: none;
+  border-top: 1px dashed gray;
+  margin-top: 0.5em;
+  padding-top: 0.5em;
+}
+
+.bm-rbtn {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+.bm-item:last-child>.bm-rbtn {
+  padding-bottom: 0;
 }

@@ -58,8 +58,9 @@ interface EasingResult {
 function getEasingFn(le: LineEventRPE, startTime: number, endTime: number): EasingResult {
   const { start, end, bezier = 0 } = le;
   if (start === end) return { code: EasingCode.StartEqualsEnd };
-  if (bezier === 0) {
+  if (bezier === 0 || bezier == null) {
     const { easingType, easingLeft = 0, easingRight = 1 } = le;
+    if (easingLeft === easingRight) return { code: EasingCode.StartEqualsEnd };
     const easingFn = easing(easingType);
     if (easingFn == null) return { code: EasingCode.EasingTypeNotSupported };
     const eHead = easingFn(easingLeft);
@@ -486,7 +487,7 @@ interface JudgeLineRPEExtends extends JudgeLineRPE {
 }
 export function parse(pec: string, filename: string): {
   data: string;
-  messages: string[];
+  messages: BetterMessage[];
   info: ChartInfoData;
   line: ChartLineData[];
 } {
@@ -494,8 +495,9 @@ export function parse(pec: string, filename: string): {
   const meta = data.META || data;
   if (!meta?.RPEVersion) throw new Error('Invalid rpe file');
   const result = { formatVersion: 3, offset: 0, numOfNotes: 0, judgeLineList: [] as JudgeLine[] };
-  const warnings = [];
-  warnings.push(`RPE谱面兼容建设中...\n检测到RPE版本:${meta.RPEVersion}\n来自${filename}`);
+  const warnings = [] as BetterMessage[];
+  const warn = (code: number, name: string, message: string) => warnings.push({ host: 'RPE2JSON', code, name, message, target: filename });
+  warn(0, 'RPEVersionNotice', `RPE谱面兼容建设中...\n检测到RPE版本:${meta.RPEVersion}`);
   // 谱面信息
   const info: ChartInfoData = {};
   info.Chart = filename;
@@ -537,20 +539,20 @@ export function parse(pec: string, filename: string): {
     if (i.zOrder === undefined) i.zOrder = 0;
     if (i.bpmfactor === undefined) i.bpmfactor = 1;
     if (i.father === undefined) i.father = -1;
-    if (i.isCover !== 1) { warnings.push(`未兼容isCover=${i.isCover}(可能无法正常显示)\n位于${i.LineId}号判定线\n来自${filename}`) }
-    if (i.zOrder !== 0) { warnings.push(`未兼容zOrder=${i.zOrder}(可能无法正常显示)\n位于${i.LineId}号判定线\n来自${filename}`) }
-    if (i.bpmfactor !== 1) { warnings.push(`未兼容bpmfactor=${i.bpmfactor}(可能无法正常显示)\n位于${i.LineId}号判定线\n来自${filename}`) }
+    if (i.isCover !== 1) warn(1, 'ImplementionWarning', `未兼容isCover=${i.isCover}(可能无法正常显示)\n位于${i.LineId}号判定线`);
+    if (i.zOrder !== 0) warn(1, 'ImplementionWarning', `未兼容zOrder=${i.zOrder}(可能无法正常显示)\n位于${i.LineId}号判定线`);
+    if (i.bpmfactor !== 1) warn(1, 'ImplementionWarning', `未兼容bpmfactor=${i.bpmfactor}(可能无法正常显示)\n位于${i.LineId}号判定线`);
     const lineRPE = new LineRPE1(bpmList.baseBpm);
     lineRPE.setId(i.LineId);
     if (i.notes) {
       for (const note of i.notes) {
         if (note.alpha === undefined) note.alpha = 255;
-        // if (note.above !== 1 && note.above !== 2) warnings.push(`检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
-        if (note.isFake !== 0) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
-        if (note.size !== 1) warnings.push(`未兼容size=${note.size}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
-        if (note.yOffset !== 0) warnings.push(`未兼容yOffset=${note.yOffset}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
-        if (note.visibleTime !== 999999) warnings.push(`未兼容visibleTime=${note.visibleTime}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
-        if (note.alpha !== 255) warnings.push(`未兼容alpha=${note.alpha}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"\n来自${filename}`);
+        // if (note.above !== 1 && note.above !== 2) ({code:1,name:'NoteSideWarning',message:`检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"`});
+        if (note.isFake !== 0) warn(1, 'FakeNoteWarning', `检测到FakeNote(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
+        if (note.size !== 1) warn(1, 'ImplementionWarning', `未兼容size=${note.size}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
+        if (note.yOffset !== 0) warn(1, 'ImplementionWarning', `未兼容yOffset=${note.yOffset}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
+        if (note.visibleTime !== 999999) warn(1, 'ImplementionWarning', `未兼容visibleTime=${note.visibleTime}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
+        if (note.alpha !== 255) warn(1, 'ImplementionWarning', `未兼容alpha=${note.alpha}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
         const type = [0, 1, 4, 2, 3].indexOf(note.type);
         const time = bpmList.calc2(note.startTime);
         const holdTime = bpmList.calc2(note.endTime) - time;
@@ -567,7 +569,10 @@ export function parse(pec: string, filename: string): {
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
         if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
+        }
+        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
+          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
         }
         layer.pushMoveXEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
@@ -576,7 +581,10 @@ export function parse(pec: string, filename: string): {
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
         if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
+        }
+        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
+          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
         }
         layer.pushMoveYEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
@@ -585,7 +593,10 @@ export function parse(pec: string, filename: string): {
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
         if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
+        }
+        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
+          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
         }
         layer.pushRotateEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
@@ -594,7 +605,10 @@ export function parse(pec: string, filename: string): {
         const endTime = bpmList.calc2(j.endTime);
         const easingResult = getEasingFn(j, startTime, endTime);
         if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warnings.push(`未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"\n来自${filename}`);
+          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
+        }
+        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
+          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
         }
         layer.pushAlphaEvent(startTime, endTime, j.start, j.end, easingResult.fn);
       }
@@ -614,7 +628,7 @@ export function parse(pec: string, filename: string): {
   }
   for (const i of data.judgeLineList) {
     const lineRPE = i.judgeLineRPE; // TODO: 待优化
-    const judgeLine = lineRPE.format({ onwarning: (msg: string) => warnings.push(`${msg}\n来自${filename}`) });
+    const judgeLine = lineRPE.format({ onwarning: (msg: string) => warn(1, 'OtherWarning', `${msg}`) });
     result.judgeLineList.push(judgeLine);
     result.numOfNotes += judgeLine.numOfNotes;
   }

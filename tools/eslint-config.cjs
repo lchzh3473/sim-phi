@@ -69,6 +69,7 @@ module.exports = {
     'prefer-named-capture-group': 'off', // ?
     'quote-props': ['error', 'consistent-as-needed'],
     'quotes': ['error', 'single'],
+    'radix': ['error', 'as-needed'],
     'require-atomic-updates': ['error', { allowProperties: true }],
     'require-unicode-regexp': 'off', // ?
     'semi': ['error', 'always', { omitLastInOneLineBlock: true }],
@@ -76,9 +77,9 @@ module.exports = {
     'sort-keys': 'off',
     'space-before-function-paren': ['error', 'never'],
     'spaced-comment': ['error', 'always', { block: { balanced: true } }],
-    'rulesdir/space-before-inline-comments': 'error',
     'rulesdir/no-magic-words': ['error', { words: ['lchz\\x68', 'Phi\\x67ros', 'sim\\x70hi', 'f\\x75ck'] }],
     'rulesdir/single-line-control-statement-spacing': 'error',
+    'rulesdir/space-before-inline-comments': 'error',
     'wrap-regex': 'off' // someday will be never
   }
 };

@@ -24,11 +24,14 @@ self._i = ['Phixos', version.split('.'), pubdate, lastupdate];
 const $id = (query: string): HTMLElement => document.getElementById(query) || (() => { throw new Error(`Cannot find element: ${query}`) })();
 const $ = (query: string) => document.body.querySelector(query);
 const $$ = (query: string) => document.body.querySelectorAll(query);
+// const viewRsmg = $id('view-rsmg') as HTMLDivElement;
 const viewNav = $id('view-nav') as HTMLDivElement;
 const viewCfg = $id('view-cfg') as HTMLDivElement;
 const viewMsg = $id('view-msg') as HTMLDivElement;
 const coverDark = $id('cover-dark') as HTMLDivElement;
+const coverRsmg = $id('cover-rsmg') as HTMLDivElement;
 const coverView = $id('cover-view') as HTMLDivElement;
+const buttonRsmg = $id('btn-rsmg') as HTMLInputElement;
 const buttonDocs = $id('btn-docs') as HTMLInputElement;
 const buttonMore = $id('btn-more') as HTMLInputElement;
 const anchorCfg = $id('nav-cfg') as HTMLAnchorElement;
@@ -72,6 +75,42 @@ const tween = {
   easeOutCubic: (t: number) => 1 + (t - 1) ** 3
 };
 const time2Str = (time = 0) => `${Math.floor(time / 60)}:${`00${Math.floor(time % 60)}`.slice(-2)}`;
+interface MainOptions {
+  modify: (chart: Chart) => Chart;
+  pressTime: number;
+  before: Map<string, () => Promise<void> | void>;
+  now: Map<string, (time: number) => void>;
+  after: Map<string, () => void>;
+  customDraw: ((ctx: CanvasRenderingContext2D) => void) | null;
+  filter: ((ctx: CanvasRenderingContext2D, time: number, now: number) => CanvasImageSource) | null;
+  filterOptions: Record<string, unknown>;
+  handleFile: (tag: string, total: number, promise: Promise<unknown>, oncomplete?: () => void) => Promise<unknown>;
+  uploader: typeof uploader;
+  awawa: boolean;
+  fireModal: (navHTML: string, contentHTML: string) => HTMLDivElement;
+  toast: (msg: string) => HTMLDivElement;
+  define: (arg0: ModuleConfig) => ModuleConfig;
+  use: (module: Promise<ModuleBase>) => Promise<unknown>;
+  stat: typeof stat;
+  app: typeof app;
+  res: typeof res;
+  audio: typeof audio;
+  msgHandler: typeof msgHandler;
+  frameAnimater: typeof frameAnimater;
+  timeEnd: typeof timeEnd;
+  bgms: typeof bgms;
+  inputName: typeof inputName;
+  selectbgm: typeof selectbgm;
+  selectchart: typeof selectchart;
+  chartsMD5: typeof chartsMD5;
+  noteRender: typeof noteRender;
+  fileReader: typeof fileReader;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  ZipReader: typeof ZipReader;
+  status: typeof status;
+  tmps: typeof tmps;
+  pause: unknown;
+}
 const main = {} as MainOptions;
 main.modify = a => a;
 main.pressTime = 0;
@@ -92,7 +131,12 @@ for (const i of viewNav.children) {
 }
 coverDark.addEventListener('click', () => {
   coverDark.classList.add('fade');
+  coverRsmg.classList.add('fade');
   coverView.classList.add('fade');
+});
+buttonRsmg.addEventListener('click', () => {
+  coverDark.classList.remove('fade');
+  coverRsmg.classList.remove('fade');
 });
 buttonDocs.addEventListener('click', () => {
   main.fireModal('<p>提示</p>', '<p><a href="https://docs.lchz\x68.net/project/sim-phi-core" target="_blank">点击此处</a>查看使用说明</p>');
@@ -107,28 +151,148 @@ strongOut.addEventListener('click', () => {
   coverView.classList.remove('fade');
   anchorMsg.click();
 });
+class BetterMessageBox {
+  public host: string;
+  public code: number;
+  public name: string;
+  public target: string;
+  public list: BetterMessage[];
+  public updateHTML: (...args: any[]) => void;
+  public constructor(msg: BetterMessage) {
+    this.host = msg.host;
+    this.code = msg.code;
+    this.name = msg.name;
+    this.target = msg.target;
+    this.list = [msg];
+    this.updateHTML = () => {};
+  }
+  public appendMessage(msg: BetterMessage) {
+    if (this.host !== msg.host) return false;
+    if (this.code !== msg.code) return false;
+    if (this.name !== msg.name) return false;
+    if (this.target !== msg.target) return false;
+    this.list.push(msg);
+    this.updateHTML();
+    return true;
+  }
+}
 const msgHandler = {
   nodeText: strongOut,
   nodeView: viewMsg,
   lastMessage: '',
-  msgbox(msg = '', type = '', fatal = false) {
+  betterMessageBoxes: [] as BetterMessageBox[],
+  addBox(type = 'warn') {
     const msgbox = document.createElement('div');
-    msgbox.innerHTML = msg;
     msgbox.setAttribute('type', type);
     msgbox.classList.add('msgbox');
+    return this.nodeView.appendChild(msgbox);
+  },
+  removeBox(msgbox: HTMLElement) {
+    msgbox.remove();
+    this.updateText(this.lastMessage);
+  },
+  removeBetterMessageBox(msgbox: BetterMessageBox) {
+    const index = this.betterMessageBoxes.indexOf(msgbox);
+    if (index !== -1) this.betterMessageBoxes.splice(index, 1);
+  },
+  msgbox(msg = '', type = '', fatal = false) {
+    const msgbox = this.addBox(type);
+    msgbox.innerHTML = msg;
     const btn = document.createElement('a');
     btn.innerText = '忽略';
     btn.style.float = 'right';
-    btn.onclick = () => {
-      msgbox.remove();
-      this.sendMessage(this.lastMessage);
-    };
-    if (fatal) btn.classList.add('disabled');
+    btn.onclick = () => this.removeBox(msgbox);
+    btn.classList.toggle('disabled', fatal);
     msgbox.appendChild(btn);
-    this.nodeView.appendChild(msgbox);
   },
-  sendMessage(msg = '', type = '') {
-    const num = this.nodeView.querySelectorAll('.msgbox[type=warn]').length;
+  bmsgbox(msg: BetterMessageBox) {
+    let pageNum = 1;
+    const pageSize = 5;
+    const getPages = () => Math.ceil(msg.list.length / pageSize);
+    const msgbox = this.addBox(['notice', 'warn', 'error'][msg.code]);
+    // 按钮[全部忽略]
+    const btnIgnoreAll = document.createElement('a');
+    btnIgnoreAll.innerText = '全部忽略';
+    btnIgnoreAll.classList.add('bm-rbtn');
+    btnIgnoreAll.onclick = () => {
+      this.removeBetterMessageBox(msg);
+      this.removeBox(msgbox);
+    };
+    // 输入框(页码，自适应宽度+非法值修正)
+    const pageNumNode = document.createElement('span');
+    pageNumNode.textContent = '1';
+    pageNumNode.contentEditable = 'true';
+    pageNumNode.style.cssText = ';color:red;outline:none;text-decoration:underline';
+    const updatePageNum = (num = pageNum) => {
+      if (!isNaN(num)) pageNum = Math.max(1, Math.min(num, getPages()));
+      pageNumNode.textContent = String(pageNum);
+      msg.updateHTML();
+    };
+    pageNumNode.onblur = () => updatePageNum(parseInt(pageNumNode.textContent!));
+    // 总页数
+    const pageTotalNode = document.createElement('span');
+    pageTotalNode.textContent = String(getPages());
+    // 上一页
+    const btnPrevousPage = document.createElement('a');
+    btnPrevousPage.innerText = '上一页';
+    btnPrevousPage.onclick = () => updatePageNum(pageNum - 1);
+    // 下一页
+    const btnNextPage = document.createElement('a');
+    btnNextPage.innerText = '下一页';
+    btnNextPage.onclick = () => updatePageNum(pageNum + 1);
+    // 控制栏
+    const controlNode = document.createElement('div');
+    controlNode.append(pageNumNode, ' / ', pageTotalNode, ' 页 ', btnPrevousPage, ' ', btnNextPage);
+    btnIgnoreAll.setAttribute('bm-ctrl', '');
+    controlNode.setAttribute('bm-ctrl', '');
+    controlNode.classList.add('bm-item');
+    const text = document.createTextNode('');
+    msgbox.append(text, btnIgnoreAll, controlNode);
+    let timer = 0;
+    msg.updateHTML = () => {
+      clearTimeout(timer);
+      timer = self.setTimeout(() => {
+        const pages = getPages();
+        if (pageNum > pages) pageNum = pages;
+        const start = (pageNum - 1) * pageSize;
+        text.textContent = `${msg.code ? `${msg.host}: 检测到${msg.list.length}个${msg.name}\n` : ''}来自${msg.target}`;
+        pageNumNode.textContent = String(pageNum);
+        pageTotalNode.textContent = String(pages);
+        for (const i of msgbox.querySelectorAll('[bm-ctrl]')) (i as HTMLElement).classList.toggle('hide', pages <= 1);
+        for (const i of msgbox.querySelectorAll('[bm-cell]')) i.remove();
+        for (const i of msg.list.slice(start, start + pageSize)) {
+          const btnIgnore = document.createElement('a');
+          btnIgnore.innerText = '忽略';
+          btnIgnore.classList.add('bm-rbtn');
+          btnIgnore.onclick = () => {
+            msg.list.splice(msg.list.indexOf(i), 1);
+            msg.updateHTML();
+            if (msg.list.length === 0) {
+              this.removeBetterMessageBox(msg);
+              msgbox.remove();
+            }
+            this.updateText(this.lastMessage);
+          };
+          const div = document.createElement('div');
+          div.setAttribute('bm-cell', '');
+          div.classList.add('bm-item');
+          div.append(`${i.name}: ${i.message}`, btnIgnore);
+          msgbox.appendChild(div);
+        }
+      });
+    };
+  },
+  getBetterMessageBox(msg: BetterMessage) {
+    for (const i of this.betterMessageBoxes) {
+      if (i.appendMessage(msg)) return i;
+    }
+    const msgbox = new BetterMessageBox(msg);
+    this.betterMessageBoxes.push(msgbox);
+    this.bmsgbox(msgbox);
+    return msgbox;
+  },
+  updateText(msg = '', type = '') {
+    const num = this.nodeView.querySelectorAll('.msgbox[type=warn]').length + this.betterMessageBoxes.reduce((a, b) => a + b.list.length - 1, 0);
     if (type === 'error') {
       this.nodeText.className = 'error';
       this.nodeText.innerText = msg;
@@ -138,10 +302,15 @@ const msgHandler = {
       this.lastMessage = msg;
     }
   },
-  sendWarning(msg = '', isHTML = '') {
-    const msgText = isHTML ? msg : Utils.escapeHTML(msg);
-    this.msgbox(msgText, 'warn');
-    this.sendMessage(this.lastMessage);
+  sendWarning(msg: BetterMessage | string = '', isHTML = '') {
+    if (typeof msg === 'string') {
+      const msgText = isHTML ? msg : Utils.escapeHTML(msg);
+      this.msgbox(msgText, 'warn');
+    } else {
+      const msgbox = this.getBetterMessageBox(msg);
+      msgbox.updateHTML();
+    }
+    this.updateText(this.lastMessage);
   },
   sendError(msg = '', html = '', fatal = false) {
     if (html) {
@@ -154,7 +323,7 @@ const msgHandler = {
       });
       this.msgbox(ahtml, 'error', fatal);
     }
-    this.sendMessage(msg, 'error');
+    this.updateText(msg, 'error');
   }
 };
 const stat = new Stat();
@@ -281,7 +450,7 @@ function adjustInfo() {
   }
 }
 // Uploader
-export const uploader = new FileEmitter();
+const uploader = new FileEmitter();
 (function() {
   const dones: Record<string, number> = {};
   const totals: Record<string, number> = {};
@@ -293,7 +462,7 @@ export const uploader = new FileEmitter();
     await (promise instanceof Promise ? promise : Promise.resolve(promise));
     dones[tag] = (dones[tag] || 0) + 1;
     uploaderDone = Object.values(dones).reduce((a, b) => a + b, 0);
-    msgHandler.sendMessage(`读取文件：${uploaderDone}/${uploaderTotal}`);
+    msgHandler.updateText(`读取文件：${uploaderDone}/${uploaderTotal}`);
     if (dones[tag] === totals[tag] && oncomplete != null) oncomplete();
     loadComplete();
   };
@@ -301,7 +470,7 @@ export const uploader = new FileEmitter();
   let fileTotal = 0;
   const options = { async createAudioBuffer(_: ArrayBuffer) { return audio.decode(_) } };
   const zip = new ZipReader({ handler: async data => fileReader.readFile(data, options) });
-  zip.addEventListener('loadstart', () => { msgHandler.sendMessage('加载zip组件...') });
+  zip.addEventListener('loadstart', () => { msgHandler.updateText('加载zip组件...') });
   zip.addEventListener('read', evt => { handleFile('zip', zip.total, pick((evt as CustomEvent<ReaderData>).detail)) });
   blockUpload.addEventListener('click', uploader.uploadFile.bind(uploader));
   blockUploadFile.addEventListener('click', uploader.uploadFile.bind(uploader));
@@ -310,7 +479,7 @@ export const uploader = new FileEmitter();
   uploader.addEventListener('progress', evt => { // 显示加载文件进度
     if (!(evt as ProgressEvent).total) return;
     const percent = Math.floor((evt as ProgressEvent).loaded / (evt as ProgressEvent).total * 100);
-    msgHandler.sendMessage(`加载文件：${percent}% (${bytefm((evt as ProgressEvent).loaded)}/${bytefm((evt as ProgressEvent).total)})`);
+    msgHandler.updateText(`加载文件：${percent}% (${bytefm((evt as ProgressEvent).loaded)}/${bytefm((evt as ProgressEvent).total)})`);
   });
   uploader.addEventListener('load', evt => {
     // console.log(evt);
@@ -467,7 +636,7 @@ document.addEventListener('visibilitychange', handlerHide);
 document.addEventListener('pagehide', handlerHide); // 兼容Safari
 let isOutOver = false;
 let tempStat = null as StatData | null;
-export const tmps = {
+const tmps = {
   bgImage: null as unknown as ImageBitmap,
   bgVideo: null as HTMLVideoElement | null,
   bgMusicHack: (_: AudioBufferSourceNode): void => {},
@@ -854,29 +1023,15 @@ export const noteRender = {
     hitRaw.forEach(img => img.close());
   }
 };
-const loadResouce = async(url: string) => {
-  const res1 = await fetch(url);
-  const text = await res1.text();
-  try {
-    return JSON.parse(text) as {
-      image: Record<string, string>;
-      audio: Record<string, string>;
-      alternative: Record<string, string>;
-    };
-  } catch (err) {
-    msgHandler.sendError('错误：解析资源时出现问题（点击查看详情）', `解析资源时出现问题：\n${(err as Error).message}\n原始数据：\n${text}`, true);
-    return null;
-  }
-};
 // 初始化(踩坑：监听DOMContentLoaded似乎会阻塞页面导致长时间白屏)
 window.addEventListener('load', (): void => {
   const handler = async(): Promise<void> => {
     canvas.classList.add('fade');
-    let loadedNum = 0;
-    let errorNum = 0;
-    msgHandler.sendMessage('初始化...');
+    // let loadedNum = 0;
+    // let errorNum = 0;
+    msgHandler.updateText('初始化...');
     if (await checkSupport({
-      messageCallback: msg => msgHandler.sendMessage(msg),
+      messageCallback: msg => msgHandler.updateText(msg),
       warnCallback: msg => msgHandler.sendWarning(msg),
       errorCallback: (msg, html, fatal) => msgHandler.sendError(msg, html, fatal),
       mobileCallback: () => blockUploaderSelect.style.display = 'none',
@@ -886,44 +1041,26 @@ window.addEventListener('load', (): void => {
         lockOri.label.textContent += '(当前设备或浏览器不支持)';
       }
     })) return;
-    const res0: Record<string, string> = {};
-    const raw = await loadResouce(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).catch(() => ({
+    await import('./utils/reader-');
+    const raw = await loadResource(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).catch(() => ({
+    // const raw = await loadResource('local/ptres2.json').catch(() => ({
       image: {} as Record<string, string>,
       audio: {} as Record<string, string>,
-      alternative: {} as Record<string, string>
+      alternative: {} as Record<string, string>,
+      format: ''
     }));
-    if (!raw) return;
-    Object.assign(res0, raw.image);
-    Object.assign(res0, raw.audio);
-    // 加载资源
-    await import('./utils/reader-');
-    await Promise.all(Object.entries(res0).map(async([name, src], _i, arr) => {
-      const [url, ext] = src.split('|');
-      await fetch(url, { referrerPolicy: 'no-referrer' }).then(async a => a.blob()).then(async blob => {
-        const img = await createImageBitmap(blob);
-        if (ext?.startsWith('m')) {
-          const data = decode(img, Number(ext.slice(1)));
-          img.close();
-          (res[name] as AudioBuffer) = await audio.decode(data).catch(async(_err: DOMException | Error) => {
-            const blob1 = await fetch(raw.alternative[name], {
-              referrerPolicy: 'no-referrer'
-            }).then(async i => i.blob());
-            return createImageBitmap(blob1).then(decodeAlt).then(async ab => audio.decode(ab)).catch((err: Error) => {
-              msgHandler.sendWarning(`音频加载存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
-              return audio.mute(1);
-            });
-          });
-        } else (res[name] as ImageBitmap) = img;
-        msgHandler.sendMessage(`加载资源：${Math.floor(loadedNum++ / arr.length * 100)}%`);
-      }).catch(err => {
-        console.error(err);
-        msgHandler.sendError(`错误：${errorNum++}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`, true);
-      });
-    }));
-    if (errorNum) {
-      msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
-      return;
-    }
+    if (!raw) return; // 占位符
+    // shit start
+    await readResource(raw);
+    // .then(result => {
+    //   loadedNum += result.loadedNum;
+    //   errorNum += result.errorNum;
+    // })
+    // shit end
+    // if (errorNum) {
+    //   msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
+    //   return;
+    // }
     const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL'];
     await fixme(raw, res);
     await Promise.all(entries.map(async i => noteRender.update(i, res[i] as ImageBitmap, 8080 / Number(raw.image[i].split('|')[1]))));
@@ -944,13 +1081,90 @@ window.addEventListener('load', (): void => {
       msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
       return;
     }
-    msgHandler.sendMessage('等待上传文件...');
+    msgHandler.updateText('等待上传文件...');
     blockUploader.classList.remove('disabled');
     blockSelect.classList.remove('disabled');
     emitter.dispatchEvent(new CustomEvent('change'));
   };
   handler();
 }, { once: true });
+async function loadResource(url: string) {
+  const res1 = await fetch(url);
+  const text = await res1.text();
+  try {
+    return JSON.parse(text) as {
+      image: Record<string, string>;
+      audio: Record<string, string>;
+      alternative: Record<string, string>;
+    };
+  } catch (err) {
+    msgHandler.sendError('错误：解析资源时出现问题（点击查看详情）', Utils.escapeHTML(`解析资源时出现问题：\n${(err as Error).message}\n原始数据：\n${text}`), true);
+    return null;
+  }
+}
+async function readResource(raw: {
+  format?: string;
+  image: Record<string, string>;
+  audio: Record<string, string>;
+  alternative: Record<string, string>;
+}) {
+  let loadedNum = 0;
+  let errorNum = 0;
+  const res0: Record<string, string> = {};
+  Object.assign(res0, raw.image);
+  Object.assign(res0, raw.audio);
+  // 加载资源
+  const res1 = [] as Promise<void>[];
+  if (raw.format === 'raw') {
+    res1.push(...Object.entries(raw.image).map(async([name, src]) => {
+      const [url, ext] = src.split('|');
+      console.log(url, ext);
+      await fetch(url, { referrerPolicy: 'no-referrer' }).then(async a => a.blob()).then(async blob => {
+        const img = await createImageBitmap(blob);
+        res[name] = img;
+        msgHandler.updateText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
+      }).catch(() => {
+        errorNum++;
+        msgHandler.sendWarning(`资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`);
+      });
+    }));
+    res1.push(...Object.entries(raw.audio).map(async([name, src]) => {
+      await fetch(src, { referrerPolicy: 'no-referrer' }).then(async a => a.arrayBuffer()).then(async buffer => {
+        res[name] = await audio.decode(buffer);
+        msgHandler.updateText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
+      }).catch(() => {
+        errorNum++;
+        msgHandler.sendWarning(`资源加载失败，请检查您的网络连接然后重试：\n${new URL(src, location.toString()).toString()}`);
+      });
+    }));
+  } else {
+    res1.push(...Object.entries(res0).map(async([name, src]) => {
+      const [url, ext] = src.split('|');
+      await fetch(url, { referrerPolicy: 'no-referrer' }).then(async a => a.blob()).then(async blob => {
+        const img = await createImageBitmap(blob);
+        if (ext?.startsWith('m')) {
+          const data = decode(img, Number(ext.slice(1)));
+          img.close();
+          res[name] = await audio.decode(data).catch(async(_err: DOMException | Error) => {
+            const blob1 = await fetch(raw.alternative[name], {
+              referrerPolicy: 'no-referrer'
+            }).then(async i => i.blob());
+            return createImageBitmap(blob1).then(decodeAlt).then(async ab => audio.decode(ab)).catch((err: Error) => {
+              msgHandler.sendWarning(`音频加载存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
+              return audio.mute(1);
+            });
+          });
+        } else res[name] = img;
+        msgHandler.updateText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
+      }).catch(err => {
+        console.error(err);
+        msgHandler.sendError(`错误：${errorNum++}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`, true);
+      });
+    }));
+  }
+  await Promise.all(res1);
+  return { loadedNum, errorNum };
+}
 // 作图
 function mainLoop() {
   frameTimer.addTick(); // 计算fps
@@ -1711,7 +1925,7 @@ main.use = async m => {
   const module = await m.then(n => n.default);
   for (const i of module.contents) {
     if (i.type === 'command') loadPlugin(i.meta[0], i.meta[1]);
-    else if (i.type === 'script') i.meta[0]($('.title') as HTMLHeadingElement);
+    else if (i.type === 'script') i.meta[0]($);
     else if (i.type === 'config') appendCfg(i.meta[0], i.meta[1]);
     else throw new TypeError(`Unknown Plugin Type: ${i.type}`);
   }

@@ -15,7 +15,7 @@ function skin() {
   /** @type {ByteData[]} */
   const files = [];
   const zip = new hook.ZipReader({ handler: data => files.push(data) });
-  zip.addEventListener('loadstart', () => hook.msgHandler.sendMessage('加载zip组件...'));
+  zip.addEventListener('loadstart', () => hook.msgHandler.updateText('加载zip组件...'));
   zip.addEventListener('read', () => hook.handleFile(id, zip.total, null, done));
   const uid = Utils.randomUUID();
   const div = hook.toast(`<a id="${uid}" href="#">点击此处打开文件选择器</a>`);

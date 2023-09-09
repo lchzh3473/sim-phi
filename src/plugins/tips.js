@@ -4,7 +4,7 @@ export default hook.define({
   contents: [
     {
       type: 'script',
-      meta: [fireTip]
+      meta: [$ => fireTip($('.title'))]
     }
   ]
 });
