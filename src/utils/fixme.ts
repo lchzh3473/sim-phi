@@ -107,22 +107,26 @@ export async function fixme(raw: Record<string, unknown>, res: Record<string, un
     res.FlickHL = await createImageBitmap(ctx.canvas);
   }
   if (res.Rank == null) {
+    const _5x5colors = ['#fffb00', '#a937e7', '#ea61df', '#ff9e22', '#00a844', '#00e8de', '#e4e4e4'];
+    const _5x5dots = [5232301, 4532785, 16267326, 18415150, 16301615, 31491134, 1088575];
     const ctx = createCtx(256, 1792);
-    ctx.lineWidth = 32;
-    ctx.strokeStyle = '#fff000';
-    ctx.strokeRect(58, 58, 140, 140);
-    ctx.strokeStyle = '#6f6bf1';
-    ctx.strokeRect(58, 58 + 256, 140, 140);
-    ctx.strokeStyle = '#ea4cd6';
-    ctx.strokeRect(58, 58 + 256 * 2, 140, 140);
-    ctx.strokeStyle = '#ff7f2a';
-    ctx.strokeRect(58, 58 + 256 * 3, 140, 140);
-    ctx.strokeStyle = '#00d448';
-    ctx.strokeRect(58, 58 + 256 * 4, 140, 140);
-    ctx.strokeStyle = '#00eafb';
-    ctx.strokeRect(58, 58 + 256 * 5, 140, 140);
-    ctx.strokeStyle = '#ffffff';
-    ctx.strokeRect(58, 58 + 256 * 6, 140, 140);
+    for (let i = 0; i < 7; i++) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, i * 256, 256, 256);
+      ctx.fillStyle = '#303030';
+      ctx.fillRect(16, i * 256 + 16, 224, 224);
+      ctx.fillStyle = _5x5colors[i];
+      const dot = _5x5dots[i];
+      const size = 32;
+      const start = (256 - size * 5) / 2;
+      for (let k = 0; k < 25; k++) {
+        if (dot >> k & 1) {
+          const x = start + k % 5 * size;
+          const y = start + Math.floor(k / 5) * size + i * 256;
+          ctx.fillRect(x, y, size, size);
+        }
+      }
+    }
     res.Rank = await createImageBitmap(ctx.canvas);
   }
   if (res.HitFXRaw == null) {
@@ -139,22 +143,40 @@ export async function fixme(raw: Record<string, unknown>, res: Record<string, un
   }
   if (res.LevelOver1 == null) {
     const ctx = createCtx(1716, 325);
-    ctx.fillStyle = '#333';
+    ctx.fillStyle = '#000';
     ctx.globalAlpha = 0.8;
     ctx.fillRect(0, 0, 1716, 325);
+    ctx.fillStyle = '#989898';
+    // ctx.fillRect(0, 90, 1716, 145);
+    // ctx.fillStyle = '#4b4b4b';
+    ctx.fillRect(0, 94, 1716, 137);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 30px Custom';
+    ctx.fillText('ACC:', 240, 172);
+    ctx.fillText('Max combo:', 1420, 172);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 22px Custom';
+    ctx.fillText('Perfect', 788, 304);
+    ctx.fillText('Good', 942, 304);
+    ctx.fillText('Bad', 1096, 304);
+    ctx.fillText('Miss', 1250, 304);
     res.LevelOver1 = await createImageBitmap(ctx.canvas);
   }
   if (res.LevelOver4 == null) {
     const ctx = createCtx(633, 122);
-    ctx.fillStyle = '#333';
-    ctx.globalAlpha = 0.9;
-    ctx.fillRect(0, 0, 633, 122);
+    const gradient = ctx.createLinearGradient(24, 0, 633, 0);
+    gradient.addColorStop(0, 'rgba(0,0,0,0.78125)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(24, 24, 609, 72);
     res.LevelOver4 = await createImageBitmap(ctx.canvas);
   }
   if (res.LevelOver5 == null) {
     const ctx = createCtx(11, 43);
     ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, 11, 43);
+    ctx.fillRect(3, 1, 7, 40);
     res.LevelOver5 = await createImageBitmap(ctx.canvas);
   }
   const entries2 = ['HitFXRaw', 'Rank', 'LevelOver1', 'LevelOver3', 'LevelOver4', 'LevelOver5'];

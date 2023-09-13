@@ -23,7 +23,7 @@ const getSongsUrlByIndex = (index = 0) => `${host}/songs/?perpage=1&page=${index
 const getChartsUrlByIndex = (index = 0) => `${host}/charts/?perpage=1&page=${index}`;
 const getChartsUrlByUUID = (id = '') => `${host}/songs/${id}/charts/`;
 const getRandomChartUrl = () => `${host}/charts/random/?rangeFormat=0&rangeFormat=1`;
-const ver = 'PhiZone API v0.8.2';
+const ver = 'PhiZone API v0.8.3';
 // eslint-disable-next-line no-alert
 const vprompt = str => prompt(`${ver}\n${str}`);
 const valert = str => hook.toast(`${ver}\n${str}`);
@@ -237,7 +237,6 @@ Object.defineProperty(Downloader.prototype, 'total', { get() {
   return values.reduce((total, xhr) => total + Math.max(xhr.event.loaded, xhr.event.total), 0);
 } });
 function getChartOffset(id) {
-  if (id === 'ea73b91d-b70f-4ce0-94a5-9c0090e2d707') return 75; // 16
   if (id === '0ada5f8d-7f1d-426e-b53d-747d4489e255') return 100; // 29
   if (id === '5201e181-b5d1-4931-9785-e78cbed0758e') return 50; // 34
   if (id === '8747c9b5-9029-499d-b1d5-59bd46e2522f') return 150; // 35
@@ -251,7 +250,6 @@ function getChartOffset(id) {
   if (id === '165119b8-7074-4106-bb23-27a8fb99c0c6') return 150; // 58
   if (id === '846587d2-0ff2-40ca-b42b-3568cef08e48') return 250; // 59
   if (id === '74585cab-6b6f-4633-9c3d-4dfa9900cafd') return -100; // 61
-  if (id === 'cb3a921a-9b7c-4653-87e8-692534d9c87d') return 200; // 65
   if (id === '4be75ae5-af61-4e2b-a23c-7171d063c391') return 300; // 66
   if (id === '108254a0-a756-4200-8391-1f47bb7707aa') return -50; // 68
   if (id === '8c4d638a-a1aa-4e29-a0d2-2f3a2cb7e69c') return 300; // 69
@@ -306,12 +304,6 @@ function getChartOffset(id) {
   if (id === 'e59e5ef8-d444-4dc6-aebe-44bfd4891a94') return -50; // 162
   if (id === 'c2006c12-e1c2-47ba-8292-c6c00b37dfbf') return 50; // 165
   if (id === '2b0338d9-e71a-40fe-8d79-dc8f6dec48da') return 50; // 166
-  if (id === '9a4428e2-e93f-4945-8762-e28031fa1203') return 50; // 169
-  if (id === 'a7b4798c-3578-471d-951f-5089bc11e1ac') return 25; // 170
-  if (id === '88ee599b-8b5e-4b23-a95d-ab5a020c7144') return 50; // 171
-  if (id === 'aa588ddd-38ee-4412-b6d2-5e74eaa1e1d9') return 100; // 172
-  if (id === '435ee0de-63b9-47e1-9386-7bbf4b716f26') return 100; // 173
-  if (id === '096460bb-13b1-45ad-9159-82e61f6149cf') return 2300; // 174
   // handled up to 174
   return 0;
 }
