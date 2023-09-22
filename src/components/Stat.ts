@@ -10,6 +10,7 @@ export class Stat {
   private numOfNotes: number;
   private data: Record<string, string>;
   private id: string;
+  public format: string;
   public constructor() {
     this.level = 0;
     this.noteRank = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -22,6 +23,7 @@ export class Stat {
     this.numOfNotes = 0;
     this.data = {};
     this.id = '';
+    this.format = '';
   }
   public get good(): number {
     return this.noteRank[7] + this.noteRank[3];
@@ -132,7 +134,7 @@ export class Stat {
     }
     return Object.assign(pbj, { textBelowStr: '' });
   }
-  public reset(numOfNotes: number, id: string, speed = ''): void {
+  public reset(numOfNotes: number, id: string, format: string, speed = ''): void {
     const key = `phi-${speed}`;
     this.numOfNotes = numOfNotes | 0;
     this.combo = 0;
@@ -152,6 +154,7 @@ export class Stat {
       if (!this.data[id]) this.data[id] = this.localData;
       this.id = id;
     }
+    this.format = format;
   }
   public addCombo(status: number, type: number): void {
     this.noteRank[status]++;

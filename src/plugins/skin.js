@@ -15,7 +15,7 @@ function skin() {
   /** @type {ByteData[]} */
   const files = [];
   const zip = new hook.ZipReader({ handler: data => files.push(data) });
-  zip.addEventListener('loadstart', () => hook.msgHandler.updateText('加载zip组件...'));
+  zip.addEventListener('loadstart', () => hook.sendText('加载zip组件...'));
   zip.addEventListener('read', () => hook.handleFile(id, zip.total, null, done));
   const uid = Utils.randomUUID();
   const div = hook.toast(`<a id="${uid}" href="#">点击此处打开文件选择器</a>`);
@@ -151,7 +151,7 @@ function loadConfig(files = []) {
   if (config0) return yaml2json(stringify(config0.buffer), /;?\r?\n/);
   const config1 = files.find(i => String(i.name).endsWith('info.yml'));
   if (config1) return yaml2json(stringify(config1.buffer));
-  hook.msgHandler.sendError('未找到config.txt或info.yml');
+  hook.sendError('未找到config.txt或info.yml');
   return {};
 }
 function yaml2json(text = '', split = /\r?\n/) {

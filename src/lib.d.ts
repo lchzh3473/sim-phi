@@ -30,6 +30,8 @@ interface HTMLElement {
 }
 // Custom
 interface Window {
+  /** @deprecated for debug */
+  [key: string]: unknown;
   _i: [string, (number | string)[], number, number];
   hook: object;
   oggmented: Oggmented;
@@ -93,7 +95,7 @@ interface ImageReaderData {
 }
 interface MediaReaderData {
   name: string;
-  type: 'audio' | 'media';
+  type: 'media';
   data: MediaData;
 }
 interface BetterMessage {
@@ -107,6 +109,7 @@ interface ChartReaderData {
   name: string;
   type: 'chart';
   data: Chart;
+  format: string;
   md5: string;
   msg?: (BetterMessage | string)[];
   info?: ChartInfoData;

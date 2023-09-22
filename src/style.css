@@ -204,6 +204,7 @@ body {
   flex-grow: 1;
 }
 
+/* MessageHandler */
 #view-msg:empty::after {
   content: '日志将会显示在这里';
   display: flow-root;

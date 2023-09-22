@@ -28,5 +28,5 @@
     // "checkJs": true
   },
   "include": ["**/*", ".eslintrc.cjs"],
-  "exclude": ["node_modules", "dist", "public/lib"]
+  "exclude": ["node_modules", "dist", "public/lib", "**/* copy*"]
 }

@@ -7,8 +7,8 @@ fileReader.use(defineReader({
   read(i: ByteData) {
     const rpeData = Pec.parseRPE(i.text!, i.name/* , path */); // TODO: path
     const jsonData = chart123(rpeData.data);
-    const { messages: msg, info, line } = rpeData;
-    return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData, msg, info, line };
+    const { messages: msg, info, line, format } = rpeData;
+    return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData, msg, info, line, format };
   }
 }));
 fileReader.use(defineReader({
@@ -17,7 +17,8 @@ fileReader.use(defineReader({
   read(i: ByteData) {
     const pecData = Pec.parse(i.text!, i.name);
     const jsonData = chart123(pecData.data);
-    return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData, msg: pecData.messages };
+    const { messages: msg, format } = pecData;
+    return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData, msg, format };
   }
 }));
 fileReader.use(defineReader({

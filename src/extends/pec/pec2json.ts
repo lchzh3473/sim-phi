@@ -33,6 +33,7 @@ interface LineCommand {
 interface PecParseResult {
   data: string;
   messages: string[];
+  format: string;
 }
 export function parse(pec: string, filename: string): PecParseResult {
   const data = pec.split(/\s+/); // 切分pec文本
@@ -149,5 +150,5 @@ export function parse(pec: string, filename: string): PecParseResult {
     result.judgeLineList.push(judgeLine);
     result.numOfNotes += judgeLine.numOfNotes;
   }
-  return { data: JSON.stringify(result), messages: warnings };
+  return { data: JSON.stringify(result), messages: warnings, format: 'PEC' };
 }

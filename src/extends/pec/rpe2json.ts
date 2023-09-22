@@ -490,6 +490,7 @@ export function parse(pec: string, filename: string): {
   messages: BetterMessage[];
   info: ChartInfoData;
   line: ChartLineData[];
+  format: string;
 } {
   const data = JSON.parse(pec) as RPEData;
   const meta = data.META || data;
@@ -498,6 +499,7 @@ export function parse(pec: string, filename: string): {
   const warnings = [] as BetterMessage[];
   const warn = (code: number, name: string, message: string) => warnings.push({ host: 'RPE2JSON', code, name, message, target: filename });
   warn(0, 'RPEVersionNotice', `RPE谱面兼容建设中...\n检测到RPE版本:${meta.RPEVersion}`);
+  const format = `RPE(${meta.RPEVersion})`;
   // 谱面信息
   const info: ChartInfoData = {};
   info.Chart = filename;
@@ -632,5 +634,5 @@ export function parse(pec: string, filename: string): {
     result.judgeLineList.push(judgeLine);
     result.numOfNotes += judgeLine.numOfNotes;
   }
-  return { data: JSON.stringify(result), messages: warnings, info, line };
+  return { data: JSON.stringify(result), messages: warnings, info, line, format };
 }

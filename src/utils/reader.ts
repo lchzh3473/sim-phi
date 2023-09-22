@@ -136,7 +136,8 @@ const readers: ByteReader[] = [
     type: 'json',
     read(i: ByteData) {
       const jsonData = chart123(i.text!, (_, value) => typeof value === 'number' ? Math.fround(value) : value);
-      return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData };
+      const format = `PGS(${jsonData.formatVersion})`;
+      return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData, format };
     }
   }), defineReader({
     pattern: /\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i,
@@ -242,8 +243,7 @@ export function chart123(text: string, reviver?: (this: unknown, key: string, va
   const chart = (typeof reviver === 'function' ? JSON.parse(text, reviver) : JSON.parse(text)) as Chart;
   if (chart.formatVersion === undefined) throw new Error('Invalid chart file');
   switch (Number(chart.formatVersion) | 0) {
-    case 1: {
-      chart.formatVersion = 3;
+    case 1:
       for (const i of chart.judgeLineList) {
         for (const j of i.judgeLineMoveEvents) {
           j.start2 = j.start % 1e3 / 520;
@@ -252,8 +252,7 @@ export function chart123(text: string, reviver?: (this: unknown, key: string, va
           j.end = Math.floor(j.end / 1e3) / 880;
         }
       } // fallthrough
-    }
-    case 3: {
+    case 3:
       for (const i of chart.judgeLineList) {
         let y = 0;
         let y2 = 0; // float32
@@ -267,7 +266,6 @@ export function chart123(text: string, reviver?: (this: unknown, key: string, va
           y2 = Math.fround(y2);
         }
       } // fallthrough
-    }
     case 3473:
       for (const i of chart.judgeLineList) {
         if (i.numOfNotes == null) {

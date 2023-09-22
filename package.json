@@ -1,7 +1,7 @@
 {
   "name": "sim-phi-vite",
   "private": true,
-  "version": "1.5.2",
+  "version": "1.5.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,8 +22,8 @@
     "@types/eslint": "^8.44.2",
     "@types/md5": "^2.3.2",
     "@types/prompts": "^2.4.4",
-    "@typescript-eslint/eslint-plugin": "^6.6.0",
-    "@typescript-eslint/parser": "^6.6.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.2",
+    "@typescript-eslint/parser": "^6.7.2",
     "eslint": "^8.49.0",
     "eslint-plugin-rulesdir": "^0.2.2",
     "picocolors": "^1.0.0",

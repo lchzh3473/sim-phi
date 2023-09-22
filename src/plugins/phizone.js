@@ -16,7 +16,7 @@ export default hook.define({
     }
   ]
 });
-const { msgHandler, uploader } = hook;
+const { sendText, uploader } = hook;
 const host = 'https://api.phizone.cn';
 const getSongUrlByUUID = (id = '') => `${host}/songs/${id}/`;
 const getSongsUrlByIndex = (index = 0) => `${host}/songs/?perpage=1&page=${index}`;
@@ -32,7 +32,7 @@ async function dialog(num) {
   if (id === '' || id === null) { valert('未输入歌曲ID，已取消操作'); return }
   const data = await query(id).catch(err => {
     valert(`无法连接至服务器\n错误代码：${err.message}`);
-    msgHandler.updateText('无法连接至服务器');
+    sendText('无法连接至服务器');
   });
   console.log(data);
   if (!data) return;
@@ -44,7 +44,7 @@ async function dialogc(num) {
   if (id === '' || id === null) { valert('未输入谱面ID，已取消操作'); return }
   const data = await queryChart(id).catch(err => {
     valert(`无法连接至服务器\n错误代码：${err.message}`);
-    msgHandler.updateText('无法连接至服务器');
+    sendText('无法连接至服务器');
   });
   console.log(data);
   if (!data) return;
@@ -59,7 +59,7 @@ async function random() {
   await readData(data);
 }
 async function query(id) {
-  msgHandler.updateText('等待服务器响应...');
+  sendText('等待服务器响应...');
   const resS = await fetch(getSongsUrlByIndex(id | 0));
   if (!resS.ok) throw new Error(`${resS.status} ${resS.statusText}`);
   const song = ((await resS.json()).data || [])[0];
@@ -70,7 +70,7 @@ async function query(id) {
   return getData(charts.filter(a => a.file), song);
 }
 async function queryChart(id) {
-  msgHandler.updateText('等待服务器响应...');
+  sendText('等待服务器响应...');
   const resC = await fetch(getChartsUrlByIndex(id | 0));
   if (!resC.ok) throw new Error(`${resC.status} ${resC.statusText}`);
   const chart = ((await resC.json()).data || [])[0];
@@ -81,7 +81,7 @@ async function queryChart(id) {
   return getData([chart], song);
 }
 async function queryRandom() {
-  msgHandler.updateText('等待服务器响应...');
+  sendText('等待服务器响应...');
   const resC = await fetch(getRandomChartUrl());
   if (!resC.ok) throw new Error(`${resC.status} ${resC.statusText}`);
   const chart = (await resC.json()).data;
@@ -117,7 +117,7 @@ async function readData(data) {
   }
   const downloader = new Downloader();
   const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
-  msgHandler.updateText('获取资源列表...');
+  sendText('获取资源列表...');
   await downloader.add(urls, ({ url, status, statusText }) => {
     valert(`资源 '${dstr(url)}' 加载失败\n错误代码：${status} ${statusText}`);
   });

@@ -1,4 +1,4 @@
-import { decodeAlt } from '/src/utils/imgAny';
+import { ImgAny } from '../../utils/ImageTools';
 const $id = query => document.getElementById(query);
 const $ = query => document.body.querySelector(query);
 const flag0 = 'flag{\x71w\x71}';
@@ -28,7 +28,7 @@ export default function() {
         btn.onclick = function() {
           btn.onclick = null;
           btn.remove();
-          const handler = img => hook.uploader.fireLoad({ name: 'demo.zip' }, decodeAlt(img));
+          const handler = img => hook.uploader.fireLoad({ name: 'demo.zip' }, ImgAny.decodeAlt(img));
           const xhr = new XMLHttpRequest();
           xhr.open('GET', '//i0.hdslb.com/bfs/music/1682346166.jpg', true);
           xhr.responseType = 'blob';

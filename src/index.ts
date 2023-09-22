@@ -10,17 +10,13 @@ import { HitManager, JudgeEvent } from './components/HitManager';
 import { Stat } from './components/Stat';
 import { InteractProxy, audio } from './external';
 import createCtx from './utils/createCtx';
-import { decode, decodeAlt } from './utils/imgAny';
+import { ImgAny, imgBlur, imgPainter, imgShader, imgSplit } from './utils/ImageTools';
 import { Checkbox, HitEvents, HitFeedback, HitImage, HitWord, ScaledNote, StatusManager } from './components';
-import { imgBlur } from './utils/imgBlur';
-import { imgShader } from './utils/imgShader';
-import { imgPainter } from './utils/imgPainter';
-import { imgSplit } from './utils/imgSplit';
 import { Stage } from './components/Stage';
 import { checkSupport } from './utils/checkSupport';
 import { adjustSize } from './utils/adjustSize';
 import { fixme } from './utils/fixme';
-import { BetterMessageBox } from './components/BetterMessageBox';
+import { MessageHandler } from './components/MessageHandler';
 self._i = ['Phixos', version.split('.'), pubdate, lastupdate];
 const $id = (query: string): HTMLElement => document.getElementById(query) || (() => { throw new Error(`Cannot find element: ${query}`) })();
 const $ = (query: string) => document.body.querySelector(query);
@@ -96,7 +92,9 @@ interface MainOptions {
   app: typeof app;
   res: typeof res;
   audio: typeof audio;
-  msgHandler: typeof msgHandler;
+  sendText: (msg?: string, type?: string) => void;
+  sendWarning: (msg?: BetterMessage | string, isHTML?: boolean) => void;
+  sendError: (msg?: string, html?: string, fatal?: boolean) => void;
   frameAnimater: typeof frameAnimater;
   timeEnd: typeof timeEnd;
   bgms: typeof bgms;
@@ -152,152 +150,13 @@ strongOut.addEventListener('click', () => {
   coverView.classList.remove('fade');
   anchorMsg.click();
 });
-const msgHandler = {
-  nodeText: strongOut,
-  nodeView: viewMsg,
-  lastMessage: '',
-  betterMessageBoxes: [] as BetterMessageBox[],
-  addBox(type = 'warn') {
-    const msgbox = document.createElement('div');
-    msgbox.setAttribute('type', type);
-    msgbox.classList.add('msgbox');
-    return this.nodeView.appendChild(msgbox);
-  },
-  removeNodeBox(nodeBox: HTMLDivElement) {
-    nodeBox.remove();
-    this.updateText(this.lastMessage);
-  },
-  removeBetterMessageBox(msgbox: BetterMessageBox) {
-    const index = this.betterMessageBoxes.indexOf(msgbox);
-    if (index !== -1) this.betterMessageBoxes.splice(index, 1);
-  },
-  msgbox(msg = '', type = '', fatal = false) {
-    const msgbox = this.addBox(type);
-    msgbox.innerHTML = msg;
-    const btn = document.createElement('a');
-    btn.innerText = '忽略';
-    btn.style.float = 'right';
-    btn.onclick = () => this.removeNodeBox(msgbox);
-    btn.classList.toggle('disabled', fatal);
-    msgbox.appendChild(btn);
-  },
-  bmsgbox(msg: BetterMessage) {
-    const msgbox = new BetterMessageBox(msg);
-    const page = { page: 1, size: 5, get pages() { return Math.ceil(msgbox.list.length / this.size) } };
-    // 日志文本
-    const text = document.createTextNode('');
-    // 按钮[全部忽略]
-    const btnIgnoreAll = document.createElement('a');
-    btnIgnoreAll.innerText = '全部忽略';
-    btnIgnoreAll.classList.add('bm-rbtn');
-    // 当前页数(可编辑)
-    const nodePageNum = document.createElement('span');
-    nodePageNum.textContent = String(page.page);
-    nodePageNum.contentEditable = 'true';
-    nodePageNum.style.cssText = ';color:red;outline:none;text-decoration:underline';
-    // 总页数
-    const nodePages = document.createElement('span');
-    nodePages.textContent = String(page.pages);
-    // 按钮[上一页]
-    const btnPrevousPage = document.createElement('a');
-    btnPrevousPage.innerText = '上一页';
-    // 按钮[下一页]
-    const btnNextPage = document.createElement('a');
-    btnNextPage.innerText = '下一页';
-    // 控制栏
-    const nodeControl = document.createElement('div');
-    nodeControl.classList.add('bm-item');
-    nodeControl.append(nodePageNum, ' / ', nodePages, ' 页 ', btnPrevousPage, ' ', btnNextPage);
-    // 消息框
-    const nodeBMsg = this.addBox(['notice', 'warn', 'error'][msgbox.code]);
-    nodeBMsg.append(text, btnIgnoreAll, nodeControl);
-    // 脚本
-    btnIgnoreAll.setAttribute('bm-ctrl', '');
-    nodeControl.setAttribute('bm-ctrl', '');
-    const updatePage = (num: number) => {
-      if (!isNaN(num)) page.page = Math.max(1, Math.min(num, page.pages));
-      nodePageNum.textContent = String(page.page);
-      msgbox.updateHTML();
-    };
-    nodePageNum.onblur = () => updatePage(parseInt(nodePageNum.textContent!));
-    btnPrevousPage.onclick = () => updatePage(page.page - 1);
-    btnNextPage.onclick = () => updatePage(page.page + 1);
-    btnIgnoreAll.onclick = () => {
-      this.removeBetterMessageBox(msgbox);
-      this.removeNodeBox(nodeBMsg);
-    };
-    // 防抖
-    let timer = 0;
-    msgbox.updateHTML = () => {
-      clearTimeout(timer);
-      timer = self.setTimeout((() => {
-        const { pages } = page;
-        if (page.page > pages) page.page = pages;
-        const start = (page.page - 1) * page.size;
-        text.textContent = `${msgbox.code ? `${msgbox.host}: 检测到${msgbox.list.length}个${msgbox.name}\n` : ''}来自${msgbox.target}`;
-        nodePageNum.textContent = String(page.page);
-        nodePages.textContent = String(pages);
-        for (const i of nodeBMsg.querySelectorAll('[bm-ctrl]')) (i as HTMLElement).classList.toggle('hide', pages <= 1);
-        for (const i of nodeBMsg.querySelectorAll('[bm-cell]')) i.remove();
-        for (const i of msgbox.list.slice(start, start + page.size)) {
-          const btnIgnore = document.createElement('a');
-          btnIgnore.innerText = '忽略';
-          btnIgnore.classList.add('bm-rbtn');
-          btnIgnore.onclick = () => {
-            msgbox.list.splice(msgbox.list.indexOf(i), 1);
-            msgbox.updateHTML();
-            if (msgbox.list.length === 0) {
-              this.removeBetterMessageBox(msgbox);
-              this.removeNodeBox(nodeBMsg);
-            } else this.updateText(this.lastMessage);
-          };
-          const div = document.createElement('div');
-          div.setAttribute('bm-cell', '');
-          div.classList.add('bm-item');
-          div.append(`${i.name}: ${i.message}`, btnIgnore);
-          nodeBMsg.appendChild(div);
-        }
-      }));
-    };
-    this.betterMessageBoxes.push(msgbox);
-    return msgbox;
-  },
-  getBetterMessageBox(msg: BetterMessage) {
-    for (const i of this.betterMessageBoxes) {
-      if (i.appendMessage(msg)) return i;
-    }
-    return this.bmsgbox(msg);
-  },
-  updateText(msg = '', type = '') {
-    const num = this.nodeView.querySelectorAll('.msgbox[type=warn]').length + this.betterMessageBoxes.reduce((a, b) => a + b.list.length - 1, 0);
-    if (type === 'error') {
-      this.nodeText.className = 'error';
-      this.nodeText.innerText = msg;
-    } else {
-      this.nodeText.className = num ? 'warning' : 'accept';
-      this.nodeText.innerText = msg + (num ? `（发现${num}个问题，点击查看）` : '');
-      this.lastMessage = msg;
-    }
-  },
-  sendWarning(msg: BetterMessage | string = '', isHTML = false) {
-    if (typeof msg === 'string') this.msgbox(isHTML ? msg : Utils.escapeHTML(msg), 'warn');
-    else this.getBetterMessageBox(msg).updateHTML();
-    this.updateText(this.lastMessage);
-  },
-  sendError(msg = '', html = '', fatal = false) {
-    if (html) {
-      const exp = /([A-Za-z][A-Za-z+-.]{2,}:\/\/|www\.)[^\s\x00-\x20\x7f-\x9f"]{2,}[^\s\x00-\x20\x7f-\x9f"!'),.:;?\]}]/g;
-      const ahtml = html.replace(exp, (match = '') => {
-        const url = match.startsWith('www.') ? `//${match}` : match;
-        const rpath = match.replace(`${location.origin}/`, '');
-        if (match.includes(location.origin)) return `<a href="#"style="color:#023b8f;text-decoration:underline;">${rpath}</a>`;
-        return `<a href="${url}"target="_blank"style="color:#023b8f;text-decoration:underline;">${rpath}</a>`;
-      });
-      this.msgbox(ahtml, 'error', fatal);
-    }
-    this.updateText(msg, 'error');
-  }
-};
+const msgHandler = new class extends MessageHandler {
+  public nodeView = viewMsg;
+  public nodeText = strongOut;
+}();
+const sendText = msgHandler.updateText.bind(msgHandler);
+const sendWarning = msgHandler.sendWarning.bind(msgHandler);
+const sendError = msgHandler.sendError.bind(msgHandler);
 const stat = new Stat();
 const stage = new Stage(stageEl);
 const app = new Renderer(stageEl); // test
@@ -340,6 +199,7 @@ const bgsBlur = new Map() as Map<string, ImageBitmap>;
 const bgms = new Map() as Map<string, { audio: AudioBuffer; video: HTMLVideoElement | null }>;
 const charts = new Map() as Map<string, Chart>;
 const chartsMD5 = new Map() as Map<string, string>;
+const chartsFormat = new Map() as Map<string, string>;
 const chartLineData: ChartLineData[] = []; // Line.csv
 const chartInfoData: ChartInfoData[] = []; // Info.csv
 selectNoteScale.addEventListener('change', evt => { app.setNoteScale(Number((evt.target as HTMLSelectElement).value)) });
@@ -434,7 +294,7 @@ const uploader = new FileEmitter();
     await (promise instanceof Promise ? promise : Promise.resolve(promise));
     dones[tag] = (dones[tag] || 0) + 1;
     uploaderDone = Object.values(dones).reduce((a, b) => a + b, 0);
-    msgHandler.updateText(`读取文件：${uploaderDone}/${uploaderTotal}`);
+    sendText(`读取文件：${uploaderDone}/${uploaderTotal}`);
     if (dones[tag] === totals[tag] && oncomplete != null) oncomplete();
     loadComplete();
   };
@@ -442,7 +302,7 @@ const uploader = new FileEmitter();
   let fileTotal = 0;
   const options = { async createAudioBuffer(_: ArrayBuffer) { return audio.decode(_) } };
   const zip = new ZipReader({ handler: async data => fileReader.readFile(data, options) });
-  zip.addEventListener('loadstart', () => { msgHandler.updateText('加载zip组件...') });
+  zip.addEventListener('loadstart', () => sendText('加载zip组件...'));
   zip.addEventListener('read', evt => { handleFile('zip', zip.total, pick((evt as CustomEvent<ReaderData>).detail)) });
   blockUpload.addEventListener('click', uploader.uploadFile.bind(uploader));
   blockUploadFile.addEventListener('click', uploader.uploadFile.bind(uploader));
@@ -451,7 +311,7 @@ const uploader = new FileEmitter();
   uploader.addEventListener('progress', evt => { // 显示加载文件进度
     if (!(evt as ProgressEvent).total) return;
     const percent = Math.floor((evt as ProgressEvent).loaded / (evt as ProgressEvent).total * 100);
-    msgHandler.updateText(`加载文件：${percent}% (${bytefm((evt as ProgressEvent).loaded)}/${bytefm((evt as ProgressEvent).total)})`);
+    sendText(`加载文件：${percent}% (${bytefm((evt as ProgressEvent).loaded)}/${bytefm((evt as ProgressEvent).total)})`);
   });
   uploader.addEventListener('load', evt => {
     // console.log(evt);
@@ -476,8 +336,7 @@ const uploader = new FileEmitter();
       case 'info':
         chartInfoData.push(...data.data);
         break;
-      case 'media':
-      case 'audio': {
+      case 'media': {
         let basename = data.name;
         while (bgms.has(basename)) basename += '\n'; // TODO: abstract
         bgms.set(basename, data.data);
@@ -493,20 +352,21 @@ const uploader = new FileEmitter();
         break;
       }
       case 'chart': {
-        if (data.msg) data.msg.forEach(v => msgHandler.sendWarning(v));
+        if (data.msg) data.msg.forEach(v => sendWarning(v));
         if (data.info) chartInfoData.push(data.info);
         if (data.line) chartLineData.push(...data.line);
         let basename = data.name;
         while (charts.has(basename)) basename += '\n';
         charts.set(basename, data.data);
         chartsMD5.set(basename, data.md5);
+        chartsFormat.set(basename, data.format);
         selectchart.appendChild(createOption(basename, data.name));
         break;
       }
       default:
         console.warn(`Unsupported file: ${data.name}`);
         console.log(data.data);
-        msgHandler.sendWarning(`不支持的文件：${data.name}\n${data.data as string || 'Error: Unknown File Type'}`);
+        sendWarning(`不支持的文件：${data.name}\n${data.data as string || 'Error: Unknown File Type'}`);
     }
   }
   function createOption(value: string, innerhtml: string) {
@@ -1001,11 +861,11 @@ window.addEventListener('load', (): void => {
     canvas.classList.add('fade');
     // let loadedNum = 0;
     // let errorNum = 0;
-    msgHandler.updateText('初始化...');
+    sendText('初始化...');
     if (await checkSupport({
-      messageCallback: msg => msgHandler.updateText(msg),
-      warnCallback: msg => msgHandler.sendWarning(msg),
-      errorCallback: (msg, html, fatal) => msgHandler.sendError(msg, html, fatal),
+      messageCallback: sendText,
+      warnCallback: sendWarning,
+      errorCallback: sendError,
       mobileCallback: () => blockUploaderSelect.style.display = 'none',
       orientNotSupportCallback: () => {
         lockOri.checked = false;
@@ -1030,7 +890,7 @@ window.addEventListener('load', (): void => {
     // })
     // shit end
     // if (errorNum) {
-    //   msgHandler.sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
+    //   sendError(`错误：${errorNum}个资源加载失败（点击查看详情）`);
     //   return;
     // }
     const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL'];
@@ -1050,10 +910,10 @@ window.addEventListener('load', (): void => {
       b.drawImage(res.JudgeLine, 0, 0);
       return b.getImageData(0, 0, 1, 1).data[0];
     })() === 0) {
-      msgHandler.sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
+      sendError('检测到图片加载异常，请关闭所有应用程序然后重试');
       return;
     }
-    msgHandler.updateText('等待上传文件...');
+    sendText('等待上传文件...');
     blockUploader.classList.remove('disabled');
     blockSelect.classList.remove('disabled');
     emitter.dispatchEvent(new CustomEvent('change'));
@@ -1070,7 +930,7 @@ async function loadResource(url: string) {
       alternative: Record<string, string>;
     };
   } catch (err) {
-    msgHandler.sendError('错误：解析资源时出现问题（点击查看详情）', Utils.escapeHTML(`解析资源时出现问题：\n${(err as Error).message}\n原始数据：\n${text}`), true);
+    sendError('错误：解析资源时出现问题（点击查看详情）', Utils.escapeHTML(`解析资源时出现问题：\n${(err as Error).message}\n原始数据：\n${text}`), true);
     return null;
   }
 }
@@ -1094,19 +954,19 @@ async function readResource(raw: {
       await fetch(url, { referrerPolicy: 'no-referrer' }).then(async a => a.blob()).then(async blob => {
         const img = await createImageBitmap(blob);
         res[name] = img;
-        msgHandler.updateText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
+        sendText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
       }).catch(() => {
         errorNum++;
-        msgHandler.sendWarning(`资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`);
+        sendWarning(`资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`);
       });
     }));
     res1.push(...Object.entries(raw.audio).map(async([name, src]) => {
       await fetch(src, { referrerPolicy: 'no-referrer' }).then(async a => a.arrayBuffer()).then(async buffer => {
         res[name] = await audio.decode(buffer);
-        msgHandler.updateText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
+        sendText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
       }).catch(() => {
         errorNum++;
-        msgHandler.sendWarning(`资源加载失败，请检查您的网络连接然后重试：\n${new URL(src, location.toString()).toString()}`);
+        sendWarning(`资源加载失败，请检查您的网络连接然后重试：\n${new URL(src, location.toString()).toString()}`);
       });
     }));
   } else {
@@ -1115,22 +975,22 @@ async function readResource(raw: {
       await fetch(url, { referrerPolicy: 'no-referrer' }).then(async a => a.blob()).then(async blob => {
         const img = await createImageBitmap(blob);
         if (ext?.startsWith('m')) {
-          const data = decode(img, Number(ext.slice(1)));
+          const data = ImgAny.decode(img, Number(ext.slice(1)));
           img.close();
           res[name] = await audio.decode(data).catch(async(_err: DOMException | Error) => {
             const blob1 = await fetch(raw.alternative[name], {
               referrerPolicy: 'no-referrer'
             }).then(async i => i.blob());
-            return createImageBitmap(blob1).then(decodeAlt).then(async ab => audio.decode(ab)).catch((err: Error) => {
-              msgHandler.sendWarning(`音频加载存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
+            return createImageBitmap(blob1).then(ImgAny.decodeAlt).then(async ab => audio.decode(ab)).catch((err: Error) => {
+              sendWarning(`音频加载存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
               return audio.mute(1);
             });
           });
         } else res[name] = img;
-        msgHandler.updateText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
+        sendText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
       }).catch(err => {
         console.error(err);
-        msgHandler.sendError(`错误：${errorNum++}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`, true);
+        sendError(`错误：${errorNum++}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`, true);
       });
     }));
   }
@@ -1366,6 +1226,7 @@ function loopCanvas() {
   ctxfg.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
   ctxfg.textAlign = 'left';
   ctxfg.fillText(`${time2Str(main.awawa ? duration0 - timeBgm : timeBgm)}/${time2Str(duration0)}${status2.text}`, lineScale * 0.05, lineScale * 0.6);
+  ctxfg.fillText(stat.format, canvasfg.width - lineScale * 4.35, lineScale * 0.6);
   ctxfg.textAlign = 'right';
   ctxfg.fillText(frameTimer.fpsStr, canvasfg.width - lineScale * 0.05, lineScale * 0.6);
   if (tmps.showStat && showStat.checked) {
@@ -1731,16 +1592,17 @@ status2.reg(emitter, 'change', target => (target as Emitter).eq('pause') ? 'Paus
 async function atStop(): Promise<void> {
   if (emitter.eq('stop')) {
     if (!selectchart.value) {
-      msgHandler.sendError('错误：未选择任何谱面');
+      sendError('错误：未选择任何谱面');
       return;
     }
     for (const i of main.before.values()) await i();
     audio.play(res.mute, { loop: true, isOut: false }); // 播放空音频(避免音画不同步)
     app.prerenderChart(main.modify(charts.get(selectchart.value)!) as unknown as Record<string, unknown>); // TODO: 重构
     const md5 = chartsMD5.get(selectchart.value)!;
+    const format = chartsFormat.get(selectchart.value)!;
     stat.level = Number(/\d+$/.exec(levelText));
-    if (app.chart != null) stat.reset(app.chart.numOfNotes, md5, selectspeed.value);
-    await loadLineData({ onwarn: str => msgHandler.sendWarning(str) });
+    if (app.chart != null) stat.reset(app.chart.numOfNotes, md5, format, selectspeed.value);
+    await loadLineData({ onwarn: sendWarning });
     app.bgImage = bgs.get(selectbg.value) || res.NoImageWhite;
     app.bgImageBlur = bgsBlur.get(selectbg.value) || res.NoImageWhite;
     const bgm = bgms.get(selectbgm.value) || { audio: audio.mute(app.chart!.maxSeconds + 0.5), video: null };
@@ -1918,7 +1780,9 @@ main.stat = stat;
 main.app = app;
 main.res = res;
 main.audio = audio;
-main.msgHandler = msgHandler;
+main.sendText = sendText;
+main.sendWarning = sendWarning;
+main.sendError = sendError;
 main.frameAnimater = frameAnimater;
 main.timeEnd = timeEnd;
 main.bgms = bgms;
