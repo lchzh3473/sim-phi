@@ -112,7 +112,7 @@ interface ChartReaderData {
   format: string;
   md5: string;
   msg?: (BetterMessage | string)[];
-  info?: ChartInfoData;
+  info?: ChartInfoData[];
   line?: ChartLineData[];
 }
 interface UnknownReaderData {
@@ -141,42 +141,30 @@ interface ReaderOptions {
   handler: (data: ByteData) => Promise<unknown>;
 }
 interface ChartLineData {
-  Chart?: string;
-  LineId?: number;
-  Image?: string;
-  Vert?: string;
-  Horz?: string;
-  IsDark?: string;
-  Scale?: number;
-  Aspect?: number;
-  UseBackgroundDim?: number;
-  UseLineColor?: number;
-  UseLineScale?: number;
+  chart: string;
+  lineId?: number;
+  image?: string;
+  scaleOld?: number;
+  scale?: number;
+  aspect?: number;
+  useBackgroundDim?: boolean;
+  useLineColor?: boolean;
+  useLineScale?: boolean;
 }
 interface ChartInfoData {
-  Musician?: string;
-  Composer?: string;
-  Artist?: string;
-  Chart?: string;
-  Name?: string;
-  Level?: string;
-  Illustrator?: string;
-  Designer?: string;
-  Charter?: string;
-  Music?: string;
-  Image?: string;
-  AspectRatio?: string;
-  AspectRatioValue?: number;
-  ScaleRatio?: string;
-  ScaleRatioValue?: number;
-  NoteScale?: string;
-  NoteScaleValue?: number;
-  GlobalAlpha?: string;
-  GlobalAlphaValue?: number;
-  BackgroundDim?: string;
-  BackgroundDimValue?: number;
-  Offset?: string;
-  OffsetValue?: number;
+  chart: string;
+  name?: string;
+  artist?: string;
+  composer?: string;
+  level?: string;
+  illustrator?: string;
+  charter?: string;
+  music?: string;
+  image?: string;
+  aspectRatio?: number;
+  noteScale?: number;
+  backgroundDim?: number;
+  offset?: number;
 }
 interface StatData {
   newBestColor: string;

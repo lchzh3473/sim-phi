@@ -1,5 +1,5 @@
 import { ImgAny } from '../../utils/ImageTools';
-const $id = query => document.getElementById(query);
+import { waitForElementById } from '../../utils/waitForElementById';
 const $ = query => document.body.querySelector(query);
 const flag0 = 'flag{\x71w\x71}';
 export default function() {
@@ -20,14 +20,11 @@ export default function() {
     let tid = 3;
     $('.title>small').addEventListener('click', () => {
       if (--tid) return;
-      const btn = document.createElement('button');
-      $id('uploader').insertAdjacentElement('afterend', btn);
-      $id('uploader').insertAdjacentText('afterend', ' ');
-      if (new URLSearchParams(location.search).has('test')) {
-        btn.innerText = 'Demo';
-        btn.onclick = function() {
-          btn.onclick = null;
-          btn.remove();
+      const uidDemo = Utils.randomUUID();
+      const uidLegacy = Utils.randomUUID();
+      const div = hook.toast(`<a id="${uidDemo}" href="#">Demo</a><br><br><a id="${uidLegacy}" href="#">Legacy</a>`);
+      waitForElementById(uidDemo, elem => {
+        elem.addEventListener('click', () => {
           const handler = img => hook.uploader.fireLoad({ name: 'demo.zip' }, ImgAny.decodeAlt(img));
           const xhr = new XMLHttpRequest();
           xhr.open('GET', '//i0.hdslb.com/bfs/music/1682346166.jpg', true);
@@ -35,15 +32,15 @@ export default function() {
           xhr.onprogress = evt => hook.uploader.fireProgress(evt.loaded, evt.total);
           xhr.onloadend = () => createImageBitmap(xhr.response).then(handler);
           setNoReferrer(() => xhr.send());
-        };
-      } else {
-        btn.innerText = 'Legacy';
-        btn.onclick = function() {
-          btn.onclick = null;
-          btn.remove();
+          div.dispatchEvent(new Event('custom-done'));
+        });
+      });
+      waitForElementById(uidLegacy, elem => {
+        elem.addEventListener('click', () => {
           location.replace('/sim-phi-legacy');
-        };
-      }
+          div.dispatchEvent(new Event('custom-done'));
+        });
+      });
     });
   }, 500);
 }

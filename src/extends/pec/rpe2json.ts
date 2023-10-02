@@ -47,9 +47,10 @@ interface LineEventRPE2 {
 }
 const enum EasingCode {
   NoError = 0,
-  StartEqualsEnd = -1,
-  EasingTypeNotSupported = -2,
-  LinearBezier = -3
+  EqualsLinear = 1,
+  LeftEqualsRight = -1,
+  TypeNotSupported = -2,
+  ValueNotFinite = -3
 }
 interface EasingResult {
   code: EasingCode;
@@ -57,27 +58,30 @@ interface EasingResult {
 }
 function getEasingFn(le: LineEventRPE, startTime: number, endTime: number): EasingResult {
   const { start, end, bezier = 0 } = le;
-  if (start === end) return { code: EasingCode.StartEqualsEnd };
-  if (bezier === 0 || bezier == null) {
+  if (Math.floor(bezier) === 1) return bezierFn();
+  return clipFn();
+  function clipFn() {
     const { easingType, easingLeft = 0, easingRight = 1 } = le;
-    if (easingLeft === easingRight) return { code: EasingCode.StartEqualsEnd };
+    if (easingLeft === easingRight) return { code: EasingCode.LeftEqualsRight };
+    if (start === end) return { code: EasingCode.EqualsLinear };
     const easingFn = easing(easingType);
-    if (easingFn == null) return { code: EasingCode.EasingTypeNotSupported };
+    if (easingFn == null) return { code: easingType === 1 ? EasingCode.EqualsLinear : EasingCode.TypeNotSupported };
     const eHead = easingFn(easingLeft);
     const eTail = easingFn(easingRight);
     const eSpeed = (easingRight - easingLeft) / (endTime - startTime);
-    const eDelta = (eTail - eHead) / (end - start);
-    return { code: EasingCode.NoError, fn: (t: number) => (easingFn((t - startTime) * eSpeed + easingLeft) - eHead) / eDelta };
+    const e1Delta = (end - start) / (eTail - eHead);
+    if (!isFinite(e1Delta)) return { code: EasingCode.ValueNotFinite };
+    return { code: EasingCode.NoError, fn: (t: number) => (easingFn((t - startTime) * eSpeed + easingLeft) - eHead) * e1Delta };
   }
-  if (bezier !== 0) {
+  function bezierFn() {
+    if (start === end) return { code: EasingCode.EqualsLinear };
     const { bezierPoints: [p1x, p1y, p2x, p2y] = [0, 0, 0, 0] } = le;
-    if (p1x === p1y && p2x === p2y) return { code: EasingCode.LinearBezier };
+    if (p1x === p1y && p2x === p2y) return { code: EasingCode.EqualsLinear };
     const eSpeed = 1 / (endTime - startTime);
-    const eDelta = 1 / (end - start);
+    const e1Delta = end - start;
     const easingFn = cubicBezier(p1x, p1y, p2x, p2y);
-    return { code: EasingCode.NoError, fn: (t: number) => easingFn((t - startTime) * eSpeed) / eDelta };
+    return { code: EasingCode.NoError, fn: (t: number) => easingFn((t - startTime) * eSpeed) * e1Delta };
   }
-  throw new Error('Not implemented');
 }
 function pushLineEvent(ls: LineEventPecDelta[], le: LineEventRPE2) {
   const { startTime, endTime, start, end, easingFn } = le;
@@ -488,8 +492,8 @@ interface JudgeLineRPEExtends extends JudgeLineRPE {
 export function parse(pec: string, filename: string): {
   data: string;
   messages: BetterMessage[];
-  info: ChartInfoData;
-  line: ChartLineData[];
+  info: Record<string, string>;
+  line: Record<string, string>[];
   format: string;
 } {
   const data = JSON.parse(pec) as RPEData;
@@ -501,7 +505,7 @@ export function parse(pec: string, filename: string): {
   warn(0, 'RPEVersionNotice', `RPE谱面兼容建设中...\n检测到RPE版本:${meta.RPEVersion}`);
   const format = `RPE(${meta.RPEVersion})`;
   // 谱面信息
-  const info: ChartInfoData = {};
+  const info: Record<string, string> = {};
   info.Chart = filename;
   info.Music = meta.song;
   info.Image = meta.background;
@@ -510,8 +514,8 @@ export function parse(pec: string, filename: string): {
   info.Charter = meta.charter;
   info.Level = meta.level;
   result.offset = meta.offset / 1e3;
-  // 判定线贴图
-  const line: ChartLineData[] = [];
+  // 判定线贴图(WIP)
+  const line: Record<string, string>[] = [];
   data.judgeLineList.forEach((i: JudgeLineRPEExtends, index: number) => {
     i.LineId = index;
     const texture = String(i.Texture).replace(/\0/g, '');
@@ -521,13 +525,13 @@ export function parse(pec: string, filename: string): {
     const scaleY = extended?.scaleYEvents ? extended.scaleYEvents[extended.scaleYEvents.length - 1].end : 1;
     line.push({
       Chart: filename,
-      LineId: index,
+      LineId: index.toString(),
       Image: texture,
-      Scale: scaleY,
-      Aspect: scaleX / scaleY,
-      UseBackgroundDim: 0,
-      UseLineColor: 1,
-      UseLineScale: 1
+      Scale: scaleY.toString(),
+      Aspect: (scaleX / scaleY).toString(),
+      UseBackgroundDim: '0',
+      UseLineColor: '1',
+      UseLineScale: '1'
     });
   });
   // bpm变速
@@ -569,50 +573,30 @@ export function parse(pec: string, filename: string): {
       for (const j of e.moveXEvents ?? []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        const easingResult = getEasingFn(j, startTime, endTime);
-        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
-        }
-        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
-          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
-        }
-        layer.pushMoveXEvent(startTime, endTime, j.start, j.end, easingResult.fn);
+        const { fn, code } = getEasingFn(j, startTime, endTime);
+        getWarning(code, j);
+        layer.pushMoveXEvent(startTime, endTime, j.start, j.end, fn);
       }
       for (const j of e.moveYEvents ?? []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        const easingResult = getEasingFn(j, startTime, endTime);
-        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
-        }
-        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
-          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
-        }
-        layer.pushMoveYEvent(startTime, endTime, j.start, j.end, easingResult.fn);
+        const { fn, code } = getEasingFn(j, startTime, endTime);
+        getWarning(code, j);
+        layer.pushMoveYEvent(startTime, endTime, j.start, j.end, fn);
       }
       for (const j of e.rotateEvents ?? []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        const easingResult = getEasingFn(j, startTime, endTime);
-        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
-        }
-        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
-          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
-        }
-        layer.pushRotateEvent(startTime, endTime, j.start, j.end, easingResult.fn);
+        const { fn, code } = getEasingFn(j, startTime, endTime);
+        getWarning(code, j);
+        layer.pushRotateEvent(startTime, endTime, j.start, j.end, fn);
       }
       for (const j of e.alphaEvents ?? []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
-        const easingResult = getEasingFn(j, startTime, endTime);
-        if (easingResult.code === EasingCode.EasingTypeNotSupported && j.easingType !== 1) {
-          warn(1, 'EasingTypeWarning', `未知的缓动类型:${j.easingType}(将被视为1)\n位于:"${JSON.stringify(j)}"`);
-        }
-        if (easingResult.code === EasingCode.StartEqualsEnd && j.easingLeft === j.easingRight) {
-          warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(j)}"`);
-        }
-        layer.pushAlphaEvent(startTime, endTime, j.start, j.end, easingResult.fn);
+        const { fn, code } = getEasingFn(j, startTime, endTime);
+        getWarning(code, j);
+        layer.pushAlphaEvent(startTime, endTime, j.start, j.end, fn);
       }
       for (const j of e.speedEvents ?? []) {
         const startTime = bpmList.calc2(j.startTime);
@@ -635,4 +619,9 @@ export function parse(pec: string, filename: string): {
     result.numOfNotes += judgeLine.numOfNotes;
   }
   return { data: JSON.stringify(result), messages: warnings, info, line, format };
+  function getWarning(code: EasingCode, le: LineEventRPE) {
+    if (code === EasingCode.TypeNotSupported) warn(1, 'EasingTypeWarning', `未知的缓动类型:${le.easingType}(将被视为1)\n位于:"${JSON.stringify(le)}"`);
+    if (code === EasingCode.LeftEqualsRight) warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(le)}"`);
+    if (code === EasingCode.ValueNotFinite) warn(1, 'EasingClipWarning', `非法的缓动函数(将被视为线性)\n位于:"${JSON.stringify(le)}"`);
+  }
 }

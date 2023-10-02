@@ -185,6 +185,15 @@ export const isUndefined = name => self[name] === undefined;
       }
     });
   }
+  // Array.prototype.toReversed polyfill
+  if (Array.prototype.toReversed === undefined) {
+    // eslint-disable-next-line no-extend-native
+    Object.defineProperty(Array.prototype, 'toReversed', {
+      value() {
+        return this.slice().reverse();
+      }
+    });
+  }
 }
 export function loadJS(...args) {
   const arr = Array.from(args[0] instanceof Array ? args[0] : args, i => new URL(i, location).href);

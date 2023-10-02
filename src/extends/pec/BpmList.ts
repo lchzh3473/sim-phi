@@ -22,8 +22,8 @@ export class BpmList {
   public calc(beat: number): number {
     let time = 0;
     for (const i of this.list) {
-      if (beat > i.end) { continue }
-      if (beat < i.start) { break }
+      if (beat > i.end) continue;
+      if (beat < i.start) break;
       time = Math.round(((beat - i.start) / i.bpm + i.value) * this.baseBpm * 32);
     }
     return time;

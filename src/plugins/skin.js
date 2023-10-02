@@ -1,4 +1,5 @@
 import { stringify } from '../utils/stringify';
+import { waitForElementById } from '../utils/waitForElementById';
 import { audio } from '../external';
 export default hook.define({
   name: 'Skin',
@@ -40,14 +41,9 @@ function skin() {
     }
   });
   // 直到uid进入DOM树才能触发click事件
-  const observer = new MutationObserver(() => {
-    console.log(document.getElementById(uid));
-    if (document.getElementById(uid)) {
-      document.getElementById(uid).addEventListener('click', () => input.click());
-      observer.disconnect();
-    }
+  waitForElementById(uid, elem => {
+    elem.addEventListener('click', () => input.click());
   });
-  observer.observe(document.body, { childList: true, subtree: true });
   // input.click();
   async function done() {
     console.log(files);
@@ -148,13 +144,13 @@ function skin() {
 /** @param {ByteData[]} files */
 function loadConfig(files = []) {
   const config0 = files.find(i => String(i.name).endsWith('config.txt'));
-  if (config0) return yaml2json(stringify(config0.buffer), /;?\r?\n/);
+  if (config0) return parseYAML(stringify(config0.buffer), /;?\r?\n/);
   const config1 = files.find(i => String(i.name).endsWith('info.yml'));
-  if (config1) return yaml2json(stringify(config1.buffer));
+  if (config1) return parseYAML(stringify(config1.buffer));
   hook.sendError('未找到config.txt或info.yml');
   return {};
 }
-function yaml2json(text = '', split = /\r?\n/) {
+function parseYAML(text = '', split = /\r?\n/) {
   /** @type {(value:string)=>any} */
   const parse = value => {
     try {
@@ -171,18 +167,3 @@ function yaml2json(text = '', split = /\r?\n/) {
     return i;
   }, Object.create(null));
 }
-// function splitPath(i) {
-//   const j = i.lastIndexOf('/');
-//   const name = i.slice(j + 1);
-//   const path = ~j ? i.slice(0, j) : '';
-//   return { name, path };
-// }
-// function joinPathInfo(info, path) {
-//   if (!path) return info;
-//   for (const i of info) {
-//     if (i.Chart) i.Chart = `${path}/${i.Chart}`;
-//     if (i.Music) i.Music = `${path}/${i.Music}`;
-//     if (i.Image) i.Image = `${path}/${i.Image}`;
-//   }
-//   return info;
-// }

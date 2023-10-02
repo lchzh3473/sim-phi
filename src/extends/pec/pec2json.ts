@@ -111,10 +111,8 @@ export function parse(pec: string, filename: string): PecParseResult {
     linesPec[i.lineId] ??= new LinePec(bpmList.baseBpm);
     linesPec[i.lineId].pushNote(type, time, i.offsetX / 115.2, holdTime, speed, i.isAbove === 1, i.isFake !== 0); // 102.4
     // if (i.isAbove !== 1 && i.isAbove !== 2) warnings.push(`检测到非法方向:${i.isAbove}(将被视为2)\n位于:"${i.text}"\n来自${filename}`);
-    if (i.isFake !== 0) {
-      warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
-    }
-    if (i.size !== 1) { warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`) }
+    if (i.isFake !== 0) warnings.push(`检测到FakeNote(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
+    if (i.size !== 1) warnings.push(`检测到异常Note(可能无法正常显示)\n位于:"${i.text}"\n来自${filename}`);
   }
   const isMotion = (i: number) => !isLinear(i) || i === 1;
   for (const i of data2.lines) {

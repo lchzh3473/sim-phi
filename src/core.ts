@@ -358,11 +358,11 @@ export class Renderer {
     this._resizeCanvas();
   }
   public resizeCanvas(): void {
-    const { clientWidth: width, clientHeight: height } = this.stage;
+    const { width, height } = this.stage.getBoundingClientRect();
     if (this.width === width && this.height === height) return;
     this.width = width;
     this.height = height;
-    this.canvas.style.cssText += `;width:${width}px;height:${height}px`; // 只有inset还是会溢出
+    this.canvas.style.cssText += `;width:${width.toFixed(3)}px;height:${height.toFixed(3)}px`; // 只有inset还是会溢出
     this._resizeCanvas();
   }
   public mirrorView(code = this._mirrorType): void {
@@ -490,12 +490,12 @@ export class Renderer {
     this.drags.sort(sortNote);
     this.holds.sort(sortNote);
     this.flicks.sort(sortNote);
-    this.notesReversed = this.notes.slice(0).reverse();
-    this.tapsReversed = this.taps.slice(0).reverse();
-    this.dragsReversed = this.drags.slice(0).reverse();
-    this.holdsReversed = this.holds.slice(0).reverse();
-    this.flicksReversed = this.flicks.slice(0).reverse();
-    this.linesReversed = this.lines.slice(0).reverse();
+    this.notesReversed = this.notes.toReversed();
+    this.tapsReversed = this.taps.toReversed();
+    this.dragsReversed = this.drags.toReversed();
+    this.holdsReversed = this.holds.toReversed();
+    this.flicksReversed = this.flicks.toReversed();
+    this.linesReversed = this.lines.toReversed();
     this.tapholds.sort(sortNote);
     // 多押标记
     const timeOfMulti: Record<string, number> = {};
@@ -623,12 +623,13 @@ export class Renderer {
     }
   }
   private _setLowResFactor(num = 1) {
-    this.lowResFactor = num * self.devicePixelRatio;
+    this.lowResFactor = num;
   }
   private _resizeCanvas() {
     const { canvas, canvasfg, width, height } = this;
-    const widthLowRes = width * this.lowResFactor;
-    const heightLowRes = height * this.lowResFactor;
+    const lowResFactor = this.lowResFactor * self.devicePixelRatio;
+    const widthLowRes = width * lowResFactor;
+    const heightLowRes = height * lowResFactor;
     canvas.width = widthLowRes;
     canvas.height = heightLowRes;
     canvasfg.width = Math.min(widthLowRes, heightLowRes * 16 / 9);

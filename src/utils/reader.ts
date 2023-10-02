@@ -1,5 +1,7 @@
-import { csv2array } from './csv2array';
+import { parseCSV } from './parseCSV';
 import { stringify } from './stringify';
+import { structChart } from './structChart';
+import { structInfoData, structLineData } from './structInfo';
 import md5 from 'md5';
 // @ts-expect-error: vite-plugin-worker-loader
 import Zip from '../zip.worker?worker';
@@ -83,7 +85,7 @@ interface ReaderInit {
   weight?: number;
   read: (data: ByteData, path: string, options?: Record<string, unknown>) => Promise<ReaderData | null> | ReaderData | null;
 }
-export function defineReader(readerInit: ReaderInit): ByteReader {
+function defineReader(readerInit: ReaderInit): ByteReader {
   const { pattern, type = 'binary', mustMatch = false, weight = 0, read } = readerInit;
   const reader = { pattern, type, mustMatch, weight, read };
   if (type === 'text') {
@@ -122,8 +124,8 @@ export function defineReader(readerInit: ReaderInit): ByteReader {
   }
   return reader;
 }
-const readers: ByteReader[] = [
-  defineReader({
+const readerInit: ReaderInit[] = [
+  {
     pattern: /\.(mp3|ogg|wav|mp4|webm|ogv|mpg|mpeg|avi|mov|flv|wmv|mkv)$/i,
     async read(i: ByteData, _path, { createAudioBuffer }: Record<string, unknown> = {}) {
       return readMediaData(i, async(arraybuffer: ArrayBuffer) => {
@@ -131,40 +133,40 @@ const readers: ByteReader[] = [
         return defaultDecode(arraybuffer);
       });
     }
-  }), defineReader({
+  }, {
     pattern: /\.json$/i,
     type: 'json',
     read(i: ByteData) {
-      const jsonData = chart123(i.text!, (_, value) => typeof value === 'number' ? Math.fround(value) : value);
+      const jsonData = structChart(i.text!, (_, value) => typeof value === 'number' ? Math.fround(value) : value as unknown);
       const format = `PGS(${jsonData.formatVersion})`;
       return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData, format };
     }
-  }), defineReader({
+  }, {
     pattern: /\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i,
     async read(i: ByteData) {
       const data = new Blob([i.buffer]);
       const imageData = await createImageBitmap(data);
       return { type: 'image' as const, name: i.name, data: imageData };
     }
-  }), defineReader({
+  }, {
     pattern: /^line\.csv$/i,
     type: 'text',
     mustMatch: true,
     read(i: ByteData, path: string) {
       const data = i.text!;
-      const chartLine = joinPathInfo(csv2array(data, true) as ChartLineData[], path);
+      const chartLine = structLineData(parseCSV(data, true), path);
       return { type: 'line' as const, data: chartLine };
     }
-  }), defineReader({
+  }, {
     pattern: /^info\.csv$/i,
     type: 'text',
     mustMatch: true,
     read(i: ByteData, path: string) {
       const data = i.text!;
-      const chartInfo = joinPathInfo(csv2array(data, true) as ChartInfoData[], path);
+      const chartInfo = structInfoData(parseCSV(data, true), path);
       return { type: 'info' as const, data: chartInfo };
     }
-  })
+  }
 ];
 async function defaultDecode(arraybuffer: ArrayBuffer) {
   const actx: AudioContext = new self.AudioContext();
@@ -178,50 +180,48 @@ async function defaultDecode(arraybuffer: ArrayBuffer) {
     throw err;
   });
 }
-async function readFile(i: ByteData, options = {}): Promise<ReaderData> {
-  const { name, path } = splitPath(i.name);
-  const readers0 = readers.filter(a => a.pattern.test(name) || !a.mustMatch);
-  readers0.sort((a, b) => {
-    if (a.pattern.test(name) && !b.pattern.test(name)) return -1;
-    if (!a.pattern.test(name) && b.pattern.test(name)) return 1;
-    if (a.weight > b.weight) return -1;
-    if (a.weight < b.weight) return 1;
-    return 0;
-  });
-  const errors = [] as Error[];
-  const errorHandler = (reader: ByteReader, err: Error) => {
-    if (reader.pattern.test(name)) errors.push(err);
-  };
-  for (const reader of readers0) {
-    try {
-      const data = await reader.read(i, path, options);
-      if (data) return data;
-    } catch (err) {
-      errorHandler(reader, err as Error);
+function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {
+  const readers = readerInit.map(define);
+  return {
+    async read(i: ByteData, options = {}): Promise<ReaderData> {
+      const { name, path } = splitPath(i.name);
+      const filtered = readers.filter(a => a.pattern.test(name) || !a.mustMatch);
+      filtered.sort((a, b) => {
+        if (a.pattern.test(name) && !b.pattern.test(name)) return -1;
+        if (!a.pattern.test(name) && b.pattern.test(name)) return 1;
+        if (a.weight > b.weight) return -1;
+        if (a.weight < b.weight) return 1;
+        return 0;
+      });
+      const errors = [] as Error[];
+      const errorHandler = (reader: ByteReader, err: Error) => {
+        if (reader.pattern.test(name)) errors.push(err);
+      };
+      for (const reader of filtered) {
+        try {
+          const data = await reader.read(i, path, options);
+          if (data) return data;
+        } catch (err) {
+          errorHandler(reader, err as Error);
+        }
+      }
+      return { type: 'unknown', name, data: readers[0].pattern.test(name) ? errors : '' };
+    },
+    use(reader: ReaderInit | ReaderInit[]) {
+      if (Array.isArray(reader)) {
+        for (const i of reader) this.use(i);
+      } else {
+        readers.push(define(reader));
+      }
     }
-  }
-  return { type: 'unknown', name, data: readers[0].pattern.test(name) ? errors : '' };
+  } as const;
 }
-export const fileReader = {
-  readFile,
-  use: (reader: ByteReader): void => {
-    readers.push(reader);
-  }
-};
+export const reader = createReader(defineReader);
 function splitPath(i: string) {
   const j = i.lastIndexOf('/');
   const name = i.slice(j + 1);
   const path = ~j ? i.slice(0, j) : '';
   return { name, path };
-}
-export function joinPathInfo(info: ChartInfoData[], path: string): ChartInfoData[] {
-  if (!path) return info;
-  for (const i of info) {
-    if (i.Chart != null) i.Chart = `${path}/${i.Chart}`;
-    if (i.Music != null) i.Music = `${path}/${i.Music}`;
-    if (i.Image != null) i.Image = `${path}/${i.Image}`;
-  }
-  return info;
 }
 async function readMediaData(i: ByteData, createAudioBuffer: (arraybuffer: ArrayBuffer) => Promise<AudioBuffer>) {
   const videoElement = document.createElement('video');
@@ -237,60 +237,4 @@ async function readMediaData(i: ByteData, createAudioBuffer: (arraybuffer: Array
     video: width && height ? videoElement : null
   };
   return { type: 'media' as const, name: i.name, data };
-}
-// test
-export function chart123(text: string, reviver?: (this: unknown, key: string, value: unknown) => unknown): Chart {
-  const chart = (typeof reviver === 'function' ? JSON.parse(text, reviver) : JSON.parse(text)) as Chart;
-  if (chart.formatVersion === undefined) throw new Error('Invalid chart file');
-  switch (Number(chart.formatVersion) | 0) {
-    case 1:
-      for (const i of chart.judgeLineList) {
-        for (const j of i.judgeLineMoveEvents) {
-          j.start2 = j.start % 1e3 / 520;
-          j.end2 = j.end % 1e3 / 520;
-          j.start = Math.floor(j.start / 1e3) / 880;
-          j.end = Math.floor(j.end / 1e3) / 880;
-        }
-      } // fallthrough
-    case 3:
-      for (const i of chart.judgeLineList) {
-        let y = 0;
-        let y2 = 0; // float32
-        for (const j of i.speedEvents) {
-          if (j.startTime < 0) j.startTime = 0;
-          j.floorPosition = y;
-          j.floorPosition2 = y2;
-          y += (j.endTime - j.startTime) / i.bpm * 1.875 * j.value;
-          y2 += Math.fround(Math.fround((j.endTime - j.startTime) / i.bpm * 1.875) * j.value);
-          y = Math.fround(y);
-          y2 = Math.fround(y2);
-        }
-      } // fallthrough
-    case 3473:
-      for (const i of chart.judgeLineList) {
-        if (i.numOfNotes == null) {
-          i.numOfNotes = 0;
-          for (const j of i.notesAbove) {
-            if (j.type === 1) i.numOfNotes++;
-            if (j.type === 2) i.numOfNotes++;
-            if (j.type === 3) i.numOfNotes++;
-            if (j.type === 4) i.numOfNotes++;
-          }
-          for (const j of i.notesBelow) {
-            if (j.type === 1) i.numOfNotes++;
-            if (j.type === 2) i.numOfNotes++;
-            if (j.type === 3) i.numOfNotes++;
-            if (j.type === 4) i.numOfNotes++;
-          }
-        }
-      }
-      if (chart.numOfNotes == null) {
-        chart.numOfNotes = 0;
-        for (const i of chart.judgeLineList) chart.numOfNotes += i.numOfNotes;
-      }
-      break;
-    default:
-      throw new Error(`Unsupported formatVersion: ${chart.formatVersion}`);
-  }
-  return chart;
 }

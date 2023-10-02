@@ -4,7 +4,7 @@ import { full, orientation } from './js/common.js';
 import { FrameAnimater } from './components/FrameAnimater';
 import { FrameTimer } from './components/FrameTimer';
 import { Timer } from './components/Timer';
-import { FileEmitter, ZipReader, fileReader } from './utils/reader';
+import { FileEmitter, ZipReader, reader } from './utils/reader';
 import { type JudgeLineExtends, type NoteExtends, Renderer } from './core';
 import { HitManager, JudgeEvent } from './components/HitManager';
 import { Stat } from './components/Stat';
@@ -103,7 +103,7 @@ interface MainOptions {
   selectchart: typeof selectchart;
   chartsMD5: typeof chartsMD5;
   noteRender: typeof noteRender;
-  fileReader: typeof fileReader;
+  reader: typeof reader;
   // eslint-disable-next-line @typescript-eslint/naming-convention
   ZipReader: typeof ZipReader;
   status: typeof status;
@@ -238,46 +238,35 @@ status.reg('selectSpeed', selectspeed);
 // 自动填写歌曲信息
 function adjustInfo() {
   for (const i of chartInfoData) {
-    if (selectchart.value.trim() === i.Chart) {
-      if (i.Name != null) inputName.value = i.Name;
-      if (i.Musician != null) inputArtist.value = i.Musician; // Alternative
-      if (i.Composer != null) inputArtist.value = i.Composer; // Alternative
-      if (i.Artist != null) inputArtist.value = i.Artist;
-      if (i.Level != null) {
-        levelText = i.Level;
+    if (selectchart.value.trim() === i.chart) {
+      if (i.name != null) inputName.value = i.name;
+      if (i.artist != null) inputArtist.value = i.artist;
+      if (i.level != null) {
+        levelText = i.level;
         const p = levelText.toLocaleUpperCase().split('LV.').map(a => a.trim());
         if (p[0]) selectDifficulty.value = p[0];
         if (p[1]) selectLevel.value = p[1];
       }
-      if (i.Illustrator != null) inputIllustrator.value = i.Illustrator;
-      if (i.Designer != null) inputCharter.value = i.Designer;
-      if (i.Charter != null) inputCharter.value = i.Charter;
-      if (i.Music != null && bgms.has(i.Music)) selectbgm.value = i.Music;
-      if (i.Image != null && bgs.has(i.Image)) {
-        selectbg.value = i.Image;
+      if (i.illustrator != null) inputIllustrator.value = i.illustrator;
+      if (i.charter != null) inputCharter.value = i.charter;
+      if (i.music != null && bgms.has(i.music)) selectbgm.value = i.music;
+      if (i.image != null && bgs.has(i.image)) {
+        selectbg.value = i.image;
         selectbg.dispatchEvent(new Event('change'));
       }
-      if (i.AspectRatio != null && isFinite(i.AspectRatioValue = parseFloat(i.AspectRatio))) {
-        selectAspectRatio.value = i.AspectRatio;
-        stage.resize(i.AspectRatioValue); // TODO: 期待更好的解决方案
+      if (i.aspectRatio != null) {
+        selectAspectRatio.value = i.aspectRatio.toString();
+        stage.resize(i.aspectRatio);
       }
-      if (i.ScaleRatio != null && isFinite(i.ScaleRatioValue = parseFloat(i.ScaleRatio))) { // Legacy
-        selectNoteScale.value = String(8080 / i.ScaleRatioValue);
-        app.setNoteScale(8080 / i.ScaleRatioValue);
+      if (i.noteScale != null) {
+        selectNoteScale.value = i.noteScale.toString();
+        app.setNoteScale(i.noteScale);
       }
-      if (i.NoteScale != null && isFinite(i.NoteScaleValue = parseFloat(i.NoteScale))) {
-        selectNoteScale.value = i.NoteScale;
-        app.setNoteScale(i.NoteScaleValue);
+      if (i.backgroundDim != null) {
+        selectBackgroundDim.value = i.backgroundDim.toString();
+        app.brightness = i.backgroundDim;
       }
-      if (i.GlobalAlpha != null && isFinite(i.GlobalAlphaValue = parseFloat(i.GlobalAlpha))) { // Legacy
-        selectBackgroundDim.value = i.GlobalAlpha;
-        app.brightness = i.GlobalAlphaValue;
-      }
-      if (i.BackgroundDim != null && isFinite(i.BackgroundDimValue = parseFloat(i.BackgroundDim))) {
-        selectBackgroundDim.value = i.BackgroundDim;
-        app.brightness = i.BackgroundDimValue;
-      }
-      if (i.Offset != null && isFinite(i.OffsetValue = parseFloat(i.Offset))) inputOffset.value = i.Offset;
+      if (i.offset != null) inputOffset.value = i.offset.toString();
     }
   }
 }
@@ -301,7 +290,7 @@ const uploader = new FileEmitter();
   main.handleFile = handleFile;
   let fileTotal = 0;
   const options = { async createAudioBuffer(_: ArrayBuffer) { return audio.decode(_) } };
-  const zip = new ZipReader({ handler: async data => fileReader.readFile(data, options) });
+  const zip = new ZipReader({ handler: async data => reader.read(data, options) });
   zip.addEventListener('loadstart', () => sendText('加载zip组件...'));
   zip.addEventListener('read', evt => { handleFile('zip', zip.total, pick((evt as CustomEvent<ReaderData>).detail)) });
   blockUpload.addEventListener('click', uploader.uploadFile.bind(uploader));
@@ -320,7 +309,7 @@ const uploader = new FileEmitter();
     const data = { name, buffer, path: path || name };
     const handler = async() => {
       fileTotal++;
-      const result = await fileReader.readFile(data, options);
+      const result = await reader.read(data, options);
       await handleFile('file', fileTotal, pick(result));
     };
     // 检测buffer是否为zip
@@ -353,7 +342,7 @@ const uploader = new FileEmitter();
       }
       case 'chart': {
         if (data.msg) data.msg.forEach(v => sendWarning(v));
-        if (data.info) chartInfoData.push(data.info);
+        if (data.info) chartInfoData.push(...data.info);
         if (data.line) chartLineData.push(...data.line);
         let basename = data.name;
         while (charts.has(basename)) basename += '\n';
@@ -1651,37 +1640,34 @@ async function loadLineData({
     i.imageU = true;
   }
   for (const i of chartLineData) {
-    if (selectchart.value === i.Chart) {
-      if (i.LineId == null) {
+    if (selectchart.value === i.chart) {
+      if (i.lineId == null) {
         onwarn('未指定判定线id');
         continue;
       }
-      const line = app.lines[Number(i.LineId)] as JudgeLineExtends | null;
+      const line = app.lines[Number(i.lineId)] as JudgeLineExtends | null;
       if (line == null) {
-        onwarn(`指定id的判定线不存在：${i.LineId}`);
+        onwarn(`指定id的判定线不存在：${i.lineId}`);
         continue;
       }
-      let image = i.Image == null ? null : bgs.get(i.Image);
+      let image = i.image == null ? null : bgs.get(i.image);
       if (!image) {
-        if (i.Image != null) onwarn(`图片不存在：${i.Image}`);
+        if (i.image != null) onwarn(`图片不存在：${i.image}`);
         image = res.NoImageBlack;
       }
       line.imageW = image.width;
       line.imageH = image.height;
       const lineImage = updateLineImage(image);
       line.imageL = await Promise.all([image, lineImage.getMP(), lineImage.getAP(), lineImage.getFC()]);
-      let temp = 0;
-      if (i.Vert != null && isFinite(temp = parseFloat(i.Vert))) { // Legacy
-        line.imageS = Math.abs(temp) * 1080 / image.height;
-        line.imageU = temp > 0;
+      if (i.scaleOld != null) { // Legacy
+        line.imageS = Math.abs(i.scaleOld) * 1080 / image.height;
+        line.imageU = i.scaleOld > 0;
       }
-      if (i.Horz != null && isFinite(temp = parseFloat(i.Horz))) line.imageA = temp; // Legacy
-      if (i.IsDark != null && isFinite(temp = parseFloat(i.IsDark))) line.imageD = Boolean(temp); // Legacy
-      if (i.Scale != null && isFinite(temp = parseFloat(String(i.Scale)))) line.imageS = temp;
-      if (i.Aspect != null && isFinite(temp = parseFloat(String(i.Aspect)))) line.imageA = temp;
-      if (i.UseBackgroundDim != null && isFinite(temp = parseFloat(String(i.UseBackgroundDim)))) line.imageD = Boolean(temp);
-      if (i.UseLineColor != null && isFinite(temp = parseFloat(String(i.UseLineColor)))) line.imageC = Boolean(temp);
-      if (i.UseLineScale != null && isFinite(temp = parseFloat(String(i.UseLineScale)))) line.imageU = Boolean(temp);
+      if (i.scale != null) line.imageS = i.scale;
+      if (i.aspect != null) line.imageA = i.aspect;
+      if (i.useBackgroundDim != null) line.imageD = i.useBackgroundDim;
+      if (i.useLineColor != null) line.imageC = i.useLineColor;
+      if (i.useLineScale != null) line.imageU = i.useLineScale;
     }
   }
 }
@@ -1791,7 +1777,7 @@ main.selectbgm = selectbgm;
 main.selectchart = selectchart;
 main.chartsMD5 = chartsMD5;
 main.noteRender = noteRender;
-main.fileReader = fileReader;
+main.reader = reader;
 main.ZipReader = ZipReader;
 main.status = status;
 main.tmps = tmps;
