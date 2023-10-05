@@ -863,14 +863,14 @@ window.addEventListener('load', (): void => {
       }
     })) return;
     await import('./utils/reader-');
-    const raw = await loadResource(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).catch(() => ({
-    // const raw = await loadResource('local/ptres2.json').catch(() => ({
+    const raw = await loadResource(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).catch(() => null) || {
+      // const raw = await loadResource('local/ptres2.json').catch(() => ({
       image: {} as Record<string, string>,
       audio: {} as Record<string, string>,
       alternative: {} as Record<string, string>,
       format: ''
-    }));
-    if (!raw) return; // 占位符
+    };
+    // if (!raw) return; // 占位符
     // shit start
     await readResource(raw);
     // .then(result => {

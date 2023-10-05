@@ -21,6 +21,7 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': ['error', { fixToUnknown: true, ignoreRestArgs: true }],
     '@typescript-eslint/no-extra-parens': ['error', 'all', { enforceForSequenceExpressions: false }],
     '@typescript-eslint/no-floating-promises': 'off',
+    '@typescript-eslint/no-invalid-void-type': ['error', { allowAsThisParameter: true }],
     '@typescript-eslint/no-magic-numbers': 'off', // qwq
     '@typescript-eslint/no-namespace': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off', // qwq

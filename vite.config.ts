@@ -26,7 +26,7 @@ export default defineConfig({
           getBabelOutputPlugin({
             plugins: [['@babel/plugin-transform-nullish-coalescing-operator']]
           }),
-          terser()
+          terser({ compress: { passes: 3 } })
         ]
       }
     }

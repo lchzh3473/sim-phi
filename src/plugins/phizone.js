@@ -250,7 +250,6 @@ function getChartOffset(id) {
   if (id === '165119b8-7074-4106-bb23-27a8fb99c0c6') return 150; // 58
   if (id === '846587d2-0ff2-40ca-b42b-3568cef08e48') return 250; // 59
   if (id === '74585cab-6b6f-4633-9c3d-4dfa9900cafd') return -100; // 61
-  if (id === '4be75ae5-af61-4e2b-a23c-7171d063c391') return 300; // 66
   if (id === '108254a0-a756-4200-8391-1f47bb7707aa') return -50; // 68
   if (id === '8c4d638a-a1aa-4e29-a0d2-2f3a2cb7e69c') return 300; // 69
   if (id === 'e29e6b87-796f-4518-ac33-d9db79bbc103') return 200; // 70

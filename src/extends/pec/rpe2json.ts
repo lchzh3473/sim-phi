@@ -130,9 +130,10 @@ function toSpeedEvent(le: LineEventRPE2[]) {
     if (start !== end) { // 暂未考虑开始时间大于结束时间的情况
       const t1 = (end - start) / (endTime - startTime);
       for (let j = startTime; j < endTime; j++) {
-        const x = j + 1 - startTime;
-        result.push({ time: j + 1, value: start + x * t1 });
+        const x = j + 0.5 - startTime;
+        result.push({ time: j, value: start + x * t1 });
       }
+      result.push({ time: endTime, value: end });
     }
   }
   return result;
@@ -409,7 +410,7 @@ class LineRPE1 {
     for (let i = 0; i < speedEvents.length; i++) {
       const startTime = Math.max(speedEvents[i].time, 0);
       const endTime = i < speedEvents.length - 1 ? speedEvents[i + 1].time : 1e9;
-      const value = speedEvents[i].value * 11 / 45;
+      const value = speedEvents[i].value * 2 / 9;
       const floorPosition = floorPos;
       floorPos += (endTime - startTime) * value / this.bpm * 1.875;
       floorPos = Math.fround(floorPos);
