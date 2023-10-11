@@ -1,190 +1,199 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <!--viewport-fit=cover:Fill the whole screen on iPhone X-->
+    <meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+    <title>(っ °Д °;)っ</title>
+    <link rel="shortcut icon" href="./icon.svg" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="stylesheet" href="/utils/style.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').then(() => {
+          console.log('Service Worker Registered');
+        });
+      }
+    </script>
+    <script>
+      (function () {
+        var src = '//fastly.jsdelivr.net/npm/eruda';
+        if (!new URLSearchParams(location.search).has('test')) return;
+        document.write('<scr' + 'ipt src="' + src + '"></scr' + 'ipt>');
+        document.write('<scr' + 'ipt>eruda.init();</scr' + 'ipt>');
+      })();
+    </script>
+    <script>
+      eval('try{eval("\'use strict\';{async(a=1)=>1}")}catch(e){location.href="/412.html"}');
+    </script>
+    <script src="/utils/main.js"></script>
+    <script type="module" src="script-$VERSION$.js"></script>
+  </head>
 
-<head>
-  <!--viewport-fit=cover:Fill the whole screen on iPhone X-->
-  <meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-  <title>(っ °Д °;)っ</title>
-  <link rel="shortcut icon" href="./icon.svg" />
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="/utils/style.css" />
-  <link rel="stylesheet" href="style.css" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').then(() => {
-        console.log('Service Worker Registered');
-      });
-    }
-  </script>
-  <script>
-    (function() {
-      var src = '//fastly.jsdelivr.net/npm/eruda';
-      if (!new URLSearchParams(location.search).has('test')) return;
-      document.write('<scr' + 'ipt src="' + src + '"></scr' + 'ipt>');
-      document.write('<scr' + 'ipt>eruda.init();</scr' + 'ipt>');
-    })();
-  </script>
-  <script>
-    eval('try{eval("\'use strict\';{async(a=1)=>1}")}catch(e){location.href="/412.html"}')
-  </script>
-  <script src="/utils/main.js"></script>
-  <script type="module" src="script-$VERSION$.js"></script>
-</head>
-
-<body>
-  <noscript><strong style="color: #f00">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
-  <div class="index">
-    <div class="main">
-      <h1 class="title"></h1>
-      <p class="info"></p>
-      <p class="profile">上传谱面和资源文件或将其打包成zip然后上传；<br />读取完成后调节相关参数，最后点击“播放”按钮。<br />播放时双击画面：左上角暂停；右上角重新开始；右下角全屏。</p>
-      <div id="uploader" class="disabled">
-        <input type="button" id="uploader-upload" value="上传" />
-        <div id="uploader-select">
-          <label id="uploader-file">上传文件</label>
-          <label id="uploader-dir">上传文件夹</label>
+  <body>
+    <noscript><strong style="color: #f00">此浏览器不支持JavaScript，该脚本无法运行。</strong></noscript>
+    <div class="index">
+      <div class="main">
+        <h1 class="title"></h1>
+        <p class="info"></p>
+        <p class="profile">上传谱面和资源文件或将其打包成zip然后上传；<br />读取完成后调节相关参数，最后点击“播放”按钮。<br />播放时双击画面：左上角暂停；右上角重新开始；右下角全屏。</p>
+        <div id="uploader" class="disabled">
+          <input type="button" id="uploader-upload" value="上传" />
+          <div id="uploader-select">
+            <label id="uploader-file">上传文件</label>
+            <label id="uploader-dir">上传文件夹</label>
+          </div>
+        </div>
+        <input type="button" value="重置" onclick="location.reload(true)" />
+        <input type="button" id="btn-rsmg" class="hide" value="资源管理" />
+        <input type="button" id="btn-docs" value="使用说明" />
+        <input type="button" id="btn-more" value="更多设置" />
+        <div id="select" class="disabled">
+          <div>谱面：<select id="select-chart" style="width: 6em"></select></div>
+          <div>音乐：<select id="select-bgm" style="width: 6em"></select></div>
+          <div>图片：<select id="select-bg" style="width: 6em"></select></div>
+          <br />
+          <div>
+            宽高比：<select id="select-aspect-ratio" style="width: 4em">
+              <option value="1.25">5:4</option>
+              <option value="1.333333">4:3</option>
+              <option value="1.4316546762589928">10:7</option>
+              <option value="1.461538">19:13</option>
+              <option value="1.6">8:5</option>
+              <option value="1.666667">5:3</option>
+              <option value="1.692308">22:13</option>
+              <option value="1.777778" selected>16:9</option>
+            </select>
+          </div>
+          <div>
+            按键缩放：<select id="select-note-scale" style="width: 4em">
+              <option value="0.8">极小</option>
+              <option value="0.9">较小</option>
+              <option value="1" selected>默认</option>
+              <option value="1.15">较大</option>
+              <option value="1.3">极大</option>
+            </select>
+          </div>
+          <div>
+            背景变暗：<select id="select-background-dim" style="width: 4em">
+              <option value="1">黑暗</option>
+              <option value="0.8">昏暗</option>
+              <option value="0.6" selected>默认</option>
+              <option value="0.4">较亮</option>
+              <option value="0.2">明亮</option>
+            </select>
+          </div>
+          <br />
+          <div>曲名：<input id="input-name" class="input" style="width: 7em" placeholder="&#60; Untitled &#62;" /></div>
+          <div>曲师：<input id="input-artist" class="input" style="width: 7em" placeholder="&#60; nameless &#62;" /></div>
+          <br />
+          <div>曲绘：<input id="input-illustrator" class="input" style="width: 7em" placeholder="&#60; nameless &#62;" /></div>
+          <div>谱师：<input id="input-charter" class="input" style="width: 7em" placeholder="&#60; nameless &#62;" /></div>
+          <br />
+          <div>
+            难度：<select id="select-difficulty" style="width: 3em">
+              <option value="" selected>SP</option>
+              <option value="EZ">EZ</option>
+              <option value="HD">HD</option>
+              <option value="IN">IN</option>
+              <option value="AT">AT</option>
+            </select>
+          </div>
+          <div>
+            等级：<select id="select-level" style="width: 3em">
+              <option value="" selected>?</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+            </select>
+          </div>
+          <div>
+            音效音量：<select id="select-volume" style="width: 5em">
+              <option value="0">0%</option>
+              <option value="0.25">25%</option>
+              <option value="0.5">50%</option>
+              <option value="1" selected>100%</option>
+              <option value="2.5">250%</option>
+              <option value="5">500%</option>
+            </select>
+          </div>
+          <br />
+          <div><input type="checkbox" id="feedback" checked /><label for="feedback">触摸反馈</label></div>
+          <div><input type="checkbox" id="imageBlur" checked /><label for="imageBlur">背景模糊</label></div>
+          <div><input type="checkbox" id="highLight" checked /><label for="highLight">多押高亮</label></div>
+          <br />
+          <div><input type="checkbox" id="lineColor" checked /><label for="lineColor">FC/AP指示器</label></div>
+          <div class="disabled-when-playing"><input type="checkbox" id="autoplay" checked /><label for="autoplay">自动演示</label></div>
+          <div class="disabled-when-playing"><input type="checkbox" id="showTransition" checked /><label for="showTransition">过渡动画</label></div>
+          <br />
+          <div class="">
+            谱面镜像：<select id="select-flip" style="width: 4em">
+              <option value="0" selected>无</option>
+              <option value="1">X轴</option>
+              <option value="2">Y轴</option>
+              <option value="3">X&Y</option>
+            </select>
+          </div>
+          <div class="disabled-when-playing">
+            音乐变速：<select id="select-speed" style="width: 4em">
+              <option value="Slowest">极慢</option>
+              <option value="Slower">较慢</option>
+              <option value="" selected>正常</option>
+              <option value="Faster">较快</option>
+              <option value="Fastest">极快</option>
+            </select>
+          </div>
+          <br />
+          <div class="disabled-when-playing">谱面延时(ms)：<input id="input-offset" type="number" step="5" class="input" style="width: 4em" placeholder="0" /></div>
+          <div>
+            <input type="button" id="btn-play" value="播放" />
+            <input type="button" id="btn-pause" value="暂停" />
+          </div>
+        </div>
+        <div><strong id="msg-out">初始化...</strong></div>
+        <div id="stage">
+          <i class="tl">&#xe034;</i>
+          <i class="tr">&#xe042;</i>
+          <i class="bl">&#xe8b8;</i>
+          <i class="br">&#xe5d0;</i>
+          <div id="mask">
+            <div>GitHub: lchz&#104;3473/sim-phi</div>
+          </div>
+        </div>
+        <div id="cover-dark" class="cover-dark fade"></div>
+        <div id="cover-rsmg" class="cover-view fade" qwq>
+          <div class="view-nav">
+            <p id="nav-rsmg">资源管理</p>
+          </div>
+          <div class="view-content">
+            <div id="view-rsmg"></div>
+          </div>
+        </div>
+        <div id="cover-view" class="cover-view fade" qwq>
+          <div id="view-nav" class="view-nav">
+            <a id="nav-cfg">更多设置</a>
+            <a id="nav-msg">日志</a>
+          </div>
+          <div id="view-content" class="view-content">
+            <div id="view-cfg"></div>
+            <div id="view-msg"></div>
+          </div>
         </div>
       </div>
-      <input type="button" value="重置" onclick="location.reload(true)" />
-      <input type="button" id="btn-rsmg" class="hide" value="资源管理" />
-      <input type="button" id="btn-docs" value="使用说明" />
-      <input type="button" id="btn-more" value="更多设置" />
-      <div id="select" class="disabled">
-        <div>谱面：<select id="select-chart" style="width: 6em"></select></div>
-        <div>音乐：<select id="select-bgm" style="width: 6em"></select></div>
-        <div>图片：<select id="select-bg" style="width: 6em"></select></div>
-        <br />
-        <div> 宽高比：<select id="select-aspect-ratio" style="width: 4em">
-            <option value="1.25">5:4</option>
-            <option value="1.333333">4:3</option>
-            <option value="1.4316546762589928">10:7</option>
-            <option value="1.461538">19:13</option>
-            <option value="1.6">8:5</option>
-            <option value="1.666667">5:3</option>
-            <option value="1.692308">22:13</option>
-            <option value="1.777778" selected>16:9</option>
-          </select>
-        </div>
-        <div> 按键缩放：<select id="select-note-scale" style="width: 4em">
-            <option value="0.8">极小</option>
-            <option value="0.9">较小</option>
-            <option value="1" selected>默认</option>
-            <option value="1.15">较大</option>
-            <option value="1.3">极大</option>
-          </select>
-        </div>
-        <div> 背景变暗：<select id="select-background-dim" style="width: 4em">
-            <option value="1">黑暗</option>
-            <option value="0.8">昏暗</option>
-            <option value="0.6" selected>默认</option>
-            <option value="0.4">较亮</option>
-            <option value="0.2">明亮</option>
-          </select>
-        </div>
-        <br />
-        <div>曲名：<input id="input-name" class="input" style="width: 7em" placeholder="&#60; Untitled &#62;" /></div>
-        <div>曲师：<input id="input-artist" class="input" style="width: 7em" placeholder="&#60; nameless &#62;" /></div>
-        <br />
-        <div>曲绘：<input id="input-illustrator" class="input" style="width: 7em" placeholder="&#60; nameless &#62;" /></div>
-        <div>谱师：<input id="input-charter" class="input" style="width: 7em" placeholder="&#60; nameless &#62;" /></div>
-        <br />
-        <div> 难度：<select id="select-difficulty" style="width: 3em">
-            <option value="" selected>SP</option>
-            <option value="EZ">EZ</option>
-            <option value="HD">HD</option>
-            <option value="IN">IN</option>
-            <option value="AT">AT</option>
-          </select>
-        </div>
-        <div> 等级：<select id="select-level" style="width: 3em">
-            <option value="" selected>?</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-            <option value="11">11</option>
-            <option value="12">12</option>
-            <option value="13">13</option>
-            <option value="14">14</option>
-            <option value="15">15</option>
-            <option value="16">16</option>
-          </select>
-        </div>
-        <div> 音效音量：<select id="select-volume" style="width: 5em">
-            <option value="0">0%</option>
-            <option value="0.25">25%</option>
-            <option value="0.5">50%</option>
-            <option value="1" selected>100%</option>
-            <option value="2.5">250%</option>
-            <option value="5">500%</option>
-          </select>
-        </div>
-        <br />
-        <div><input type="checkbox" id="feedback" checked /><label for="feedback">触摸反馈</label></div>
-        <div><input type="checkbox" id="imageBlur" checked /><label for="imageBlur">背景模糊</label></div>
-        <div><input type="checkbox" id="highLight" checked /><label for="highLight">多押高亮</label></div>
-        <br />
-        <div><input type="checkbox" id="lineColor" checked /><label for="lineColor">FC/AP指示器</label></div>
-        <div class="disabled-when-playing"><input type="checkbox" id="autoplay" checked /><label for="autoplay">自动演示</label></div>
-        <div class="disabled-when-playing"><input type="checkbox" id="showTransition" checked /><label for="showTransition">过渡动画</label></div>
-        <br />
-        <div class=""> 谱面镜像：<select id="select-flip" style="width: 4em">
-            <option value="0" selected>无</option>
-            <option value="1">X轴</option>
-            <option value="2">Y轴</option>
-            <option value="3">X&Y</option>
-          </select>
-        </div>
-        <div class="disabled-when-playing"> 音乐变速：<select id="select-speed" style="width: 4em">
-            <option value="Slowest">极慢</option>
-            <option value="Slower">较慢</option>
-            <option value="" selected>正常</option>
-            <option value="Faster">较快</option>
-            <option value="Fastest">极快</option>
-          </select>
-        </div>
-        <br />
-        <div class="disabled-when-playing">谱面延时(ms)：<input id="input-offset" type="number" step="5" class="input" style="width: 4em" placeholder="0" /></div>
-        <div>
-          <input type="button" id="btn-play" value="播放" />
-          <input type="button" id="btn-pause" value="暂停" />
-        </div>
-      </div>
-      <div><strong id="msg-out">初始化...</strong></div>
-      <div id="stage">
-        <i class="tl">&#xe900;</i><i class="tr">&#xe902;</i><i class="bl">&#xe909;</i><i class="br">&#xe904;</i>
-        <div id="mask">
-          <div>GitHub: lchz&#104;3473/sim-phi</div>
-        </div>
-      </div>
-      <div id="cover-dark" class="cover-dark fade"></div>
-      <div id="cover-rsmg" class="cover-view fade" qwq>
-        <div class="view-nav">
-          <p id="nav-rsmg">资源管理</p>
-        </div>
-        <div class="view-content">
-          <div id="view-rsmg"></div>
-        </div>
-      </div>
-      <div id="cover-view" class="cover-view fade" qwq>
-        <div id="view-nav" class="view-nav">
-          <a id="nav-cfg">更多设置</a>
-          <a id="nav-msg">日志</a>
-        </div>
-        <div id="view-content" class="view-content">
-          <div id="view-cfg"></div>
-          <div id="view-msg"></div>
-        </div>
-      </div>
+      <p class="footer">&copy;&nbsp;2020-2023&nbsp;lchz&#104;3473</p>
     </div>
-    <p class="footer">&copy;&nbsp;2020-2023&nbsp;lchz&#104;3473</p>
-  </div>
-</body>
-
+  </body>
 </html>

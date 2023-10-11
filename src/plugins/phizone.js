@@ -23,39 +23,41 @@ const getSongsUrlByIndex = (index = 0) => `${host}/songs/?perpage=1&page=${index
 const getChartsUrlByIndex = (index = 0) => `${host}/charts/?perpage=1&page=${index}`;
 const getChartsUrlByUUID = (id = '') => `${host}/songs/${id}/charts/`;
 const getRandomChartUrl = () => `${host}/charts/random/?rangeFormat=0&rangeFormat=1`;
-const ver = 'PhiZone API v0.8.3';
+const ver = 'PhiZone API v0.8.4';
 // eslint-disable-next-line no-alert
 const vprompt = str => prompt(`${ver}\n${str}`);
 const valert = str => hook.toast(`${ver}\n${str}`);
+const msgNetErr = err => {
+  valert(`无法连接至服务器\n错误代码：${err.message}`);
+  sendText('无法连接至服务器');
+};
+const msgNoChart = id => {
+  valert(`歌曲ID ${id} 对应的谱面不存在`);
+  sendText(`歌曲ID ${id} 对应的谱面不存在`);
+};
 async function dialog(num) {
   const id = num || vprompt('请输入歌曲ID');
   if (id === '' || id === null) { valert('未输入歌曲ID，已取消操作'); return }
-  const data = await query(id).catch(err => {
-    valert(`无法连接至服务器\n错误代码：${err.message}`);
-    sendText('无法连接至服务器');
-  });
+  const data = await query(id).catch(msgNetErr);
   console.log(data);
   if (!data) return;
-  if (!data.charts.length) { valert(`歌曲ID ${id} 对应的谱面不存在`); return }
+  if (!data.charts.length) { msgNoChart(id); return }
   await readData(data);
 }
 async function dialogc(num) {
   const id = num || vprompt('请输入谱面ID');
   if (id === '' || id === null) { valert('未输入谱面ID，已取消操作'); return }
-  const data = await queryChart(id).catch(err => {
-    valert(`无法连接至服务器\n错误代码：${err.message}`);
-    sendText('无法连接至服务器');
-  });
+  const data = await queryChart(id).catch(msgNetErr);
   console.log(data);
   if (!data) return;
-  if (!data.charts.length) { valert(`谱面ID ${id} 对应的谱面不存在`); return }
+  if (!data.charts.length) { msgNoChart(id); return }
   await readData(data);
 }
 async function random() {
-  const data = await queryRandom().catch(err => valert(`无法连接至服务器\n错误代码：${err.message}`));
+  const data = await queryRandom().catch(msgNetErr);
   console.log(data);
   if (!data) return;
-  if (!data.charts.length) { valert(`歌曲ID ${'<random>'} 对应的谱面不存在`); return }
+  if (!data.charts.length) { msgNoChart('<random>'); return }
   await readData(data);
 }
 async function query(id) {
@@ -237,32 +239,17 @@ Object.defineProperty(Downloader.prototype, 'total', { get() {
   return values.reduce((total, xhr) => total + Math.max(xhr.event.loaded, xhr.event.total), 0);
 } });
 function getChartOffset(id) {
-  if (id === '0ada5f8d-7f1d-426e-b53d-747d4489e255') return 100; // 29
-  if (id === '5201e181-b5d1-4931-9785-e78cbed0758e') return 50; // 34
-  if (id === '8747c9b5-9029-499d-b1d5-59bd46e2522f') return 150; // 35
-  if (id === 'ccf6522f-d746-4b76-9b3b-09d6534fd99e') return 50; // 38
-  if (id === '5d17fa22-51da-48e3-b56d-29ed782d830b') return 175; // 39
   if (id === '67b8c0fd-4879-41e3-af04-6dc8f41ddcd1') return -500; // 48
-  if (id === 'e15c5743-fbb1-4d36-9821-43208a75bf07') return 100; // 51
-  if (id === '2eb9e940-4350-4509-a244-068abd937f44') return 50; // 53
+  if (id === '2eb9e940-4350-4509-a244-068abd937f44') return -50; // 53
   if (id === '026c8905-6f24-421c-a594-e5f9bf1d053a') return 150; // 54
   if (id === '71acb2d4-225e-4b0a-989c-660f4c075542') return 175; // 57
   if (id === '165119b8-7074-4106-bb23-27a8fb99c0c6') return 150; // 58
-  if (id === '846587d2-0ff2-40ca-b42b-3568cef08e48') return 250; // 59
-  if (id === '74585cab-6b6f-4633-9c3d-4dfa9900cafd') return -100; // 61
-  if (id === '108254a0-a756-4200-8391-1f47bb7707aa') return -50; // 68
+  if (id === '846587d2-0ff2-40ca-b42b-3568cef08e48') return -25; // 59
+  if (id === '74585cab-6b6f-4633-9c3d-4dfa9900cafd') return 75; // 61
   if (id === '8c4d638a-a1aa-4e29-a0d2-2f3a2cb7e69c') return 300; // 69
-  if (id === 'e29e6b87-796f-4518-ac33-d9db79bbc103') return 200; // 70
-  if (id === '7457a0a7-5d50-4e5e-b5a5-6049100a168e') return 200; // 72
   if (id === 'c4dc62c4-7bed-4f39-b6ed-451ecdcb9b6b') return 250; // 73
-  if (id === '53e2ca24-2212-4795-be30-1a80cebbc339') return 250; // 76
-  if (id === 'af635f4b-df9c-42ad-9f8d-e20c0e2aebad') return 400; // 77
-  if (id === 'e4307062-420a-49a2-8515-b22375e7f6c4') return -50; // 79
   if (id === 'f0b1e2eb-f7f8-42ec-bcb3-6a717147ad4e') return 225; // 80
-  if (id === '918a8854-04be-47e3-bfae-62699d193fee') return 200; // 82
-  if (id === 'ed0d5555-7573-4b9d-a491-b22aeab66da7') return 200; // 83
   if (id === 'd7ad0802-22e1-4efc-8bba-4cfe074d2a95') return 200; // 85
-  if (id === 'f2398611-f145-45f5-b4f9-78be5f97fa86') return 175; // 86
   if (id === '7be304a2-74cc-48a7-80bb-98de40cd814d') return -25; // 88
   if (id === '232ec440-647e-4319-96c2-17e97f4ea55d') return 150; // 90
   if (id === '11eae627-ff9e-48fe-8c9f-2d49d6e34221') return -100; // 91

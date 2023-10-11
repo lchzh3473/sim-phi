@@ -23,7 +23,7 @@ body {
 }
 
 #stage i {
-  font-family: icomoon;
+  font-family: 'Material Icons';
   font-style: normal;
   color: #fff;
   font-size: 4vmin;
@@ -92,14 +92,14 @@ body {
   visibility: visible;
 }
 
-#uploader-select>label {
+#uploader-select > label {
   font-size: 0.9em;
   padding: 0.15em 0.15em 0.15em 0;
   text-align: left;
   padding: 0.2em 0.6em;
 }
 
-#uploader-select>label:hover {
+#uploader-select > label:hover {
   background-color: #c9e5ca;
 }
 
@@ -134,7 +134,7 @@ body {
   pointer-events: none;
 }
 
-.cover-view>* {
+.cover-view > * {
   pointer-events: initial;
 }
 
@@ -146,7 +146,7 @@ body {
   overflow: scroll;
 }
 
-#view-cfg>div {
+#view-cfg > div {
   padding: 0.5em 0;
   display: flex;
   justify-content: center;
@@ -200,7 +200,7 @@ body {
   flex-wrap: nowrap;
 }
 
-.cover-view[qwq]>.view-content {
+.cover-view[qwq] > .view-content {
   flex-grow: 1;
 }
 
@@ -260,6 +260,6 @@ body {
   padding-bottom: 0.5em;
 }
 
-.bm-item:last-child>.bm-rbtn {
+.bm-item:last-child > .bm-rbtn {
   padding-bottom: 0;
 }

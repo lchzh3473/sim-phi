@@ -27,9 +27,10 @@ interface JudgeLine {
 interface SpeedEvent {
   startTime: number;
   endTime: number;
-  floorPosition: number;
-  floorPosition2?: number; // FIXME: float32
   value: number;
+  floorPosition: number;
+  floorPosition2?: number; // float32
+  floorPositionMin?: number;
 }
 interface JudgeLineEvent {
   startTime: number;

@@ -295,6 +295,7 @@ interface NoteRPE1 {
   speed: number;
   isAbove: boolean;
   isFake: boolean;
+  isHidden: boolean;
 }
 class LineRPE1 {
   public bpm: number;
@@ -317,8 +318,8 @@ class LineRPE1 {
     this.merged = false;
     if (!isNaN(bpm)) this.bpm = bpm;
   }
-  public pushNote(type: number, time: number, positionX: number, holdTime: number, speed: number, isAbove: boolean, isFake: boolean) {
-    this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake });
+  public pushNote(type: number, time: number, positionX: number, holdTime: number, speed: number, isAbove: boolean, isFake: boolean, isHide: boolean) {
+    this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake, isHidden: isHide });
   }
   public setId(id = NaN) { this.id = id }
   public setFather(fatherLine: LineRPE1 | null) { this.father = fatherLine }
@@ -406,38 +407,55 @@ class LineRPE1 {
     }
     // 添加floorPosition
     let floorPos = 0;
+    let minPos = 0;
     const speedEvents = this.speedEvents!;
     for (let i = 0; i < speedEvents.length; i++) {
       const startTime = Math.max(speedEvents[i].time, 0);
       const endTime = i < speedEvents.length - 1 ? speedEvents[i + 1].time : 1e9;
       const value = speedEvents[i].value * 2 / 9;
-      const floorPosition = floorPos;
+      result.speedEvents.push({ startTime, endTime, value, floorPosition: floorPos, floorPositionMin: minPos });
       floorPos += (endTime - startTime) * value / this.bpm * 1.875;
       floorPos = Math.fround(floorPos);
-      result.speedEvents.push({ startTime, endTime, value, floorPosition });
+      minPos = Math.min(minPos, floorPos);
     }
     // 处理notes
     const sortFn = (a: { time: number }, b: { time: number }) => a.time - b.time;
-    for (const i of this.notes.sort(sortFn)) {
-      const { time } = i;
+    const getPositionValues = (time: number) => {
       let v1 = 0;
       let v2 = 0;
       let v3 = 0;
+      let vmin = 0;
       for (const e of result.speedEvents) {
         if (time > e.endTime) continue;
         if (time < e.startTime) break;
         v1 = e.floorPosition;
         v2 = e.value;
         v3 = time - e.startTime;
+        vmin = e.floorPositionMin!;
       }
+      return { v1, v4: v2 * v3, vmin };
+    };
+    const getHoldSpeedValue = (time: number, holdTime: number) => {
+      const start = getPositionValues(time);
+      const end = getPositionValues(time + holdTime);
+      return ((end.v1 - start.v1) / 1.875 * this.bpm + (end.v4 - start.v4)) / holdTime;
+    };
+    for (const i of this.notes.sort(sortFn)) {
+      const { v1, v4, vmin } = getPositionValues(i.time);
+      const speedFactor = i.type === 3 ? getHoldSpeedValue(i.time, i.holdTime) : 1;
+      const floorPosition = Math.fround(v1 + v4 / this.bpm * 1.875);
       const note = {
         type: i.type,
-        time: time + (i.isFake ? 1e9 : 0),
+        time: i.time + (i.isFake ? 1e9 : 0),
         positionX: i.positionX,
         holdTime: i.holdTime,
-        speed: i.speed * (i.type === 3 ? v2 : 1),
-        floorPosition: Math.fround(v1 + v2 * v3 / this.bpm * 1.875)
+        speed: i.speed * speedFactor,
+        floorPosition
       };
+      if (i.isHidden) {
+        note.speed = 0;
+        note.floorPosition = Math.min(vmin, floorPosition) - 1;
+      }
       if (i.isAbove) {
         result.notesAbove.push(note);
         if (i.isFake) continue;
@@ -554,18 +572,18 @@ export function parse(pec: string, filename: string): {
     if (i.notes) {
       for (const note of i.notes) {
         if (note.alpha === undefined) note.alpha = 255;
-        // if (note.above !== 1 && note.above !== 2) ({code:1,name:'NoteSideWarning',message:`检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"`});
-        if (note.isFake !== 0) warn(1, 'FakeNoteWarning', `检测到FakeNote(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
+        if (note.above !== 1 && note.above !== 2) warn(1, 'NoteSideWarning', `检测到非法方向:${note.above}(将被视为2)\n位于:"${JSON.stringify(note)}"`);
+        if (note.isFake !== 0) warn(1, 'NoteFakeWarning', `检测到FakeNote(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
         if (note.size !== 1) warn(1, 'ImplementionWarning', `未兼容size=${note.size}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
         if (note.yOffset !== 0) warn(1, 'ImplementionWarning', `未兼容yOffset=${note.yOffset}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
         if (note.visibleTime !== 999999) warn(1, 'ImplementionWarning', `未兼容visibleTime=${note.visibleTime}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
-        if (note.alpha !== 255) warn(1, 'ImplementionWarning', `未兼容alpha=${note.alpha}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
+        if (note.alpha !== 255 && note.alpha !== 0) warn(1, 'ImplementionWarning', `未兼容alpha=${note.alpha}(可能无法正常显示)\n位于:"${JSON.stringify(note)}"`);
         const type = [0, 1, 4, 2, 3].indexOf(note.type);
         const time = bpmList.calc2(note.startTime);
         const holdTime = bpmList.calc2(note.endTime) - time;
         const { speed } = note;
         const positionX = note.positionX / 75.375;
-        lineRPE.pushNote(type, time, positionX, holdTime, speed, note.above === 1, note.isFake !== 0);
+        lineRPE.pushNote(type, time, positionX, holdTime, speed, note.above === 1, note.isFake !== 0, note.alpha === 0);
       }
     }
     for (const e of i.eventLayers) {
