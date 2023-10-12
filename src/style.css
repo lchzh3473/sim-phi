@@ -16,6 +16,9 @@ body {
 }
 
 #stage {
+  font-family: Custom, Consolas, Menlo, monospace;
+  font-size: 4vmin;
+  color: gray;
   position: relative;
   background-color: rgba(0, 0, 0, 0.2);
   margin: auto;
@@ -26,7 +29,6 @@ body {
   font-family: 'Material Icons';
   font-style: normal;
   color: #fff;
-  font-size: 4vmin;
   pointer-events: none;
   opacity: 0.6;
   line-height: initial;
@@ -57,9 +59,6 @@ body {
 }
 
 #mask {
-  color: gray;
-  font-family: Custom, Consolas, Menlo, monospace;
-  font-size: 4vmin;
   position: absolute;
   width: 70vmin;
   left: 50%;
@@ -118,7 +117,6 @@ body {
 .cover-view {
   position: fixed;
   width: 85vmin;
-  height: 85vh;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -161,7 +159,7 @@ body {
   justify-content: space-evenly;
   align-items: stretch;
   border: 1px solid gray;
-  border-radius: 2vmin 2vmin 0 0;
+  border-radius: 1em 1em 0 0;
   overflow: hidden;
   flex-shrink: 0;
   min-width: 50%;
@@ -175,8 +173,8 @@ body {
   text-align: center;
   border: 1px solid gray;
   margin: -1px;
-  padding: 0.5vmin;
-  font-size: calc(12px + 1vmin);
+  padding: 0.25em;
+  font-size: 1.33em;
   transition-property: color, background-color;
   transition-duration: 0.2s;
 }
@@ -188,9 +186,10 @@ body {
 }
 
 .view-content {
+  max-height: 80vh;
   background-color: #f0f1fe;
   border: 1px solid gray;
-  border-radius: 0 0 2vmin 2vmin;
+  border-radius: 0 0 1em 1em;
   overflow: scroll;
   margin-top: -1px;
   padding: 1% 2.5% 0%;
@@ -201,6 +200,7 @@ body {
 }
 
 .cover-view[qwq] > .view-content {
+  height: 3473vh;
   flex-grow: 1;
 }
 
@@ -209,8 +209,8 @@ body {
   content: '日志将会显示在这里';
   display: flow-root;
   text-align: center;
-  padding: calc(6px + 1vmin);
-  font-size: calc(6px + 1vmin);
+  padding: 0.9em;
+  font-size: 0.9em;
   user-select: text;
   -webkit-user-select: text;
   -moz-user-select: text;
@@ -218,14 +218,14 @@ body {
 
 .msgbox {
   display: flow-root;
-  margin: calc(6px + 1vmin) 0;
+  margin: 0.9em 0;
   border: 1px solid gray;
-  border-radius: calc(6px + 1vmin);
+  border-radius: 0.5em;
   text-align: left;
   word-break: break-all;
   white-space: pre-wrap;
-  padding: calc(6px + 1vmin);
-  font-size: calc(6px + 1vmin);
+  padding: 0.9em;
+  font-size: 0.9em;
   font-family: Consolas, Menlo, monospace;
   user-select: text;
   -webkit-user-select: text;

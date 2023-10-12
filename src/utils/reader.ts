@@ -22,6 +22,7 @@ export class FileEmitter extends EventTarget {
           reader.onprogress = evt => this.fireProgress(evt.loaded, evt.total);
           reader.onload = evt => evt.target && evt.target.result instanceof ArrayBuffer && this.fireLoad(i, evt.target.result);
         }
+        this.input.value = ''; // allow same file
       }
     });
   }

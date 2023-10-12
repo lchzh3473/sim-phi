@@ -78,6 +78,7 @@ interface MainOptions {
   before: Map<string, () => Promise<void> | void>;
   now: Map<string, (time: number) => void>;
   after: Map<string, () => void>;
+  end: Map<string, () => Promise<void> | void>;
   customDraw: ((ctx: CanvasRenderingContext2D) => void) | null;
   filter: ((ctx: CanvasRenderingContext2D, time: number, now: number) => CanvasImageSource) | null;
   filterOptions: Record<string, unknown>;
@@ -86,6 +87,7 @@ interface MainOptions {
   awawa: boolean;
   fireModal: (navHTML: string, contentHTML: string) => HTMLDivElement;
   toast: (msg: string) => HTMLDivElement;
+  error: (msg?: string) => HTMLDivElement;
   define: (arg0: ModuleConfig) => ModuleConfig;
   use: (module: Promise<ModuleBase>) => Promise<unknown>;
   stat: typeof stat;
@@ -116,6 +118,7 @@ main.pressTime = 0;
 main.before = new Map();
 main.now = new Map();
 main.after = new Map();
+main.end = new Map();
 main.filter = null;
 main.filterOptions = {};
 document.oncontextmenu = e => e.preventDefault();
@@ -194,8 +197,27 @@ const status2 = {
   }
 };
 let levelText = '';
-const bgs = new Map() as Map<string, ImageBitmap>;
-const bgsBlur = new Map() as Map<string, ImageBitmap>;
+class ImageStore {
+  public base: ImageBitmap;
+  public width: number;
+  public height: number;
+  private _blur: ImageBitmap | null;
+  public constructor(image: ImageBitmap) {
+    this.base = image;
+    this.width = image.width;
+    this.height = image.height;
+    this._blur = null;
+  }
+  public get blur() {
+    this.setBlur();
+    return this._blur || this.base;
+  }
+  public async setBlur() {
+    this.setBlur = async() => {};
+    this._blur = await imgBlur(this.base);
+  }
+}
+const bgs = new Map() as Map<string, ImageStore>;
 const bgms = new Map() as Map<string, { audio: AudioBuffer; video: HTMLVideoElement | null }>;
 const charts = new Map() as Map<string, Chart>;
 const chartsMD5 = new Map() as Map<string, string>;
@@ -316,7 +338,7 @@ const uploader = new FileEmitter();
     if (isZip) zip.read(data);
     else handler();
   });
-  async function pick(data: ReaderData) {
+  function pick(data: ReaderData) {
     console.log(data);
     switch (data.type) {
       case 'line':
@@ -326,30 +348,29 @@ const uploader = new FileEmitter();
         chartInfoData.push(...data.data);
         break;
       case 'media': {
-        let basename = data.name;
-        while (bgms.has(basename)) basename += '\n'; // TODO: abstract
+        const basename = getUniqueName(data.name, bgms);
         bgms.set(basename, data.data);
         selectbgm.appendChild(createOption(basename, data.name));
+        selectbgm.dispatchEvent(new Event('change'));
         break;
       }
       case 'image': {
-        let basename = data.name;
-        while (bgs.has(basename)) basename += '\n';
-        bgs.set(basename, data.data);
-        bgsBlur.set(basename, await imgBlur(data.data));
+        const basename = getUniqueName(data.name, bgs);
+        bgs.set(basename, new ImageStore(data.data));
         selectbg.appendChild(createOption(basename, data.name));
+        selectbg.dispatchEvent(new Event('change'));
         break;
       }
       case 'chart': {
         if (data.msg) data.msg.forEach(v => sendWarning(v));
         if (data.info) chartInfoData.push(...data.info);
         if (data.line) chartLineData.push(...data.line);
-        let basename = data.name;
-        while (charts.has(basename)) basename += '\n';
+        const basename = getUniqueName(data.name, charts);
         charts.set(basename, data.data);
         chartsMD5.set(basename, data.md5);
         chartsFormat.set(basename, data.format);
         selectchart.appendChild(createOption(basename, data.name));
+        selectchart.dispatchEvent(new Event('change'));
         break;
       }
       default:
@@ -371,6 +392,11 @@ const uploader = new FileEmitter();
       blockUploader.classList.remove('disabled');
       adjustInfo();
     } else blockUploader.classList.add('disabled');
+  }
+  function getUniqueName(name: string, set: Map<string, unknown>): string {
+    let basename = name;
+    while (set.has(basename)) basename += '\n';
+    return basename;
   }
 }());
 main.uploader = uploader;
@@ -864,7 +890,7 @@ window.addEventListener('load', (): void => {
     })) return;
     await import('./utils/reader-');
     const raw = await loadResource(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).catch(() => null) || {
-      // const raw = await loadResource('local/ptres2.json').catch(() => ({
+    // const raw = await loadResource('local/ptres.json').catch(() => null) || {
       image: {} as Record<string, string>,
       audio: {} as Record<string, string>,
       alternative: {} as Record<string, string>,
@@ -986,6 +1012,22 @@ async function readResource(raw: {
   await Promise.all(res1);
   return { loadedNum, errorNum };
 }
+const background = {
+  isBlur: false,
+  image: null as ImageStore | null,
+  getImage() {
+    if (!this.image) return res.NoImageWhite;
+    return this.image.base;
+  },
+  getImageBlur() {
+    if (!this.image) return res.NoImageWhite;
+    return this.isBlur ? this.image.blur : this.image.base;
+  }
+};
+checkImageBlur.addEventListener('change', () => {
+  background.isBlur = checkImageBlur.checked;
+});
+checkImageBlur.dispatchEvent(new Event('change'));
 // 作图
 function mainLoop() {
   frameTimer.addTick(); // 计算fps
@@ -1004,8 +1046,8 @@ function mainLoop() {
     ctxfg.globalCompositeOperation = 'source-over';
     ctxfg.resetTransform();
     ctxfg.globalAlpha = 1;
-    const bgImage = checkImageBlur.checked ? app.bgImageBlur : app.bgImage;
-    ctxfg.drawImage(bgImage, ...adjustSize(bgImage, canvasfg, 1));
+    const bgImageBlur = background.getImageBlur();
+    ctxfg.drawImage(bgImageBlur, ...adjustSize(bgImageBlur, canvasfg, 1));
     ctxfg.fillStyle = '#000'; // 背景变暗
     ctxfg.globalAlpha = app.brightness; // 背景不透明度
     ctxfg.fillRect(0, 0, canvasfg.width, canvasfg.height);
@@ -1021,8 +1063,8 @@ function mainLoop() {
   } // 只让它执行一次
   if (tempStat != null) atDraw3(tempStat);
   ctx.globalAlpha = 1;
-  const bgImage = checkImageBlur.checked ? app.bgImageBlur : app.bgImage;
-  ctx.drawImage(bgImage, ...adjustSize(bgImage, canvas, 1.1));
+  const bgImageBlur = background.getImageBlur();
+  ctx.drawImage(bgImageBlur, ...adjustSize(bgImageBlur, canvas, 1.1));
   ctx.fillStyle = '#000';
   ctx.globalAlpha = 0.4;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1079,7 +1121,7 @@ function loopNoCanvas() {
   //   stat.reset();
   //   Promise.resolve().then(atStop).then(atStop);
   // }
-  tmps.bgImage = checkImageBlur.checked ? app.bgImageBlur : app.bgImage;
+  tmps.bgImage = background.getImageBlur();
   tmps.bgVideo = app.bgVideo;
   tmps.progress = (main.awawa ? duration0 - timeBgm : timeBgm) / duration0;
   tmps.name = inputName.value || inputName.placeholder;
@@ -1269,8 +1311,8 @@ function atDraw3(statData: StatData) {
   ctxfg.resetTransform();
   ctxfg.clearRect(0, 0, canvasfg.width, canvasfg.height);
   ctxfg.globalAlpha = 1;
-  const bgImage = checkImageBlur.checked ? app.bgImageBlur : app.bgImage;
-  ctxfg.drawImage(bgImage, ...adjustSize(bgImage, canvasfg, 1));
+  const bgImageBlur = background.getImageBlur();
+  ctxfg.drawImage(bgImageBlur, ...adjustSize(bgImageBlur, canvasfg, 1));
   ctxfg.fillStyle = '#000'; // 背景变暗
   ctxfg.globalAlpha = app.brightness; // 背景不透明度
   ctxfg.fillRect(0, 0, canvasfg.width, canvasfg.height);
@@ -1352,7 +1394,8 @@ function atDraw3(statData: StatData) {
   ctxfg.globalCompositeOperation = 'destination-over';
   ctxfg.globalAlpha = 1;
   ctxfg.fillStyle = '#000';
-  ctxfg.drawImage(app.bgImage, ...adjustSize(app.bgImage, canvasfg, 1));
+  const bgImage = background.getImage();
+  ctxfg.drawImage(bgImage, ...adjustSize(bgImage, canvasfg, 1));
   ctxfg.fillRect(0, 0, canvasfg.width, canvasfg.height);
   ctxfg.globalCompositeOperation = 'source-over';
 }
@@ -1516,10 +1559,10 @@ lowRes.checkbox.addEventListener('change', evt => {
   app.setLowResFactor((evt.target as HTMLInputElement).checked ? 0.5 : 1);
 });
 lowRes.checkbox.dispatchEvent(new Event('change'));
-selectbg.onchange = () => { // TODO: 重构
-  app.bgImage = bgs.get(selectbg.value)!;
-  app.bgImageBlur = bgsBlur.get(selectbg.value)!;
-  stage.resize();
+selectbg.onchange = () => {
+  const bg = bgs.get(selectbg.value);
+  background.image = bg || null;
+  if (bg) bg.setBlur();
 };
 selectchart.addEventListener('change', adjustInfo);
 (function() {
@@ -1581,7 +1624,7 @@ status2.reg(emitter, 'change', target => (target as Emitter).eq('pause') ? 'Paus
 async function atStop(): Promise<void> {
   if (emitter.eq('stop')) {
     if (!selectchart.value) {
-      sendError('错误：未选择任何谱面');
+      main.error('未选择任何谱面');
       return;
     }
     for (const i of main.before.values()) await i();
@@ -1592,8 +1635,6 @@ async function atStop(): Promise<void> {
     stat.level = Number(/\d+$/.exec(levelText));
     if (app.chart != null) stat.reset(app.chart.numOfNotes, md5, format, selectspeed.value);
     await loadLineData({ onwarn: sendWarning });
-    app.bgImage = bgs.get(selectbg.value) || res.NoImageWhite;
-    app.bgImageBlur = bgsBlur.get(selectbg.value) || res.NoImageWhite;
     const bgm = bgms.get(selectbgm.value) || { audio: audio.mute(app.chart!.maxSeconds + 0.5), video: null };
     app.bgMusic = bgm.audio;
     app.bgVideo = bgm.video;
@@ -1624,6 +1665,7 @@ async function atStop(): Promise<void> {
     curTime = 0;
     curTimeMS = 0;
     duration0 = 0;
+    for (const i of main.end.values()) await i();
   }
 }
 async function loadLineData({
@@ -1650,7 +1692,7 @@ async function loadLineData({
         onwarn(`指定id的判定线不存在：${i.lineId}`);
         continue;
       }
-      let image = i.image == null ? null : bgs.get(i.image);
+      let image = i.image == null ? null : bgs.get(i.image)?.base;
       if (!image) {
         if (i.image != null) onwarn(`图片不存在：${i.image}`);
         image = res.NoImageBlack;
@@ -1679,6 +1721,7 @@ async function atPause() {
     if (showTransition.checked && isOutStart) timeOut.pause();
     curTime = timeBgm;
     audio.stop();
+    audio.play(res.mute, { loop: true, isOut: false }); // TODO: 重构
     emitter.emit('pause');
   } else {
     if (app.bgVideo != null) await playVideo(app.bgVideo, timeBgm * app.speed);
@@ -1740,6 +1783,7 @@ main.fireModal = function(navHTML = '', contentHTML = '') {
   return content;
 };
 main.toast = (msg = '') => main.fireModal('<p>提示</p>', `<p style="white-space:pre;text-align:left;display:inline-block;">${msg}</p>`);
+main.error = (msg = '') => main.fireModal('<p>错误</p>', `<p style="white-space:pre;text-align:left;display:inline-block;">${msg}</p>`);
 main.define = a => a;
 main.use = async m => {
   const module = await m.then(n => n.default);
@@ -1759,6 +1803,7 @@ main.use(import('@/skin.js') as unknown as Promise<ModuleBase>);
 main.use(import('@/export.js') as unknown as Promise<ModuleBase>);
 main.use(import('@/gauge.js') as unknown as Promise<ModuleBase>);
 main.use(import('@/dynamic-score.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/video-recorder.js') as unknown as Promise<ModuleBase>);
 // debug
 self.hook = main;
 export const hook = main;

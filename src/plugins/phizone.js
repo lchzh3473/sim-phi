@@ -239,7 +239,7 @@ Object.defineProperty(Downloader.prototype, 'total', { get() {
   return values.reduce((total, xhr) => total + Math.max(xhr.event.loaded, xhr.event.total), 0);
 } });
 function getChartOffset(id) {
-  if (id === '67b8c0fd-4879-41e3-af04-6dc8f41ddcd1') return -500; // 48
+  if (id === '67b8c0fd-4879-41e3-af04-6dc8f41ddcd1') return 200; // 48
   if (id === '2eb9e940-4350-4509-a244-068abd937f44') return -50; // 53
   if (id === '026c8905-6f24-421c-a594-e5f9bf1d053a') return 150; // 54
   if (id === '71acb2d4-225e-4b0a-989c-660f4c075542') return 175; // 57
@@ -251,14 +251,8 @@ function getChartOffset(id) {
   if (id === 'f0b1e2eb-f7f8-42ec-bcb3-6a717147ad4e') return 225; // 80
   if (id === 'd7ad0802-22e1-4efc-8bba-4cfe074d2a95') return 200; // 85
   if (id === '7be304a2-74cc-48a7-80bb-98de40cd814d') return -25; // 88
-  if (id === '232ec440-647e-4319-96c2-17e97f4ea55d') return 150; // 90
   if (id === '11eae627-ff9e-48fe-8c9f-2d49d6e34221') return -100; // 91
-  if (id === '79a029ad-1579-44d2-8ed2-f2c7cc8c6589') return -200; // 92
   if (id === '18686678-cd3b-493e-accb-c6ca0bc304c5') return -50; // 93
-  if (id === 'acab357e-ac69-4e8c-88b4-f8a080560c52') return -400; // 95
-  if (id === 'cfab519d-794d-4791-8881-969b00c60b46') return 150; // 96
-  if (id === '20bec844-02b8-49e3-8c60-8bf8b8a36a96') return 200; // 97
-  if (id === '5230368a-0764-4d17-8673-23c3b5a995d8') return 150; // 99
   if (id === '0ebddbc4-ff08-4484-8f21-bd0295526bdc') return 50; // 101
   if (id === '430a4ff2-e9e2-4add-9ee4-fbc172367e5d') return 200; // 104
   if (id === '260d12cf-847a-4773-aaf0-b754753f5596') return 75; // 108

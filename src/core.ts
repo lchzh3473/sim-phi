@@ -246,8 +246,6 @@ export class Renderer {
   public readonly tapholds: NoteExtends[];
   // 资源数据
   public chart: ChartExtends | null;
-  public bgImage: ImageBitmap;
-  public bgImageBlur: ImageBitmap;
   public bgMusic: AudioBuffer;
   public bgVideo: HTMLVideoElement | null;
   private _mirrorType: number;
@@ -294,8 +292,6 @@ export class Renderer {
     this.enableVP = false;
     // chart
     this.chart = null;
-    this.bgImage = null as unknown as ImageBitmap;
-    this.bgImageBlur = null as unknown as ImageBitmap;
     this.bgMusic = null as unknown as AudioBuffer;
     this.bgVideo = null;
     this.lines = [];
