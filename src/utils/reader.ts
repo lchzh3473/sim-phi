@@ -1,6 +1,6 @@
 import { parseCSV } from './parseCSV';
 import { stringify } from './stringify';
-import { structChart } from './structChart';
+import { structChart } from './Chart';
 import { structInfoData, structLineData } from './structInfo';
 import md5 from 'md5';
 // @ts-expect-error: vite-plugin-worker-loader
@@ -57,6 +57,7 @@ export class ZipReader extends EventTarget {
   public read(result0: ByteData): void {
     if (!this.worker) {
       this.dispatchEvent(new CustomEvent('loadstart'));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       const worker = new Zip() as Worker; // 以后考虑indexedDB存储url
       worker.addEventListener('message', msg => {
         const handler = async() => {
@@ -138,9 +139,11 @@ const readerInit: ReaderInit[] = [
     pattern: /\.json$/i,
     type: 'json',
     read(i: ByteData) {
-      const jsonData = structChart(i.text!, (_, value) => typeof value === 'number' ? Math.fround(value) : value as unknown);
+      const text = i.text!;
+      const json = JSON.parse(text, (_, value) => typeof value === 'number' ? Math.fround(value) : value as unknown) as ChartPGS;
+      const jsonData = structChart(json);
       const format = `PGS(${jsonData.formatVersion})`;
-      return { type: 'chart', name: i.name, md5: md5(i.text!), data: jsonData, format };
+      return { type: 'chart', name: i.name, md5: md5(text), data: jsonData, format };
     }
   }, {
     pattern: /\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i,
@@ -175,9 +178,9 @@ async function defaultDecode(arraybuffer: ArrayBuffer) {
   // return actx.decodeAudioData(arraybuffer);
   return new Promise((resolve: (value: AudioBuffer) => void, reject) => {
     const a = actx.decodeAudioData(arraybuffer, resolve, reject);
-    if (a instanceof Promise) { a.then(resolve, reject) }
+    if (a instanceof Promise) a.then(resolve, reject);
   }).catch(err => {
-    if (err == null) { throw new DOMException('Unable to decode audio data', 'EncodingError') }
+    if (err == null) throw new DOMException('Unable to decode audio data', 'EncodingError');
     throw err;
   });
 }
@@ -206,7 +209,7 @@ function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {
           errorHandler(reader, err as Error);
         }
       }
-      return { type: 'unknown', name, data: readers[0].pattern.test(name) ? errors : '' };
+      return { type: 'unknown', name, data: errors.join('\n') }; // TODO: 完善错误信息
     },
     use(reader: ReaderInit | ReaderInit[]) {
       if (Array.isArray(reader)) {

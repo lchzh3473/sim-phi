@@ -1,7 +1,7 @@
 {
   "name": "sim-phi-vite",
   "private": true,
-  "version": "1.5.5",
+  "version": "1.5.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,18 +17,18 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-nullish-coalescing-operator": "^7.22.11",
-    "@rollup/plugin-babel": "^6.0.3",
-    "@rollup/plugin-terser": "^0.4.3",
-    "@types/eslint": "^8.44.3",
-    "@types/md5": "^2.3.3",
-    "@types/prompts": "^2.4.5",
-    "@typescript-eslint/eslint-plugin": "^6.7.3",
-    "@typescript-eslint/parser": "^6.7.3",
-    "eslint": "^8.50.0",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@types/eslint": "^8.44.6",
+    "@types/md5": "^2.3.4",
+    "@types/prompts": "^2.4.7",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "eslint": "^8.52.0",
     "eslint-plugin-rulesdir": "^0.2.2",
     "picocolors": "^1.0.0",
     "prompts": "^2.4.2",
     "typescript": "^5.2.2",
-    "vite": "^4.4.9"
+    "vite": "^4.5.0"
   }
 }

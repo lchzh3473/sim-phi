@@ -26,14 +26,14 @@ export class Checkbox {
     return this;
   }
   public appendBefore(node: HTMLElement): this {
-    if (node.parentNode == null) { throw new Error('Node must have a parent node') }
+    if (node.parentNode == null) throw new Error('Node must have a parent node');
     node.parentNode.insertBefore(this.container, node);
     return this;
   }
   public toggle(): void {
     this.checked = !this.checkbox.checked;
   }
-  public hook(callback = (_arg0: HTMLInputElement, _arg1: HTMLDivElement) => {}): this {
+  public hook(callback: (arg0: HTMLInputElement, arg1: HTMLDivElement) => void): this {
     callback(this.checkbox, this.container);
     return this;
   }

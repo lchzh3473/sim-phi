@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/naming-convention */
 import { type BeatArray, BpmList } from './BpmList';
 import { easing } from './easing.js';
@@ -173,7 +174,7 @@ function getRotateValue(e: LineEventRPE2[], t: number, d: boolean) {
     if (t < startTime) break;
     if (d && t === startTime) break;
     if (t >= endTime) result = end;
-    else { result = start + (t - startTime) * (end - start) / (endTime - startTime) }
+    else result = start + (t - startTime) * (end - start) / (endTime - startTime);
   }
   return result;
 }
@@ -241,11 +242,11 @@ function mergeFather(child: LineRPE1, father: LineRPE1) {
   child.moveEvents = moveEvents;
 }
 interface EventLayer {
-  moveXEvents: LineEventRPE[];
-  moveYEvents: LineEventRPE[];
-  rotateEvents: LineEventRPE[];
-  alphaEvents: LineEventRPE[];
-  speedEvents: LineEventRPE[];
+  moveXEvents?: LineEventRPE[];
+  moveYEvents?: LineEventRPE[];
+  rotateEvents?: LineEventRPE[];
+  alphaEvents?: LineEventRPE[];
+  speedEvents?: LineEventRPE[];
 }
 class EventLayer1 {
   public moveXEvents: LineEventRPE2[];
@@ -272,7 +273,9 @@ class EventLayer1 {
   public pushAlphaEvent(startTime: number, endTime: number, start: number, end: number, easingFn?: (t: number) => number) {
     this.alphaEvents.push({ startTime, endTime, start, end, easingFn });
   }
-  public pushSpeedEvent(startTime: number, endTime: number, start: number, end: number) { this.speedEvents.push({ startTime, endTime, start, end }) }
+  public pushSpeedEvent(startTime: number, endTime: number, start: number, end: number) {
+    this.speedEvents.push({ startTime, endTime, start, end });
+  }
 }
 interface NoteRPE {
   type: number;
@@ -321,8 +324,12 @@ class LineRPE1 {
   public pushNote(type: number, time: number, positionX: number, holdTime: number, speed: number, isAbove: boolean, isFake: boolean, isHide: boolean) {
     this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake, isHidden: isHide });
   }
-  public setId(id = NaN) { this.id = id }
-  public setFather(fatherLine: LineRPE1 | null) { this.father = fatherLine }
+  public setId(id = NaN) {
+    this.id = id;
+  }
+  public setFather(fatherLine: LineRPE1 | null) {
+    this.father = fatherLine;
+  }
   public preset() {
     const sortFn2 = (a: { startTime: number }, b: { startTime: number }) => a.startTime - b.startTime;
     const events = [];
@@ -365,15 +372,15 @@ class LineRPE1 {
     this.fitFather([], onwarning);
     const result = {
       bpm: this.bpm,
-      speedEvents: [] as SpeedEvent[],
+      speedEvents: [] as SpeedEventPGS[],
       numOfNotes: 0,
       numOfNotesAbove: 0,
       numOfNotesBelow: 0,
-      notesAbove: [] as Note[],
-      notesBelow: [] as Note[],
-      judgeLineDisappearEvents: [] as JudgeLineEvent[],
-      judgeLineMoveEvents: [] as JudgeLineEvent[],
-      judgeLineRotateEvents: [] as JudgeLineEvent[]
+      notesAbove: [] as NotePGS[],
+      notesBelow: [] as NotePGS[],
+      judgeLineDisappearEvents: [] as JudgeLineEventPGS[],
+      judgeLineMoveEvents: [] as JudgeLineEventPGS[],
+      judgeLineRotateEvents: [] as JudgeLineEventPGS[]
     };
     for (const i of this.moveEvents!) {
       result.judgeLineMoveEvents.push({
@@ -428,7 +435,7 @@ class LineRPE1 {
       for (const e of result.speedEvents) {
         if (time > e.endTime) continue;
         if (time < e.startTime) break;
-        v1 = e.floorPosition;
+        v1 = e.floorPosition!;
         v2 = e.value;
         v3 = time - e.startTime;
         vmin = e.floorPositionMin!;
@@ -509,7 +516,7 @@ interface JudgeLineRPEExtends extends JudgeLineRPE {
   judgeLineRPE: LineRPE1;
 }
 export function parse(pec: string, filename: string): {
-  data: string;
+  data: ChartPGS;
   messages: BetterMessage[];
   info: Record<string, string>;
   line: Record<string, string>[];
@@ -518,7 +525,7 @@ export function parse(pec: string, filename: string): {
   const data = JSON.parse(pec) as RPEData;
   const meta = data.META || data;
   if (!meta?.RPEVersion) throw new Error('Invalid rpe file');
-  const result = { formatVersion: 3, offset: 0, numOfNotes: 0, judgeLineList: [] as JudgeLine[] };
+  const result = { formatVersion: 3, offset: 0, numOfNotes: 0, judgeLineList: [] } as ChartPGS;
   const warnings = [] as BetterMessage[];
   const warn = (code: number, name: string, message: string) => warnings.push({ host: 'RPE2JSON', code, name, message, target: filename });
   warn(0, 'RPEVersionNotice', `RPE谱面兼容建设中...\n检测到RPE版本:${meta.RPEVersion}`);
@@ -555,7 +562,7 @@ export function parse(pec: string, filename: string): {
   });
   // bpm变速
   const bpmList = new BpmList(data.BPMList[0].bpm);
-  for (const i of data.BPMList) { i.time = i.startTime[0] + i.startTime[1] / i.startTime[2] }
+  for (const i of data.BPMList) i.time = i.startTime[0] + i.startTime[1] / i.startTime[2];
   data.BPMList.sort((a: { time: number }, b: { time: number }) => a.time - b.time).forEach((i, idx, arr) => {
     if (arr[idx + 1]?.time <= 0) return; // 过滤负数
     bpmList.push(i.time < 0 ? 0 : i.time, arr[idx + 1]?.time ?? 1e9, i.bpm);
@@ -589,35 +596,35 @@ export function parse(pec: string, filename: string): {
     for (const e of i.eventLayers) {
       if (!e) continue; // 有可能是null
       const layer = new EventLayer1();
-      for (const j of e.moveXEvents ?? []) {
+      for (const j of e.moveXEvents || []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const { fn, code } = getEasingFn(j, startTime, endTime);
         getWarning(code, j);
         layer.pushMoveXEvent(startTime, endTime, j.start, j.end, fn);
       }
-      for (const j of e.moveYEvents ?? []) {
+      for (const j of e.moveYEvents || []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const { fn, code } = getEasingFn(j, startTime, endTime);
         getWarning(code, j);
         layer.pushMoveYEvent(startTime, endTime, j.start, j.end, fn);
       }
-      for (const j of e.rotateEvents ?? []) {
+      for (const j of e.rotateEvents || []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const { fn, code } = getEasingFn(j, startTime, endTime);
         getWarning(code, j);
         layer.pushRotateEvent(startTime, endTime, j.start, j.end, fn);
       }
-      for (const j of e.alphaEvents ?? []) {
+      for (const j of e.alphaEvents || []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         const { fn, code } = getEasingFn(j, startTime, endTime);
         getWarning(code, j);
         layer.pushAlphaEvent(startTime, endTime, j.start, j.end, fn);
       }
-      for (const j of e.speedEvents ?? []) {
+      for (const j of e.speedEvents || []) {
         const startTime = bpmList.calc2(j.startTime);
         const endTime = bpmList.calc2(j.endTime);
         layer.pushSpeedEvent(startTime, endTime, j.start, j.end);
@@ -635,9 +642,9 @@ export function parse(pec: string, filename: string): {
     const lineRPE = i.judgeLineRPE; // TODO: 待优化
     const judgeLine = lineRPE.format({ onwarning: (msg: string) => warn(1, 'OtherWarning', `${msg}`) });
     result.judgeLineList.push(judgeLine);
-    result.numOfNotes += judgeLine.numOfNotes;
+    result.numOfNotes! += judgeLine.numOfNotes;
   }
-  return { data: JSON.stringify(result), messages: warnings, info, line, format };
+  return { data: result, messages: warnings, info, line, format };
   function getWarning(code: EasingCode, le: LineEventRPE) {
     if (code === EasingCode.TypeNotSupported) warn(1, 'EasingTypeWarning', `未知的缓动类型:${le.easingType}(将被视为1)\n位于:"${JSON.stringify(le)}"`);
     if (code === EasingCode.LeftEqualsRight) warn(1, 'EasingClipWarning', `检测到easingLeft等于easingRight(将被视为线性)\n位于:"${JSON.stringify(le)}"`);

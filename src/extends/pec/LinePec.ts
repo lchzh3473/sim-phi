@@ -35,7 +35,7 @@ export class LinePec {
     this.alphaEvents = [];
     this.moveEvents = [];
     this.rotateEvents = [];
-    if (!isNaN(bpm)) { this.bpm = bpm }
+    if (!isNaN(bpm)) this.bpm = bpm;
   }
   public pushNote(type: number, time: number, positionX: number, holdTime: number, speed: number, isAbove: boolean, isFake: boolean): void {
     this.notes.push({ type, time, positionX, holdTime, speed, isAbove, isFake });
@@ -52,7 +52,7 @@ export class LinePec {
   public pushRotateEvent(startTime: number, endTime: number, value: number, motionType: number): void {
     this.rotateEvents.push({ startTime, endTime, value, motionType });
   }
-  public format(): JudgeLine {
+  public format(): JudgeLinePGS {
     const sortFn = (a: { time: number }, b: { time: number }) => a.time - b.time;
     const sortFn2 = (a: { startTime: number; endTime: number }, b: { startTime: number; endTime: number }) => a.startTime - b.startTime + (a.endTime - b.endTime);
     // 不单独判断以避免误差
@@ -60,15 +60,15 @@ export class LinePec {
       formatVersion: 3,
       offset: 0,
       bpm: this.bpm,
-      speedEvents: [] as SpeedEvent[],
+      speedEvents: [] as SpeedEventPGS[],
       numOfNotes: 0,
       numOfNotesAbove: 0,
       numOfNotesBelow: 0,
-      notesAbove: [] as Note[],
-      notesBelow: [] as Note[],
-      judgeLineDisappearEvents: [] as JudgeLineEvent[],
-      judgeLineMoveEvents: [] as JudgeLineEvent[],
-      judgeLineRotateEvents: [] as JudgeLineEvent[]
+      notesAbove: [] as NotePGS[],
+      notesBelow: [] as NotePGS[],
+      judgeLineDisappearEvents: [] as JudgeLineEventPGS[],
+      judgeLineMoveEvents: [] as JudgeLineEventPGS[],
+      judgeLineRotateEvents: [] as JudgeLineEventPGS[]
     };
     const pushDisappearEvent = (startTime: number, endTime: number, start: number, end: number) => {
       result.judgeLineDisappearEvents.push({ startTime, endTime, start, end, start2: 0, end2: 0 });
@@ -97,9 +97,9 @@ export class LinePec {
       let v2 = 0;
       let v3 = 0;
       for (const e of result.speedEvents) {
-        if (time > e.endTime) { continue }
-        if (time < e.startTime) { break }
-        v1 = e.floorPosition;
+        if (time > e.endTime) continue;
+        if (time < e.startTime) break;
+        v1 = e.floorPosition!;
         v2 = e.value;
         v3 = time - e.startTime;
       }
@@ -113,12 +113,12 @@ export class LinePec {
       };
       if (i.isAbove) {
         result.notesAbove.push(note);
-        if (i.isFake) { continue }
+        if (i.isFake) continue;
         result.numOfNotes++;
         result.numOfNotesAbove++;
       } else {
         result.notesBelow.push(note);
-        if (i.isFake) { continue }
+        if (i.isFake) continue;
         result.numOfNotes++;
         result.numOfNotesBelow++;
       }

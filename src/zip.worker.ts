@@ -7,7 +7,7 @@ let total = 0;
 //   'https://cdn.bootcdn.net/ajax/libs/jszip/3.10.1/jszip.min.js', //
 //   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
 // ];
-// for (const url of urls) try { importScripts(url); break } catch (e) { continue }
+// for (const url of urls) try { importScripts(url); break } catch (e) continue;
 import { loadAsync } from 'jszip'; // 踩坑：linux文件名区分大小写，JSZip将报错
 interface Data { name: string; path: string; buffer: ArrayBuffer }
 function readZip(data: Data) { // JSZip

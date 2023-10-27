@@ -1,10 +1,15 @@
-interface Chart {
-  formatVersion: number;
+type Chart = import('../utils/Chart').Chart;
+type Note = import('../utils/Chart').Note;
+type JudgeLine = import('../utils/Chart').JudgeLine;
+type SpeedEvent = import('../utils/Chart').SpeedEvent;
+type JudgeLineEvent = import('../utils/Chart').JudgeLineEvent;
+interface ChartPGS {
+  formatVersion?: number;
   offset: number;
-  numOfNotes: number;
-  judgeLineList: JudgeLine[];
+  numOfNotes?: number;
+  judgeLineList: JudgeLinePGS[];
 }
-interface Note {
+interface NotePGS {
   type: number;
   time: number;
   positionX: number;
@@ -12,31 +17,31 @@ interface Note {
   speed: number;
   floorPosition: number;
 }
-interface JudgeLine {
+interface JudgeLinePGS {
   bpm: number;
-  numOfNotes: number;
-  numOfNotesAbove: number;
-  numOfNotesBelow: number;
-  notesAbove: Note[];
-  notesBelow: Note[];
-  speedEvents: SpeedEvent[];
-  judgeLineDisappearEvents: JudgeLineEvent[];
-  judgeLineMoveEvents: JudgeLineEvent[];
-  judgeLineRotateEvents: JudgeLineEvent[];
+  numOfNotes?: number;
+  numOfNotesAbove?: number;
+  numOfNotesBelow?: number;
+  notesAbove?: NotePGS[];
+  notesBelow?: NotePGS[];
+  speedEvents: SpeedEventPGS[];
+  judgeLineDisappearEvents: JudgeLineEventPGS[];
+  judgeLineMoveEvents: JudgeLineEventPGS[];
+  judgeLineRotateEvents: JudgeLineEventPGS[];
 }
-interface SpeedEvent {
+interface SpeedEventPGS {
   startTime: number;
   endTime: number;
   value: number;
-  floorPosition: number;
+  floorPosition?: number;
   floorPosition2?: number; // float32
   floorPositionMin?: number;
 }
-interface JudgeLineEvent {
+interface JudgeLineEventPGS {
   startTime: number;
   endTime: number;
   start: number;
   end: number;
-  start2: number;
-  end2: number;
+  start2?: number;
+  end2?: number;
 }

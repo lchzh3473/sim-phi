@@ -21,7 +21,7 @@ function callback() {
 }
 /**
  * 导出json
- * @param {Chart} json
+ * @param {ChartPGS} json
  */
 function chartify(json) {
   const newChart = {
@@ -31,7 +31,7 @@ function chartify(json) {
     judgeLineList: []
   };
   for (const i of json.judgeLineList) {
-    /** @type {JudgeLine} */
+    /** @type {JudgeLinePGS} */
     const newLine = {
       numOfNotes: i.numOfNotes,
       numOfNotesAbove: i.numOfNotesAbove,

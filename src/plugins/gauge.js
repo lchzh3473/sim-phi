@@ -25,7 +25,7 @@ function callback(checkbox, _container) {
   });
   status.reg('enableGauge', checkbox);
 }
-/** @type {[Chart,...number[]]} */
+/** @type {[ChartPGS,...number[]]} */
 const flags = [null, 0, 0, 0, 0, 0, 0, 0];
 let factor = 0;
 let lastTime = 0;

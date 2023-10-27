@@ -78,7 +78,8 @@ module.exports = {
     'space-before-function-paren': ['error', 'never'],
     'spaced-comment': ['error', 'always', { block: { balanced: true } }],
     'rulesdir/no-magic-words': ['error', { words: ['lchz\\x68', 'Phi\\x67ros', 'sim\\x70hi', 'f\\x75ck'] }],
-    'rulesdir/single-line-control-statement-spacing': 'error',
+    'rulesdir/no-single-line-braces': 'error',
+    'rulesdir/single-line-spacing': 'error',
     'rulesdir/space-before-inline-comments': 'error',
     'wrap-regex': 'off' // someday will be never
   }

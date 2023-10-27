@@ -100,20 +100,26 @@ function skin() {
       const img = await createImageBitmap(new Blob([entries.get('Hold').buffer]));
       const noteScale = 1089 / img.width;
       const [bottom, top] = config.holdAtlas;
+      const imgHoldEnd = bottom ? await createImageBitmap(img, 0, 0, img.width, bottom) : hook.res.NoImageBlack;
+      const imgHold = await createImageBitmap(img, 0, bottom, img.width, img.height - bottom - top);
+      const imgHoldHead = top ? await createImageBitmap(img, 0, img.height - top, img.width, top) : hook.res.NoImageBlack;
       const compacted = config.holdCompact;
-      hook.noteRender.update('HoldEnd', await createImageBitmap(img, 0, 0, img.width, bottom), noteScale, compacted);
-      hook.noteRender.update('Hold', await createImageBitmap(img, 0, bottom, img.width, img.height - bottom - top), noteScale, compacted);
-      hook.noteRender.update('HoldHead', await createImageBitmap(img, 0, img.height - top, img.width, top), noteScale, compacted);
+      hook.noteRender.update('HoldEnd', imgHoldEnd, noteScale, compacted);
+      hook.noteRender.update('Hold', imgHold, noteScale, compacted);
+      hook.noteRender.update('HoldHead', imgHoldHead, noteScale, compacted);
       if (entries.has('HoldHL')) {
         const img2 = await createImageBitmap(new Blob([entries.get('HoldHL').buffer]));
         const [bottom2, top2] = config.holdAtlasHL || config.holdAtlasMH || config.holdAtlas;
-        hook.noteRender.update('HoldEndHL', await createImageBitmap(img2, 0, 0, img2.width, bottom2), noteScale, compacted);
-        hook.noteRender.update('HoldHL', await createImageBitmap(img2, 0, bottom2, img2.width, img2.height - bottom2 - top2), noteScale, compacted);
-        hook.noteRender.update('HoldHeadHL', await createImageBitmap(img2, 0, img2.height - top2, img2.width, top2), noteScale, compacted);
+        const imgHoldEndHL = bottom2 ? await createImageBitmap(img2, 0, 0, img2.width, bottom2) : hook.res.NoImageBlack;
+        const imgHoldHL = await createImageBitmap(img2, 0, bottom2, img2.width, img2.height - bottom2 - top2);
+        const imgHoldHeadHL = top2 ? await createImageBitmap(img2, 0, img2.height - top2, img2.width, top2) : hook.res.NoImageBlack;
+        hook.noteRender.update('HoldEndHL', imgHoldEndHL, noteScale, compacted);
+        hook.noteRender.update('HoldHL', imgHoldHL, noteScale, compacted);
+        hook.noteRender.update('HoldHeadHL', imgHoldHeadHL, noteScale, compacted);
       } else {
-        hook.noteRender.update('HoldEndHL', await createImageBitmap(img, 0, 0, img.width, bottom), noteScale, compacted);
-        hook.noteRender.update('HoldHL', await createImageBitmap(img, 0, bottom, img.width, img.height - bottom - top), noteScale, compacted);
-        hook.noteRender.update('HoldHeadHL', await createImageBitmap(img, 0, img.height - top, img.width, top), noteScale, compacted);
+        hook.noteRender.update('HoldEndHL', imgHoldEnd, noteScale, compacted);
+        hook.noteRender.update('HoldHL', imgHold, noteScale, compacted);
+        hook.noteRender.update('HoldHeadHL', imgHoldHead, noteScale, compacted);
       }
     }
     if (entries.has('Flick')) {

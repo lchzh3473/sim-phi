@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 interface Navigator {
   /** Available only in iOS */
-  readonly standalone: boolean;
+  readonly standalone?: boolean;
 }
 interface Oggmented {
   OggmentedAudioContext: typeof AudioContext;

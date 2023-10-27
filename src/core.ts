@@ -1,78 +1,9 @@
-// type ArrayMapParameters<T> = typeof Array.prototype.map<T>;
-// type ArrayMapCallback<T> = Parameters<ArrayMapParameters<T>>[0];
-namespace To {
-  export function int(a: unknown): number {
-    return Number(a) | 0;
-  }
-  export function float(a: unknown): number {
-    return Number(a) || 0;
-  }
-  export function bool(a: unknown): boolean {
-    return Boolean(a);
-  }
-  export function str(a: unknown): string {
-    return String(a);
-  }
-  // export function arr<T>(a: unknown, callbackfn: ArrayMapCallback<T>): T[] {
-  //   return Array.isArray(a) ? a.map(callbackfn) : [];
-  // }
-  export function arr<T>(a: unknown, constructor: new (b: Record<string, unknown>) => T): T[] {
-    return Array.isArray(a) ? a.map((i?: Record<string, unknown>) => new constructor(i || {})) : [];
-  }
-}
-// const to = {
-//   int(a: unknown): number {
-//     return Number(a) | 0;
-//   },
-//   float(a: unknown): number {
-//     return Number(a) || 0;
-//   },
-//   bool(a: unknown): boolean {
-//     return Boolean(a);
-//   },
-//   str(a: unknown): string {
-//     return String(a);
-//   },
-//   // arr<T>(a: unknown, callbackfn: ArrayMapCallback<T>): T[] {
-//   //   return Array.isArray(a) ? a.map(callbackfn) : [];
-//   // },
-//   arr<T>(a: unknown, constructor: new (b: Record<string, unknown>) => T): T[] {
-//     return Array.isArray(a) ? a.map((i?: Record<string, unknown>) => new constructor(i || {})) : [];
-//   }
-// };
-class SpeedEvent {
-  public startTime: number;
-  public endTime: number;
-  public value: number;
-  public floorPosition: number;
-  public floorPosition2: number;
-  public constructor(event: Record<string, unknown>) {
-    this.startTime = To.int(event.startTime);
-    this.endTime = To.int(event.endTime);
-    this.value = To.float(event.value);
-    this.floorPosition = To.float(event.floorPosition);
-    this.floorPosition2 = To.float(event.floorPosition2);
-  }
-}
+// import { JudgeLineEvent } from './utils/Chart';
 interface SpeedEventExtends extends SpeedEvent {
+  floorPosition: number;
+  floorPosition2: number;
   startSeconds: number;
   endSeconds: number;
-}
-class Note {
-  public type: number;
-  public time: number;
-  public positionX: number;
-  public holdTime: number;
-  public speed: number;
-  public floorPosition: number;
-  public constructor(note: Record<string, unknown>) {
-    this.type = To.int(note.type);
-    this.time = To.int(note.time);
-    this.positionX = To.float(note.positionX);
-    this.holdTime = To.int(note.holdTime);
-    this.speed = To.float(note.speed);
-    this.floorPosition = To.float(note.floorPosition);
-  }
 }
 export interface NoteExtends extends Note {
   maxVisiblePos: number;
@@ -104,49 +35,9 @@ export interface NoteExtends extends Note {
   holdBroken: boolean;
   statOffset: number;
 }
-class LineEvent {
-  public startTime: number;
-  public endTime: number;
-  public start: number;
-  public end: number;
-  public start2: number;
-  public end2: number;
-  public constructor(event: Record<string, unknown>) {
-    this.startTime = To.int(event.startTime);
-    this.endTime = To.int(event.endTime);
-    this.start = To.float(event.start);
-    this.end = To.float(event.end);
-    this.start2 = To.float(event.start2);
-    this.end2 = To.float(event.end2);
-  }
-}
-interface LineEventExtends extends LineEvent {
+interface LineEventExtends extends JudgeLineEvent {
   startSeconds: number;
   endSeconds: number;
-}
-class JudgeLine {
-  public numOfNotes: number;
-  public numOfNotesAbove: number;
-  public numOfNotesBelow: number;
-  public bpm: number;
-  public speedEvents: SpeedEvent[];
-  public notesAbove: Note[];
-  public notesBelow: Note[];
-  public judgeLineDisappearEvents: LineEvent[];
-  public judgeLineMoveEvents: LineEvent[];
-  public judgeLineRotateEvents: LineEvent[];
-  public constructor(line: Record<string, unknown>) {
-    this.numOfNotes = To.int(line.numOfNotes);
-    this.numOfNotesAbove = To.int(line.numOfNotesAbove);
-    this.numOfNotesBelow = To.int(line.numOfNotesBelow);
-    this.bpm = To.float(line.bpm);
-    this.speedEvents = To.arr(line.speedEvents, SpeedEvent);
-    this.notesAbove = To.arr(line.notesAbove, Note);
-    this.notesBelow = To.arr(line.notesBelow, Note);
-    this.judgeLineDisappearEvents = To.arr(line.judgeLineDisappearEvents, LineEvent);
-    this.judgeLineMoveEvents = To.arr(line.judgeLineMoveEvents, LineEvent);
-    this.judgeLineRotateEvents = To.arr(line.judgeLineRotateEvents, LineEvent);
-  }
 }
 export interface JudgeLineExtends extends JudgeLine {
   lineId: number;
@@ -176,18 +67,6 @@ export interface JudgeLineExtends extends JudgeLine {
   imageA: number;
   imageL: [ImageBitmap, ImageBitmap, null, ImageBitmap];
   imageC: boolean;
-}
-class Chart {
-  public formatVersion: number;
-  public offset: number;
-  public numOfNotes: number;
-  public judgeLineList: JudgeLine[];
-  public constructor(chart: Record<string, unknown>) {
-    this.formatVersion = To.int(chart.formatVersion);
-    this.offset = To.float(chart.offset);
-    this.numOfNotes = To.int(chart.numOfNotes);
-    this.judgeLineList = To.arr(chart.judgeLineList, JudgeLine);
-  }
 }
 interface ChartExtends extends Chart {
   maxSeconds: number;
@@ -323,27 +202,6 @@ export class Renderer {
     this._setLowResFactor(1);
     this.resizeCanvas();
   }
-  // public get bgImage(): ImageBitmap {
-  //   if (!this._bgImage) throw new Error('No background image');
-  //   return this._bgImage;
-  // }
-  // public set bgImage(value: ImageBitmap) {
-  //   this._bgImage = value;
-  // }
-  // public get bgImageBlur(): ImageBitmap {
-  //   if (!this._bgImageBlur) throw new Error('No background image');
-  //   return this._bgImageBlur;
-  // }
-  // public set bgImageBlur(value: ImageBitmap) {
-  //   this._bgImageBlur = value;
-  // }
-  // public get bgMusic(): AudioBuffer {
-  //   if (!this._bgMusic) throw new Error('No background music');
-  //   return this._bgMusic;
-  // }
-  // public set bgMusic(value: AudioBuffer) {
-  //   this._bgMusic = value;
-  // }
   // config
   public setNoteScale(num = 1): void {
     this.noteScale = num;
@@ -384,7 +242,7 @@ export class Renderer {
     this.initialized = true;
   }
   // note预处理
-  public prerenderChart(chart: Record<string, unknown>): void {
+  public prerenderChart(chart: Chart): void {
     this.lines.length = 0;
     this.notes.length = 0;
     this.taps.length = 0;
@@ -392,7 +250,20 @@ export class Renderer {
     this.flicks.length = 0;
     this.holds.length = 0;
     this.tapholds.length = 0;
-    const chartNew = new Chart(chart) as ChartExtends;
+    const chartNew = chart.duplicate() as ChartExtends;
+    for (const i of chartNew.judgeLineList) {
+      let y = Math.fround(i.speedEvents[0].startTime / i.bpm * 1.875);
+      let y2 = y; // float32
+      for (const j of i.speedEvents) {
+        j.floorPosition = y;
+        j.floorPosition2 = y2;
+        const dy = (j.endTime - j.startTime) / i.bpm * 1.875;
+        y += dy * j.value;
+        y2 += Math.fround(Math.fround(dy) * j.value);
+        y = Math.fround(y);
+        y2 = Math.fround(y2);
+      }
+    }
     const ss = {
       aniStart: 1e9,
       aniEnd: 0,
@@ -414,7 +285,7 @@ export class Renderer {
         i.startSeconds = i.startTime / bpm * 1.875;
         i.endSeconds = i.endTime / bpm * 1.875;
         if (i.startTime > 1 - 1e6) aniUpdate(i.startSeconds);
-        if (i.endTime < 1e9) aniUpdate(i.endSeconds);
+        if (i.endTime < 1e9 && i.endTime !== events[events.length - 1].endTime) aniUpdate(i.endSeconds);
       }
     };
     // 获取note最大可见位置
@@ -465,10 +336,10 @@ export class Renderer {
       i.rotation = 0;
       i.positionY = 0; // 临时过渡用
       i.positionY2 = 0;
-      i.speedEvents = normalizeSpeedEvent(i.speedEvents) as SpeedEventExtends[];
-      i.judgeLineDisappearEvents = normalizeLineEvent(i.judgeLineDisappearEvents) as LineEventExtends[];
-      i.judgeLineMoveEvents = normalizeLineEvent(i.judgeLineMoveEvents) as LineEventExtends[];
-      i.judgeLineRotateEvents = normalizeLineEvent(i.judgeLineRotateEvents) as LineEventExtends[];
+      // i.speedEvents = normalizeSpeedEvent(i.speedEvents) as SpeedEventExtends[];
+      // i.judgeLineDisappearEvents = normalizeLineEvent(i.judgeLineDisappearEvents) as LineEventExtends[];
+      // i.judgeLineMoveEvents = normalizeLineEvent(i.judgeLineMoveEvents) as LineEventExtends[];
+      // i.judgeLineRotateEvents = normalizeLineEvent(i.judgeLineRotateEvents) as LineEventExtends[];
       i.disappearEventsIndex = 0;
       i.moveEventsIndex = 0;
       i.rotateEventsIndex = 0;
@@ -529,10 +400,10 @@ export class Renderer {
       line.moveEventsIndex = 0;
       line.rotateEventsIndex = 0;
       if (time == null) continue;
-      while (line.speedEventsIndex < line.speedEvents.length && line.speedEvents[line.speedEventsIndex].startSeconds < time) line.speedEventsIndex++;
-      while (line.disappearEventsIndex < line.judgeLineDisappearEvents.length && line.judgeLineDisappearEvents[line.disappearEventsIndex].startSeconds < time) line.disappearEventsIndex++;
-      while (line.moveEventsIndex < line.judgeLineMoveEvents.length && line.judgeLineMoveEvents[line.moveEventsIndex].startSeconds < time) line.moveEventsIndex++;
-      while (line.rotateEventsIndex < line.judgeLineRotateEvents.length && line.judgeLineRotateEvents[line.rotateEventsIndex].startSeconds < time) line.rotateEventsIndex++;
+      while (line.speedEventsIndex < line.speedEvents.length && line.speedEvents[line.speedEventsIndex].endSeconds < time) line.speedEventsIndex++;
+      while (line.disappearEventsIndex < line.judgeLineDisappearEvents.length && line.judgeLineDisappearEvents[line.disappearEventsIndex].endSeconds < time) line.disappearEventsIndex++;
+      while (line.moveEventsIndex < line.judgeLineMoveEvents.length && line.judgeLineMoveEvents[line.moveEventsIndex].endSeconds < time) line.moveEventsIndex++;
+      while (line.rotateEventsIndex < line.judgeLineRotateEvents.length && line.judgeLineRotateEvents[line.rotateEventsIndex].endSeconds < time) line.rotateEventsIndex++;
     }
   }
   public updateByTime(time: number): void {
@@ -599,6 +470,7 @@ export class Renderer {
           const isHidden = i.maxVisiblePos < line.positionY2;
           i.alpha = isHidden || this.enableVP && getGoodY(i) * 0.6 > 2 ? 0 : i.type === 3 && i.speed === 0 ? 0 : 1;
         } else {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           i.frameCount = i.frameCount == null ? 0 : i.frameCount + 1;
           if (i.type === 3) {
             i.showPoint = true;
@@ -637,78 +509,78 @@ export class Renderer {
     this.lineScale = canvasfg.width > canvasfg.height * 0.75 ? canvasfg.height / 18.75 : canvasfg.width / 14.0625; // 判定线、文字缩放
   }
 }
-// 规范判定线事件
-function normalizeLineEvent(events: LineEvent[]) {
-  const oldEvents = events.map(i => new LineEvent(i as unknown as Record<string, unknown>)); // 深拷贝
-  if (!oldEvents.length) return [new LineEvent({ startTime: -999999, endTime: 1e9 })]; // 如果没有事件，添加一个默认事件(以后添加warning)
-  const newEvents = [
-    new LineEvent({
-      startTime: -999999,
-      endTime: 0,
-      start: oldEvents[0].start,
-      end: oldEvents[0].start,
-      start2: oldEvents[0].start2,
-      end2: oldEvents[0].start2
-    })
-  ]; // 以1-1e6开头
-  oldEvents.push(new LineEvent({
-    startTime: oldEvents[oldEvents.length - 1].endTime,
-    endTime: 1e9,
-    start: oldEvents[oldEvents.length - 1].end,
-    end: oldEvents[oldEvents.length - 1].end,
-    start2: oldEvents[oldEvents.length - 1].end2,
-    end2: oldEvents[oldEvents.length - 1].end2
-  })); // 以1e9结尾
-  for (const i2 of oldEvents) {
-    // 保证时间连续性
-    if (i2.startTime > i2.endTime) continue;
-    const i1 = newEvents[newEvents.length - 1];
-    if (i1.endTime > i2.endTime) {
-      // 忽略
-    } else if (i1.endTime === i2.startTime) newEvents.push(i2);
-    else if (i1.endTime < i2.startTime) {
-      newEvents.push(new LineEvent({
-        startTime: i1.endTime,
-        endTime: i2.startTime,
-        start: i1.end,
-        end: i1.end,
-        start2: i1.end2,
-        end2: i1.end2
-      }), i2);
-    } else if (i1.endTime > i2.startTime) {
-      newEvents.push(new LineEvent({
-        startTime: i1.endTime,
-        endTime: i2.endTime,
-        start: (i2.start * (i2.endTime - i1.endTime) + i2.end * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
-        end: i1.end,
-        start2: (i2.start2 * (i2.endTime - i1.endTime) + i2.end2 * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
-        end2: i1.end2
-      }));
-    }
-  }
-  // 合并相同变化率事件
-  const newEvents2 = [newEvents.shift()!];
-  for (const i2 of newEvents) {
-    const i1 = newEvents2[newEvents2.length - 1];
-    const d1 = i1.endTime - i1.startTime;
-    const d2 = i2.endTime - i2.startTime;
-    if (i2.startTime === i2.endTime) {
-      // 忽略
-    } else if (i1.end === i2.start && i1.end2 === i2.start2 && (i1.end - i1.start) * d2 === (i2.end - i2.start) * d1 && (i1.end2 - i1.start2) * d2 === (i2.end2 - i2.start2) * d1) {
-      i1.endTime = i2.endTime;
-      i1.end = i2.end;
-      i1.end2 = i2.end2;
-    } else newEvents2.push(i2);
-  }
-  return newEvents2;
-}
-// 规范speedEvents
-function normalizeSpeedEvent(events: SpeedEvent[]) {
-  const newEvents = [];
-  for (const i2 of events) {
-    const i1 = newEvents[newEvents.length - 1];
-    if (i1?.value === i2.value) i1.endTime = i2.endTime;
-    else newEvents.push(i2);
-  }
-  return newEvents;
-}
+// // 规范判定线事件
+// function normalizeLineEvent(events: JudgeLineEvent[]) {
+//   const oldEvents = events.map(i => new JudgeLineEvent(i as unknown as Record<string, unknown>)); // 深拷贝
+//   if (!oldEvents.length) return [new JudgeLineEvent({ startTime: -999999, endTime: 1e9 })]; // 如果没有事件，添加一个默认事件(以后添加warning)
+//   const newEvents = [
+//     new JudgeLineEvent({
+//       startTime: -999999,
+//       endTime: 0,
+//       start: oldEvents[0].start,
+//       end: oldEvents[0].start,
+//       start2: oldEvents[0].start2,
+//       end2: oldEvents[0].start2
+//     })
+//   ]; // 以1-1e6开头
+//   oldEvents.push(new JudgeLineEvent({
+//     startTime: oldEvents[oldEvents.length - 1].endTime,
+//     endTime: 1e9,
+//     start: oldEvents[oldEvents.length - 1].end,
+//     end: oldEvents[oldEvents.length - 1].end,
+//     start2: oldEvents[oldEvents.length - 1].end2,
+//     end2: oldEvents[oldEvents.length - 1].end2
+//   })); // 以1e9结尾
+//   for (const i2 of oldEvents) {
+//     // 保证时间连续性
+//     if (i2.startTime > i2.endTime) continue;
+//     const i1 = newEvents[newEvents.length - 1];
+//     if (i1.endTime > i2.endTime) {
+//       // 忽略
+//     } else if (i1.endTime === i2.startTime) newEvents.push(i2);
+//     else if (i1.endTime < i2.startTime) {
+//       newEvents.push(new JudgeLineEvent({
+//         startTime: i1.endTime,
+//         endTime: i2.startTime,
+//         start: i1.end,
+//         end: i1.end,
+//         start2: i1.end2,
+//         end2: i1.end2
+//       }), i2);
+//     } else if (i1.endTime > i2.startTime) {
+//       newEvents.push(new JudgeLineEvent({
+//         startTime: i1.endTime,
+//         endTime: i2.endTime,
+//         start: (i2.start * (i2.endTime - i1.endTime) + i2.end * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
+//         end: i1.end,
+//         start2: (i2.start2 * (i2.endTime - i1.endTime) + i2.end2 * (i1.endTime - i2.startTime)) / (i2.endTime - i2.startTime),
+//         end2: i1.end2
+//       }));
+//     }
+//   }
+//   // 合并相同变化率事件
+//   const newEvents2 = [newEvents.shift()!];
+//   for (const i2 of newEvents) {
+//     const i1 = newEvents2[newEvents2.length - 1];
+//     const d1 = i1.endTime - i1.startTime;
+//     const d2 = i2.endTime - i2.startTime;
+//     if (i2.startTime === i2.endTime) {
+//       // 忽略
+//     } else if (i1.end === i2.start && i1.end2 === i2.start2 && (i1.end - i1.start) * d2 === (i2.end - i2.start) * d1 && (i1.end2 - i1.start2) * d2 === (i2.end2 - i2.start2) * d1) {
+//       i1.endTime = i2.endTime;
+//       i1.end = i2.end;
+//       i1.end2 = i2.end2;
+//     } else newEvents2.push(i2);
+//   }
+//   return newEvents2;
+// }
+// // 规范speedEvents
+// function normalizeSpeedEvent(events: SpeedEvent[]) {
+//   const newEvents = [];
+//   for (const i2 of events) {
+//     const i1 = newEvents[newEvents.length - 1];
+//     if (i1?.value === i2.value) i1.endTime = i2.endTime;
+//     else newEvents.push(i2);
+//   }
+//   return newEvents;
+// }

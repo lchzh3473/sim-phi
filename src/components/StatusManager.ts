@@ -31,18 +31,18 @@ export class StatusManager {
     if (node instanceof HTMLInputElement || node instanceof HTMLSelectElement) {
       const property = node.type === 'checkbox' ? 'checked' : 'value';
       const value = this.get(key);
-      if (value !== undefined) { ((node as HTMLInputElement)[property] as string) = value }
+      if (value !== undefined) ((node as HTMLInputElement)[property] as string) = value;
       node.addEventListener('change', () => {
         this.set(key, (node as HTMLInputElement)[property] as string);
       });
-      if (dispatch as boolean) { node.dispatchEvent(new Event('change')) }
+      if (dispatch as boolean) node.dispatchEvent(new Event('change'));
     } else if (node instanceof HTMLTextAreaElement) {
       const value = this.get(key);
-      if (value !== undefined) { (node.value as unknown) = value }
+      if (value !== undefined) (node.value as unknown) = value;
       node.addEventListener('change', () => {
         this.set(key, node.value);
       });
-      if (dispatch as boolean) { node.dispatchEvent(new Event('change')) }
-    } else { throw new Error('Node must be <input>, <select> or <textarea>') }
+      if (dispatch as boolean) node.dispatchEvent(new Event('change'));
+    } else throw new Error('Node must be <input>, <select> or <textarea>');
   }
 }

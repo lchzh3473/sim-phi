@@ -1,7 +1,7 @@
-export function structInfoData(record: Record<string, string>[], path: string): ChartInfoData[] {
+export function structInfoData(record: Record<string, string | null>[], path: string): ChartInfoData[] {
   const result = [];
   for (const i of record) {
-    if (!i.Chart) continue;
+    if (i.Chart == null) continue;
     const data: ChartInfoData = { chart: i.Chart };
     if (i.Name != null) data.name = i.Name;
     if (i.Musician != null) data.artist = i.Musician; // Alternative
@@ -39,17 +39,17 @@ export function structInfoData(record: Record<string, string>[], path: string): 
     }
     result.push(data);
     if (path) {
-      if (data.chart != null) data.chart = `${path}/${data.chart}`;
+      data.chart = `${path}/${data.chart}`;
       if (data.music != null) data.music = `${path}/${data.music}`;
       if (data.image != null) data.image = `${path}/${data.image}`;
     }
   }
   return result;
 }
-export function structLineData(record: Record<string, string>[], path: string): ChartLineData[] {
+export function structLineData(record: Record<string, string | null>[], path: string): ChartLineData[] {
   const result = [];
   for (const i of record) {
-    if (!i.Chart) continue;
+    if (i.Chart == null) continue;
     const data: ChartLineData = { chart: i.Chart };
     if (i.LineId != null) data.lineId = Number(i.LineId);
     if (i.Image != null) data.image = i.Image;
@@ -87,7 +87,7 @@ export function structLineData(record: Record<string, string>[], path: string): 
     }
     result.push(data);
     if (path) {
-      if (data.chart != null) data.chart = `${path}/${data.chart}`;
+      data.chart = `${path}/${data.chart}`;
       if (data.image != null) data.image = `${path}/${data.image}`;
     }
   }

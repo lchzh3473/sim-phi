@@ -224,10 +224,10 @@ const chartsMD5 = new Map() as Map<string, string>;
 const chartsFormat = new Map() as Map<string, string>;
 const chartLineData: ChartLineData[] = []; // Line.csv
 const chartInfoData: ChartInfoData[] = []; // Info.csv
-selectNoteScale.addEventListener('change', evt => { app.setNoteScale(Number((evt.target as HTMLSelectElement).value)) });
-selectAspectRatio.addEventListener('change', evt => { stage.resize(Number((evt.target as HTMLSelectElement).value)) });
-selectBackgroundDim.addEventListener('change', evt => { app.brightness = Number((evt.target as HTMLSelectElement).value) });
-checkHighLight.addEventListener('change', evt => { app.multiHint = (evt.target as HTMLInputElement).checked });
+selectNoteScale.addEventListener('change', evt => app.setNoteScale(Number((evt.target as HTMLSelectElement).value)));
+selectAspectRatio.addEventListener('change', evt => stage.resize(Number((evt.target as HTMLSelectElement).value)));
+selectBackgroundDim.addEventListener('change', evt => app.brightness = Number((evt.target as HTMLSelectElement).value));
+checkHighLight.addEventListener('change', evt => app.multiHint = (evt.target as HTMLInputElement).checked);
 const status = new StatusManager('sim-phi-status').init(data => data.resetCfg);
 status.reg('feedback', checkFeedback);
 status.reg('imageBlur', checkImageBlur);
@@ -250,7 +250,7 @@ enableVP.checkbox.dispatchEvent(new Event('change'));
 const enableFR = new Checkbox('使用单精度浮点运算').appendBefore(resetCfg.container).hook(status.reg.bind(status, 'enableFR'));
 enableFR.checkbox.addEventListener('change', evt => app.enableFR = (evt.target as HTMLInputElement).checked);
 enableFR.checkbox.dispatchEvent(new Event('change'));
-selectflip.addEventListener('change', evt => { app.mirrorView(Number((evt.target as HTMLInputElement).value)) });
+selectflip.addEventListener('change', evt => app.mirrorView(Number((evt.target as HTMLInputElement).value)));
 status.reg('selectFlip', selectflip);
 selectspeed.addEventListener('change', evt => {
   const dict = { slowest: -9, slower: -4, faster: 3, fastest: 5 } as Record<string, number | undefined>;
@@ -986,10 +986,10 @@ async function readResource(raw: {
     }));
   } else {
     res1.push(...Object.entries(res0).map(async([name, src]) => {
-      const [url, ext] = src.split('|');
+      const [url, ext] = src.split('|') as [string, string | null];
       await fetch(url, { referrerPolicy: 'no-referrer' }).then(async a => a.blob()).then(async blob => {
         const img = await createImageBitmap(blob);
-        if (ext?.startsWith('m')) {
+        if (ext != null && ext.startsWith('m')) {
           const data = ImgAny.decode(img, Number(ext.slice(1)));
           img.close();
           res[name] = await audio.decode(data).catch(async(_err: DOMException | Error) => {
@@ -1489,7 +1489,7 @@ class LineImage {
     return this.imageFC;
   }
   public async getAP() {
-    if (this.imageAP == null) this.imageAP = await Promise.resolve(null); // imgShader(this.image, '#a3ffac');
+    /* if (this.imageAP == null) */ this.imageAP = await Promise.resolve(null); // imgShader(this.image, '#a3ffac');
     return this.imageAP;
   }
   public async getMP() {
@@ -1542,8 +1542,8 @@ const updateLevelText = (type: number) => {
   return [diffString, levelString].join('\u2002Lv.');
 };
 levelText = updateLevelText(-1);
-selectDifficulty.addEventListener('change', () => { levelText = updateLevelText(0) });
-selectLevel.addEventListener('change', () => { levelText = updateLevelText(1) });
+selectDifficulty.addEventListener('change', () => levelText = updateLevelText(0));
+selectLevel.addEventListener('change', () => levelText = updateLevelText(1));
 selectVolume.addEventListener('change', evt => {
   const volume = Number((evt.target as HTMLInputElement).value);
   app.musicVolume = Math.min(1, 1 / volume);
@@ -1629,7 +1629,7 @@ async function atStop(): Promise<void> {
     }
     for (const i of main.before.values()) await i();
     audio.play(res.mute, { loop: true, isOut: false }); // 播放空音频(避免音画不同步)
-    app.prerenderChart(main.modify(charts.get(selectchart.value)!) as unknown as Record<string, unknown>); // TODO: 重构
+    app.prerenderChart(main.modify(charts.get(selectchart.value)!));
     const md5 = chartsMD5.get(selectchart.value)!;
     const format = chartsFormat.get(selectchart.value)!;
     stat.level = Number(/\d+$/.exec(levelText));

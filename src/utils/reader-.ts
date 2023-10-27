@@ -1,6 +1,6 @@
 import Pec from '../extends/pec/index';
 import { reader } from './reader';
-import { structChart } from './structChart';
+import { structChart } from './Chart';
 import { structInfoData, structLineData } from './structInfo';
 import md5 from 'md5';
 reader.use({
@@ -40,6 +40,7 @@ if (Object.hasOwn(self, 'webp')) {
     pattern: /\.webp$/i,
     type: 'binary',
     async read(i: ByteData) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       const webp2canvas = Object.getOwnPropertyDescriptor(self, 'webp')?.value.default as (buffer: ArrayBuffer) => Promise<HTMLCanvasElement>;
       const img = await webp2canvas(i.buffer);
       const bitmap = await createImageBitmap(img);
