@@ -4,11 +4,15 @@ export default hook.define({
   contents: [
     {
       type: 'command',
-      meta: ['/pz', dialog]
+      meta: ['/pz', dialogSong]
     },
     {
       type: 'command',
-      meta: ['/pzc', dialogc]
+      meta: ['/pzs', dialogSong]
+    },
+    {
+      type: 'command',
+      meta: ['/pzc', dialogChart]
     },
     {
       type: 'command',
@@ -23,7 +27,7 @@ const getSongsUrlByIndex = (index = 0) => `${host}/songs/?perpage=1&page=${index
 const getChartsUrlByIndex = (index = 0) => `${host}/charts/?perpage=1&page=${index}`;
 const getChartsUrlByUUID = (id = '') => `${host}/songs/${id}/charts/`;
 const getRandomChartUrl = () => `${host}/charts/random/?rangeFormat=0&rangeFormat=1`;
-const ver = 'PhiZone API v0.8.4';
+const ver = 'PhiZone API v0.8.5';
 // eslint-disable-next-line no-alert
 const vprompt = str => prompt(`${ver}\n${str}`);
 const valert = str => hook.toast(`${ver}\n${str}`);
@@ -35,18 +39,18 @@ const msgNoChart = id => {
   valert(`歌曲ID ${id} 对应的谱面不存在`);
   sendText(`歌曲ID ${id} 对应的谱面不存在`);
 };
-async function dialog(num) {
+async function dialogSong(num) {
   const id = num || vprompt('请输入歌曲ID');
-  if (id === '' || id === null) { valert('未输入歌曲ID，已取消操作'); return }
-  const data = await query(id).catch(msgNetErr);
+  if (id === '' || id == null) { valert('未输入歌曲ID，已取消操作'); return }
+  const data = await querySong(id).catch(msgNetErr);
   console.log(data);
   if (!data) return;
   if (!data.charts.length) { msgNoChart(id); return }
   await readData(data);
 }
-async function dialogc(num) {
+async function dialogChart(num) {
   const id = num || vprompt('请输入谱面ID');
-  if (id === '' || id === null) { valert('未输入谱面ID，已取消操作'); return }
+  if (id === '' || id == null) { valert('未输入谱面ID，已取消操作'); return }
   const data = await queryChart(id).catch(msgNetErr);
   console.log(data);
   if (!data) return;
@@ -60,7 +64,7 @@ async function random() {
   if (!data.charts.length) { msgNoChart('<random>'); return }
   await readData(data);
 }
-async function query(id) {
+async function querySong(id) {
   sendText('等待服务器响应...');
   const resS = await fetch(getSongsUrlByIndex(id | 0));
   if (!resS.ok) throw new Error(`${resS.status} ${resS.statusText}`);
@@ -111,7 +115,7 @@ function getData(base, song) {
   };
 }
 async function readData(data) {
-  const /** @type {array} */ { charts } = data;
+  const { charts } = data;
   const urls = [data.song, data.illustration];
   for (const chart of charts) {
     if (chart.chart) urls.push(chart.chart);
@@ -241,48 +245,16 @@ Object.defineProperty(Downloader.prototype, 'total', { get() {
 function getChartOffset(id) {
   if (id === '67b8c0fd-4879-41e3-af04-6dc8f41ddcd1') return 200; // 48
   if (id === '2eb9e940-4350-4509-a244-068abd937f44') return -50; // 53
-  if (id === '026c8905-6f24-421c-a594-e5f9bf1d053a') return 150; // 54
-  if (id === '71acb2d4-225e-4b0a-989c-660f4c075542') return 175; // 57
-  if (id === '165119b8-7074-4106-bb23-27a8fb99c0c6') return 150; // 58
   if (id === '846587d2-0ff2-40ca-b42b-3568cef08e48') return -25; // 59
   if (id === '74585cab-6b6f-4633-9c3d-4dfa9900cafd') return 75; // 61
-  if (id === '8c4d638a-a1aa-4e29-a0d2-2f3a2cb7e69c') return 300; // 69
-  if (id === 'c4dc62c4-7bed-4f39-b6ed-451ecdcb9b6b') return 250; // 73
-  if (id === 'f0b1e2eb-f7f8-42ec-bcb3-6a717147ad4e') return 225; // 80
-  if (id === 'd7ad0802-22e1-4efc-8bba-4cfe074d2a95') return 200; // 85
   if (id === '7be304a2-74cc-48a7-80bb-98de40cd814d') return -25; // 88
-  if (id === '11eae627-ff9e-48fe-8c9f-2d49d6e34221') return -100; // 91
-  if (id === '18686678-cd3b-493e-accb-c6ca0bc304c5') return -50; // 93
-  if (id === '0ebddbc4-ff08-4484-8f21-bd0295526bdc') return 50; // 101
-  if (id === '430a4ff2-e9e2-4add-9ee4-fbc172367e5d') return 200; // 104
-  if (id === '260d12cf-847a-4773-aaf0-b754753f5596') return 75; // 108
-  if (id === 'e5e9021d-9254-408d-8629-795849f51732') return 75; // 109
-  if (id === '9d01431f-7c81-4fb5-a9a4-5f5ef4e07cd3') return 175; // 110
-  if (id === '1476dcb7-37c8-4f97-b039-7e07a8583078') return 50; // 113
+  if (id === 'cb8e99dd-2619-409b-a8b6-d83e2e5f6bb2') return 50; // 112
   if (id === '2b8217af-3c7b-44b2-a9c9-fe869ea17c07') return 50; // 114
   if (id === 'e7ab7d3b-1be4-4300-b9d6-63814faa381c') return 150; // 116
-  if (id === 'a7b12a21-cb2c-4e79-9260-2cc3323752df') return -400; // 117
-  if (id === '39a834ed-7310-46ac-99e4-577cde527a84') return -150; // 118
-  if (id === 'da8533af-9767-47b0-87c0-c12684e02980') return -1450; // 127
-  if (id === '97e22151-1cb8-4c48-8af4-c3419ed6b9ce') return 175; // 129
-  if (id === '8d3c6775-9091-45bd-b6ff-d556cf36e85f') return -350; // 130
-  if (id === '336b6099-61c1-403b-b226-483afc4a7bec') return 25; // 137
-  if (id === 'b788d213-58e1-448f-8412-cebe8c8df12a') return 50; // 138
-  if (id === '04181380-bdcf-40f3-8ec7-68a23ad84ba3') return 50; // 139
-  if (id === '594e3208-8459-48ae-88e8-b11823e5c2ad') return 250; // 140
-  if (id === '84f0ce5f-b894-4db6-b042-b31232c62d0c') return -150; // 141
-  if (id === '920506fb-2c52-4d17-b7e7-d8f1fe6afde5') return 225; // 144
-  if (id === 'd12f18e4-ca64-4781-97ee-a7d922c831cf') return 50; // 146
-  if (id === '70c543f8-97c5-4a2d-82ff-17efc484d52f') return 400; // 148
-  if (id === 'fb716191-ffb4-462b-b92d-85c86f94833e') return -200; // 150
-  if (id === 'b15f2eb5-d9c1-40f7-9bc8-4ccbc69229c6') return 200; // 151
+  if (id === '797d3375-1fc6-47c6-a065-b76cb24805d3') return -75; // 124
+  if (id === '9ea96cf2-febc-4729-a3c3-8c11ec8ff751') return 50; // 154
   if (id === 'a837eea9-b4a3-4c77-b7e5-757f4e940307') return 150; // 155
-  if (id === '710750c5-3728-46b8-bfb2-f895f1f909c0') return 350; // 156
-  if (id === '0108b4f0-d3ee-47a0-b6a1-bddcfad8f54d') return 400; // 157
-  if (id === 'fbd4ca74-40c3-4c9f-9415-729f47d537fb') return -25; // 160
-  if (id === '0a42b7b5-8a25-4438-b221-c9c0e585f27c') return -25; // 161
-  if (id === 'e59e5ef8-d444-4dc6-aebe-44bfd4891a94') return -50; // 162
-  if (id === 'c2006c12-e1c2-47ba-8292-c6c00b37dfbf') return 50; // 165
+  if (id === 'c2006c12-e1c2-47ba-8292-c6c00b37dfbf') return -25; // 165
   if (id === '2b0338d9-e71a-40fe-8d79-dc8f6dec48da') return 50; // 166
   // handled up to 174
   return 0;
