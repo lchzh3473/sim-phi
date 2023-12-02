@@ -1,4 +1,4 @@
-import Pec from '../extends/pec/index';
+import { PEC } from '@sim-phi/extends';
 import { reader } from './reader';
 import { structChart } from './Chart';
 import { structInfoData, structLineData } from './structInfo';
@@ -7,22 +7,24 @@ reader.use({
   pattern: /\.(json|pec)$/i,
   type: 'json',
   read(i: ByteData, path: string) {
-    const rpeData = Pec.parseRPE(i.text!, i.name/* , path */); // TODO: path
-    const data = structChart(rpeData.data);
+    const rpeData = PEC.parseRPE(i.text!, i.name/* , path */); // TODO: path
+    const { data, messages } = structChart(rpeData.data, i.name);
     const info = structInfoData([rpeData.info], path);
     const line = structLineData(rpeData.line, path);
     const { messages: msg, format } = rpeData;
-    return { type: 'chart', name: i.name, md5: md5(i.text!), data, msg, info, line, format };
+    messages.push(...msg);
+    return { type: 'chart', name: i.name, md5: md5(i.text!), data, msg: messages, info, line, format };
   }
 });
 reader.use({
   pattern: /\.pec$/i,
   type: 'text',
-  read(i: ByteData) {
-    const pecData = Pec.parse(i.text!, i.name);
-    const data = structChart(pecData.data);
+  read(i: ByteData/* , path */) {
+    const pecData = PEC.parse(i.text!, i.name);
+    const { data, messages } = structChart(pecData.data, i.name);
     const { messages: msg, format } = pecData;
-    return { type: 'chart', name: i.name, md5: md5(i.text!), data, msg, format };
+    (messages as (BetterMessage | string)[]).push(...msg);
+    return { type: 'chart', name: i.name, md5: md5(i.text!), data, msg: messages, format };
   }
 });
 reader.use({
@@ -31,7 +33,7 @@ reader.use({
   mustMatch: true,
   read(i: ByteData, path: string) {
     const data = i.text!;
-    const chartInfo = structInfoData(Pec.readInfo(data), path);
+    const chartInfo = structInfoData(PEC.readInfo(data), path);
     return { type: 'info' as const, data: chartInfo };
   }
 });

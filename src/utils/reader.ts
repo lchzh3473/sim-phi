@@ -4,7 +4,7 @@ import { structChart } from './Chart';
 import { structInfoData, structLineData } from './structInfo';
 import md5 from 'md5';
 // @ts-expect-error: vite-plugin-worker-loader
-import Zip from '../zip.worker?worker';
+import Zip from '@/zip.worker?worker';
 export class FileEmitter extends EventTarget {
   private readonly input: HTMLInputElement;
   public constructor() {
@@ -138,12 +138,12 @@ const readerInit: ReaderInit[] = [
   }, {
     pattern: /\.json$/i,
     type: 'json',
-    read(i: ByteData) {
+    read(i: ByteData/* , path */) {
       const text = i.text!;
       const json = JSON.parse(text, (_, value) => typeof value === 'number' ? Math.fround(value) : value as unknown) as ChartPGS;
-      const jsonData = structChart(json);
+      const { data: jsonData, messages } = structChart(json, i.name);
       const format = `PGS(${jsonData.formatVersion})`;
-      return { type: 'chart', name: i.name, md5: md5(text), data: jsonData, format };
+      return { type: 'chart', name: i.name, md5: md5(text), data: jsonData, msg: messages, format };
     }
   }, {
     pattern: /\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i,

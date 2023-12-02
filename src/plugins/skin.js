@@ -1,6 +1,5 @@
-import { stringify } from '../utils/stringify';
-import { waitForElementById } from '../utils/waitForElementById';
-import { audio } from '../external';
+import { stringify } from '@/utils/stringify';
+import { waitForElementById } from '@/utils/waitForElementById';
 export default hook.define({
   name: 'Skin',
   description: 'Customize skin',
@@ -11,6 +10,7 @@ export default hook.define({
     }
   ]
 });
+const { audio } = hook;
 function skin() {
   const id = `skin${Date.now()}`;
   /** @type {ByteData[]} */

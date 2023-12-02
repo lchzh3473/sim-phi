@@ -1,10 +1,10 @@
-# [Phixos](https://lchz&#104;3473.github.io/sim-phi/index)
+<!-- prettier-ignore --># [Phixos](https://lchz&#104;3473.github.io/sim-phi/index)
 
 ## 简介
 
 $\text{Phi\color{red}x\color{green}os}=\color{red}\xcancel{\text{\color{black}Phi{g}ros}}\text{ \color{green}Online Simulator}$
 
-> 这不是Phi&#103;ros，这是在线的模拟器！
+> 这不是 Phi&#103;ros，这是在线的模拟器！
 
 如题，用 JS/Canvas 还原 [Phi&#103;ros](https://www.taptap.com/app/165287) 游戏画面。
 
@@ -14,14 +14,14 @@ $\text{Phi\color{red}x\color{green}os}=\color{red}\xcancel{\text{\color{black}Ph
 
 ### 特别感谢
 
-- [@luch4736](https://github.com/luch4736) 的 iPad (Safari on iOS 15.6+)
-- [@cgluWxh](https://github.com/cgluWxh) 的 iPhone (Safari on iOS 12.5.7)
+- [@luch4736](https://github.com/luch4736) 提供 iPad (Safari on iOS 15.6+)
+- [@cgluWxh](https://github.com/cgluWxh) 提供 iPhone (Safari on iOS 12.5.7)
 - [@AsakuraMizu](https://github.com/AsakuraMizu) 强力推荐的 [Vite](https://vitejs.dev) 驱动！
 - 以及看到这个页面的你！
 
 ## 文档
 
-访问 [docs.lchz&#104;.net](https://docs.lchz&#104;.net/project/sim-phi-core) (Working in progress)
+<!-- prettier-ignore -->访问 [docs.lchz&#104;.net](https://docs.lchz&#104;.net/project/sim-phi-core) (Working in progress)
 
 ## 更新日志
 

@@ -7,7 +7,7 @@ export default defineConfig({
   base: './',
   resolve: {
     alias: {
-      '@': '/src/plugins'
+      '@': '/src'
     }
   },
   build: {

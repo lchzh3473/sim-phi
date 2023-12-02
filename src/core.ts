@@ -1,11 +1,10 @@
-// import { JudgeLineEvent } from './utils/Chart';
 interface SpeedEventExtends extends SpeedEvent {
   floorPosition: number;
   floorPosition2: number;
   startSeconds: number;
   endSeconds: number;
 }
-export interface NoteExtends extends Note {
+interface NoteExtends extends Note {
   maxVisiblePos: number;
   offsetX: number;
   offsetY: number;
@@ -39,7 +38,7 @@ interface LineEventExtends extends JudgeLineEvent {
   startSeconds: number;
   endSeconds: number;
 }
-export interface JudgeLineExtends extends JudgeLine {
+interface JudgeLineExtends extends JudgeLine {
   lineId: number;
   offsetX: number;
   offsetY: number;
@@ -508,6 +507,10 @@ export class Renderer {
     this.setNoteScale(this.noteScale);
     this.lineScale = canvasfg.width > canvasfg.height * 0.75 ? canvasfg.height / 18.75 : canvasfg.width / 14.0625; // 判定线、文字缩放
   }
+}
+export namespace Renderer {
+  export type Note = NoteExtends;
+  export type JudgeLine = JudgeLineExtends;
 }
 // // 规范判定线事件
 // function normalizeLineEvent(events: JudgeLineEvent[]) {

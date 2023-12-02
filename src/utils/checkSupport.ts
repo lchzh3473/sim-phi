@@ -1,5 +1,5 @@
-import { getConstructorName, isUndefined, loadJS, orientation } from '../js/common.js';
-import { audio } from '../external';
+import { getConstructorName, isUndefined, loadJS, orientation } from '@/js/common.js';
+import { audio } from '@/external';
 export async function checkSupport({
   messageCallback = (_msg: string) => {},
   warnCallback = (_msg: string) => {},

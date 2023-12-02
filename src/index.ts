@@ -1,38 +1,41 @@
 import './style.css';
 import { lastupdate, pubdate, version } from '../scripts/meta.json';
-import { full, orientation } from './js/common.js';
-import { FrameAnimater } from './components/FrameAnimater';
-import { FrameTimer } from './components/FrameTimer';
-import { Timer } from './components/Timer';
-import { FileEmitter, ZipReader, reader } from './utils/reader';
-import { type JudgeLineExtends, type NoteExtends, Renderer } from './core';
-import { HitManager, JudgeEvent } from './components/HitManager';
-import { Stat } from './components/Stat';
-import { InteractProxy, audio } from './external';
-import createCtx from './utils/createCtx';
-import { ImgAny, imgBlur, imgPainter, imgShader, imgSplit } from './utils/ImageTools';
-import { Checkbox, HitEvents, HitFeedback, HitImage, HitWord, ScaledNote, StatusManager } from './components';
-import { Stage } from './components/Stage';
-import { checkSupport } from './utils/checkSupport';
-import { adjustSize } from './utils/adjustSize';
-import { fixme } from './utils/fixme';
-import { MessageHandler } from './components/MessageHandler';
+import { full, orientation } from '@/js/common.js';
+import { FrameAnimater } from '@/components/FrameAnimater';
+import { FrameTimer } from '@/components/FrameTimer';
+import { Timer } from '@/components/Timer';
+import { FileEmitter, ZipReader, reader } from '@/utils/reader';
+import { Renderer } from '@/core';
+import { HitManager, JudgeEvent } from '@/components/HitManager';
+import { Stat } from '@/components/Stat';
+import { InteractProxy, audio } from '@/external';
+import createCtx from '@/utils/createCtx';
+import { ImgAny, imgBlur, imgPainter, imgShader, imgSplit } from '@/utils/ImageTools';
+import { Checkbox, HitEvents, HitFeedback, HitImage, HitWord, ScaledNote, StatusManager } from '@/components';
+import { Stage } from '@/components/Stage';
+import { checkSupport } from '@/utils/checkSupport';
+import { adjustSize } from '@/utils/adjustSize';
+import { fixme } from '@/utils/fixme';
+import { MessageHandler } from '@/components/MessageHandler';
 self._i = ['Phixos', version.split('.'), pubdate, lastupdate];
 const $id = (query: string): HTMLElement => document.getElementById(query) || (() => { throw new Error(`Cannot find element: ${query}`) })();
 const $ = (query: string) => document.body.querySelector(query);
 const $$ = (query: string) => document.body.querySelectorAll(query);
-// const viewRsmg = $id('view-rsmg') as HTMLDivElement;
 const viewNav = $id('view-nav') as HTMLDivElement;
 const viewCfg = $id('view-cfg') as HTMLDivElement;
 const viewMsg = $id('view-msg') as HTMLDivElement;
+const viewNav2 = $id('view-nav2') as HTMLDivElement;
+const viewRmg = $id('view-rmg') as HTMLDivElement;
+const viewExt = $id('view-ext') as HTMLDivElement;
 const coverDark = $id('cover-dark') as HTMLDivElement;
-const coverRsmg = $id('cover-rsmg') as HTMLDivElement;
+const coverRmg = $id('cover-rmg') as HTMLDivElement;
 const coverView = $id('cover-view') as HTMLDivElement;
-const buttonRsmg = $id('btn-rsmg') as HTMLInputElement;
+const buttonRmg = $id('btn-rmg') as HTMLInputElement;
 const buttonDocs = $id('btn-docs') as HTMLInputElement;
 const buttonMore = $id('btn-more') as HTMLInputElement;
 const anchorCfg = $id('nav-cfg') as HTMLAnchorElement;
 const anchorMsg = $id('nav-msg') as HTMLAnchorElement;
+const anchorRmg = $id('nav-rmg') as HTMLAnchorElement;
 const strongOut = $id('msg-out');
 const blockUploader = $id('uploader') as HTMLDivElement;
 const stageEl = $id('stage') as HTMLDivElement;
@@ -131,14 +134,22 @@ for (const i of viewNav.children) {
     viewMsg.classList.toggle('hide', this.id !== 'nav-msg');
   });
 }
+for (const i of viewNav2.children) {
+  i.addEventListener('click', function(this: HTMLElement) {
+    for (const j of viewNav2.children) j.classList.toggle('active', j === this);
+    viewRmg.classList.toggle('hide', this.id !== 'nav-rmg');
+    viewExt.classList.toggle('hide', this.id !== 'nav-ext');
+  });
+}
 coverDark.addEventListener('click', () => {
   coverDark.classList.add('fade');
-  coverRsmg.classList.add('fade');
+  coverRmg.classList.add('fade');
   coverView.classList.add('fade');
 });
-buttonRsmg.addEventListener('click', () => {
+buttonRmg.addEventListener('click', () => {
   coverDark.classList.remove('fade');
-  coverRsmg.classList.remove('fade');
+  coverRmg.classList.remove('fade');
+  anchorRmg.click();
 });
 buttonDocs.addEventListener('click', () => {
   main.fireModal('<p>提示</p>', '<p><a href="https://docs.lchz\x68.net/project/sim-phi-core" target="_blank">点击此处</a>查看使用说明</p>');
@@ -400,7 +411,7 @@ const uploader = new FileEmitter();
   }
 }());
 main.uploader = uploader;
-import('@/demo/index.js').then(a => a.default());
+import('@/plugins/demo/index.js').then(a => a.default());
 // Hit start
 const hitManager = new HitManager();
 const exitFull = () => {
@@ -454,12 +465,12 @@ const specialClick = {
     if (timeEnd.second > 0) main.pressTime = main.pressTime > 0 ? -timeEnd.second : timeEnd.second;
   }
 };
-function getJudgeOffset(judgeEvent: JudgeEvent, note: NoteExtends) {
+function getJudgeOffset(judgeEvent: JudgeEvent, note: Renderer.Note) {
   const { offsetX, offsetY } = judgeEvent;
   const { offsetX: x, offsetY: y, cosr, sinr } = note;
   return Math.abs((offsetX - x) * cosr + (offsetY - y) * sinr) || 0;
 }
-function getJudgeDistance(judgeEvent: JudgeEvent, note: NoteExtends) {
+function getJudgeDistance(judgeEvent: JudgeEvent, note: Renderer.Note) {
   const { offsetX, offsetY } = judgeEvent;
   const { offsetX: x, offsetY: y, cosr, sinr } = note;
   return Math.abs((offsetX - x) * cosr + (offsetY - y) * sinr) + Math.abs((offsetX - x) * sinr - (offsetY - y) * cosr) || 0;
@@ -548,7 +559,7 @@ const hitWordList = new HitEvents({
 });
 const judgeManager = {
   list: [] as JudgeEvent[],
-  addEvent(notes: NoteExtends[], seconds: number) {
+  addEvent(notes: Renderer.Note[], seconds: number) {
     const { list } = this;
     list.length = 0;
     if (app.playMode === 1) {
@@ -575,7 +586,7 @@ const judgeManager = {
       }
     }
   },
-  execute(notes: NoteExtends[], seconds: number, width: number) {
+  execute(notes: Renderer.Note[], seconds: number, width: number) {
     const { list } = this;
     for (const note of notes) {
       if (note.scored) continue; // 跳过已判分的Note
@@ -845,7 +856,7 @@ function getPos(obj: MouseEvent | Touch) {
   };
 }
 // Hit end
-export const noteRender = {
+const noteRender = {
   note: {} as Record<string, ScaledNote>,
   hitFX: {} as Record<string, ScaledHitFX>,
   async update(name: string, img: ImageBitmap, scale: number, compacted = false): Promise<void> {
@@ -888,7 +899,7 @@ window.addEventListener('load', (): void => {
         lockOri.label.textContent += '(当前设备或浏览器不支持)';
       }
     })) return;
-    await import('./utils/reader-');
+    await import('@/utils/reader-');
     const raw = await loadResource(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).catch(() => null) || {
     // const raw = await loadResource('local/ptres.json').catch(() => null) || {
       image: {} as Record<string, string>,
@@ -1140,7 +1151,6 @@ function loopNoCanvas() {
   tmps.customForeDraw = null;
   tmps.customBackDraw = null;
 }
-// import { app, adjustSize, isInEnd, main, atIn, stat, drawLine, atOut, drawNotes, showPoint, timeChart, hitImageList, showCE2, hitWordList, tween, res, tmps, fillTextNode, lineColor, showAcc, nowTimeMS, checkFeedback, hitFeedbackList, time2Str, duration0, timeBgm, status2, frameTimer, showStat } from './index';
 function loopCanvas() {
   const { lineScale, wlen, hlen } = app;
   const { bgImage, bgVideo } = tmps;
@@ -1416,7 +1426,7 @@ function drawNotes() {
   for (const i of app.tapsReversed) drawTap(i);
   for (const i of app.flicksReversed) drawFlick(i);
 }
-function drawTap(note: NoteExtends) {
+function drawTap(note: Renderer.Note) {
   const HL = note.isMulti && app.multiHint;
   const nsr = app.noteScaleRatio;
   if (!note.visible || note.scored && note.badTime == null) return;
@@ -1431,7 +1441,7 @@ function drawTap(note: NoteExtends) {
     noteRender.note.TapBad.full(ctxfg);
   }
 }
-function drawDrag(note: NoteExtends) {
+function drawDrag(note: Renderer.Note) {
   const HL = note.isMulti && app.multiHint;
   const nsr = app.noteScaleRatio;
   if (!note.visible || note.scored && note.badTime == null) return;
@@ -1444,7 +1454,7 @@ function drawDrag(note: NoteExtends) {
     // Nothing to do
   }
 }
-function drawHold(note: NoteExtends, seconds: number) {
+function drawHold(note: Renderer.Note, seconds: number) {
   const HL = note.isMulti && app.multiHint;
   const nsr = app.noteScaleRatio;
   if (!note.visible || note.seconds + note.holdSeconds < seconds) return; // 不绘制时空超界的Hold
@@ -1459,7 +1469,7 @@ function drawHold(note: NoteExtends, seconds: number) {
   } else noteRender.note[HL ? 'HoldHL' : 'Hold'].body(ctxfg, -holdLength, holdLength - baseLength * (seconds - note.seconds));
   noteRender.note.HoldEnd.tail(ctxfg, -holdLength);
 }
-function drawFlick(note: NoteExtends) {
+function drawFlick(note: Renderer.Note) {
   const HL = note.isMulti && app.multiHint;
   const nsr = app.noteScaleRatio;
   if (!note.visible || note.scored && note.badTime == null) return;
@@ -1687,7 +1697,7 @@ async function loadLineData({
         onwarn('未指定判定线id');
         continue;
       }
-      const line = app.lines[Number(i.lineId)] as JudgeLineExtends | null;
+      const line = app.lines[Number(i.lineId)] as Renderer.JudgeLine | null;
       if (line == null) {
         onwarn(`指定id的判定线不存在：${i.lineId}`);
         continue;
@@ -1796,14 +1806,14 @@ main.use = async m => {
   console.log(module);
   return module;
 };
-main.use(import('@/phizone.js') as unknown as Promise<ModuleBase>);
-main.use(import('@/tips.js') as unknown as Promise<ModuleBase>);
-main.use(import('@/filter.js') as unknown as Promise<ModuleBase>);
-main.use(import('@/skin.js') as unknown as Promise<ModuleBase>);
-main.use(import('@/export.js') as unknown as Promise<ModuleBase>);
-main.use(import('@/gauge.js') as unknown as Promise<ModuleBase>);
-main.use(import('@/dynamic-score.js') as unknown as Promise<ModuleBase>);
-main.use(import('@/video-recorder.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/phizone.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/tips.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/filter.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/skin.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/export.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/gauge.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/dynamic-score.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/video-recorder.js') as unknown as Promise<ModuleBase>);
 // debug
 self.hook = main;
 export const hook = main;

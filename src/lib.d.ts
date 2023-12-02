@@ -1,4 +1,3 @@
-// import type { ZipReader } from './reader';
 /* eslint-disable @typescript-eslint/naming-convention */
 interface Navigator {
   /** Available only in iOS */

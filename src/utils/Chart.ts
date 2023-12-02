@@ -85,7 +85,11 @@ export class Chart {
     return Type.obj(this, Chart);
   }
 }
-export function structChart(chart: ChartPGS): Chart {
+interface ChartData {
+  data: Chart;
+  messages: BetterMessage[];
+}
+export function structChart(chart: ChartPGS, filename: string): ChartData {
   const result = Type.obj(chart, Chart);
   switch (result.formatVersion) {
     case 1:
@@ -104,20 +108,47 @@ export function structChart(chart: ChartPGS): Chart {
       throw new Error(`Unsupported formatVersion: ${result.formatVersion}`);
   }
   const errors = [];
+  const messages: BetterMessage[] = [];
   const numOfLines = result.judgeLineList.length;
   // if (result.offset < 0) throw new Error('Offset must be non-negative');
   // if (result.numOfNotes <= 0) throw new Error('At least one note is required');
+  const warn = (code: number, name: string, message: string) => messages.push({ host: 'Core', code, name, message, target: filename });
+  if (numOfLines > 100) warn(1, 'LineCountWarning', `Expected at most 100 items in judgeLineList, but got ${numOfLines}`);
+  let maxNoteSeconds = 0;
+  for (const { bpm, notesAbove, notesBelow } of result.judgeLineList) {
+    for (const { type, time, holdTime } of notesAbove) {
+      const seconds = (time % 1e9 + (type === 3 && holdTime > 0 ? holdTime : 0)) / bpm * 1.875;
+      if (seconds > maxNoteSeconds) maxNoteSeconds = seconds;
+    }
+    for (const { type, time, holdTime } of notesBelow) {
+      const seconds = (time % 1e9 + (type === 3 && holdTime > 0 ? holdTime : 0)) / bpm * 1.875;
+      if (seconds > maxNoteSeconds) maxNoteSeconds = seconds;
+    }
+  }
   for (let i = 0; i < numOfLines; i++) {
     const line = result.judgeLineList[i];
     const subErrors = [];
-    if (line.bpm <= 0) subErrors.push(`Expected bpm > 0, but got ${line.bpm}`);
-    if (!line.speedEvents.length) subErrors.push('Expected at least 1 item in speedEvents, but got 0');
-    if (!line.judgeLineDisappearEvents.length) subErrors.push('Expected at least 1 item in judgeLineDisappearEvents, but got 0');
-    if (!line.judgeLineMoveEvents.length) subErrors.push('Expected at least 1 item in judgeLineMoveEvents, but got 0');
-    if (!line.judgeLineRotateEvents.length) subErrors.push('Expected at least 1 item in judgeLineRotateEvents, but got 0');
+    if (line.bpm > 0) {
+      const maxNoteTime = Math.ceil(maxNoteSeconds * line.bpm / 1.875);
+      type KeyOfType<T, U> = { [K in keyof T]: T[K] extends U ? K : never }[keyof T];
+      type KeyOfJudgeLine = KeyOfType<JudgeLine, (JudgeLineEvent | SpeedEvent)[]>;
+      const checkMaxEventTime = (key: KeyOfJudgeLine) => {
+        if (line[key].length) {
+          let maxEndTime = 0;
+          for (const { endTime } of line[key]) {
+            if (endTime > maxEndTime) maxEndTime = endTime;
+          }
+          if (maxEndTime < maxNoteTime) subErrors.push(`Maximum time for ${key} is too small`);
+        } else subErrors.push(`Expected at least 1 item in ${key}`);
+      };
+      checkMaxEventTime('speedEvents');
+      checkMaxEventTime('judgeLineDisappearEvents');
+      checkMaxEventTime('judgeLineMoveEvents');
+      checkMaxEventTime('judgeLineRotateEvents');
+    } else subErrors.push(`Expected bpm > 0, but got ${line.bpm}`);
     if (subErrors.length) errors.push(`JudgeLine ${i}:\n${subErrors.map(e => `  ${e}`).join('\n')}`);
   }
   if (errors.length) throw new Error(`Invalid chart input\n${errors.map(e => `  ${e.split('\n').join('\n  ')}`).join('\n')}`);
   if (!numOfLines) throw new Error('No judge lines available');
-  return result;
+  return { data: result, messages };
 }

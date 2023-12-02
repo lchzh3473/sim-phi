@@ -22,7 +22,7 @@
     "baseUrl": "./",
     "paths": {
       "/utils/*": ["public/utils/*"],
-      "@/*": ["src/plugins/*"]
+      "@/*": ["src/*"]
     },
     "allowJs": true
     // "checkJs": true

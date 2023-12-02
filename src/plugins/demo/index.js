@@ -1,5 +1,5 @@
-import { ImgAny } from '../../utils/ImageTools';
-import { waitForElementById } from '../../utils/waitForElementById';
+import { ImgAny } from '@/utils/ImageTools';
+import { waitForElementById } from '@/utils/waitForElementById';
 const $ = query => document.body.querySelector(query);
 const flag0 = 'flag{\x71w\x71}';
 export default function() {

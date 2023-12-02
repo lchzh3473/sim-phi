@@ -45,7 +45,7 @@
           </div>
         </div>
         <input type="button" value="重置" onclick="location.reload(true)" />
-        <input type="button" id="btn-rsmg" class="hide" value="资源管理" />
+        <input type="button" id="btn-rmg" class="hide" value="资源管理" />
         <input type="button" id="btn-docs" value="使用说明" />
         <input type="button" id="btn-more" value="更多设置" />
         <div id="select" class="disabled">
@@ -174,12 +174,14 @@
           </div>
         </div>
         <div id="cover-dark" class="cover-dark fade"></div>
-        <div id="cover-rsmg" class="cover-view fade" qwq>
-          <div class="view-nav">
-            <p id="nav-rsmg">资源管理</p>
+        <div id="cover-rmg" class="cover-view fade" qwq>
+          <div id="view-nav2" class="view-nav">
+            <a id="nav-rmg">资源管理</a>
+            <a id="nav-ext">扩展</a>
           </div>
           <div class="view-content">
-            <div id="view-rsmg"></div>
+            <div id="view-rmg"></div>
+            <div id="view-ext"></div>
           </div>
         </div>
         <div id="cover-view" class="cover-view fade" qwq>
@@ -187,7 +189,7 @@
             <a id="nav-cfg">更多设置</a>
             <a id="nav-msg">日志</a>
           </div>
-          <div id="view-content" class="view-content">
+          <div class="view-content">
             <div id="view-cfg"></div>
             <div id="view-msg"></div>
           </div>

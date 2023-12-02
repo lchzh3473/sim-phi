@@ -11,9 +11,10 @@ export default hook.define({
 const brain = {
   firstTip: null,
   tips: [],
-  addTip(tip, { first = false } = {}) {
-    if (first) this.firstTip = tip;
-    this.tips.push(tip);
+  addTip(content, { first = false } = {}) {
+    if (first) this.firstTip = content;
+    const weight = this.tips.reduce((acc, cur) => Math.max(acc, cur.weight), 0);
+    this.tips.push({ content, weight: weight || 1 });
   },
   getTip() {
     if (this.firstTip) {
@@ -21,7 +22,18 @@ const brain = {
       this.firstTip = null;
       return tip;
     }
-    return this.tips[Math.floor(Math.random() * this.tips.length)];
+    if (this.tips.every(tip => tip.weight < 1)) this.tips.forEach(tip => tip.weight *= 2);
+    const total = this.tips.reduce((acc, cur) => acc + cur.weight, 0);
+    const rand = Math.random() * total;
+    let acc = 0;
+    for (const tip of this.tips) {
+      acc += tip.weight;
+      if (rand < acc) {
+        tip.weight *= 0.5;
+        return tip.content;
+      }
+    }
+    throw new Error('NoIdeaException');
   }
 };
 // 2022.5.8
@@ -87,7 +99,7 @@ function fireTip(elem) {
   (function helloworld() {
     let pressTime = null;
     longPress(elem, () => {
-      if (pressTime === null) pressTime = performance.now();
+      if (pressTime == null) pressTime = performance.now();
       if (performance.now() - pressTime > 3473) return 1;
       return 0;
     }, () => {

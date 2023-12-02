@@ -1,8 +1,8 @@
-type Chart = import('../utils/Chart').Chart;
-type Note = import('../utils/Chart').Note;
-type JudgeLine = import('../utils/Chart').JudgeLine;
-type SpeedEvent = import('../utils/Chart').SpeedEvent;
-type JudgeLineEvent = import('../utils/Chart').JudgeLineEvent;
+type Chart = import('@/utils/Chart').Chart;
+type Note = import('@/utils/Chart').Note;
+type JudgeLine = import('@/utils/Chart').JudgeLine;
+type SpeedEvent = import('@/utils/Chart').SpeedEvent;
+type JudgeLineEvent = import('@/utils/Chart').JudgeLineEvent;
 interface ChartPGS {
   formatVersion?: number;
   offset: number;

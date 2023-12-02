@@ -1,5 +1,5 @@
 import createCtx from './createCtx';
-import { audio } from '../external';
+import { audio } from '@/external';
 export async function fixme(raw: Record<string, unknown>, res: Record<string, unknown>): Promise<void> {
   const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL', 'HitFXRaw'];
   if (raw.image == null) raw.image = {};
