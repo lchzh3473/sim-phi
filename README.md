@@ -1,4 +1,4 @@
-<!-- prettier-ignore --># [Phixos](https://lchz&#104;3473.github.io/sim-phi/index)
+# <!-- prettier-ignore -->[Phixos](https://lchz&#104;3473.github.io/sim-phi/index)
 
 ## 简介
 
@@ -21,7 +21,7 @@ $\text{Phi\color{red}x\color{green}os}=\color{red}\xcancel{\text{\color{black}Ph
 
 ## 文档
 
-<!-- prettier-ignore -->访问 [docs.lchz&#104;.net](https://docs.lchz&#104;.net/project/sim-phi-core) (Working in progress)
+访问 <!-- prettier-ignore -->[docs.lchz&#104;.net](https://docs.lchz&#104;.net/project/sim-phi-core) (Working in progress)
 
 ## 更新日志
 
