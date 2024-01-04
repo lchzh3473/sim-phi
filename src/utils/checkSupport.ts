@@ -46,7 +46,7 @@ export async function checkSupport({
   if (isMobile) mobileCallback();
   checkMiuiVersion(warnCallback);
   if (!await loadLib('ImageBitmap兼容', '/lib/createImageBitmap.js', () => isUndefined('createImageBitmap'))) return -1;
-  messageCallback('加载声音组件...');
+  messageCallback('加载音频组件...');
   const oggCompatible = new Audio().canPlayType('audio/ogg') !== '';
   if (!await loadLib('ogg格式兼容', '/lib/oggmented-bundle.js', () => !oggCompatible && isUndefined('oggmented'))) return -4;
   audio.init(oggCompatible ? self.AudioContext : self.oggmented.OggmentedAudioContext); // 兼容Safari

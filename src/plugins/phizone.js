@@ -26,8 +26,9 @@ const getSongUrlByUUID = (id = '') => `${host}/songs/${id}/`;
 const getSongsUrlByIndex = (index = 0) => `${host}/songs/?perpage=1&page=${index}`;
 const getChartsUrlByIndex = (index = 0) => `${host}/charts/?perpage=1&page=${index}`;
 const getChartsUrlByUUID = (id = '') => `${host}/songs/${id}/charts/`;
+const getAssetsUrlByUUID = (id = '') => `${host}/charts/${id}/assets/?perpage=-1`;
 const getRandomChartUrl = () => `${host}/charts/random/?rangeFormat=0&rangeFormat=1`;
-const ver = 'PhiZone API v0.8.5';
+const ver = 'PhiZone API v0.9.0';
 // eslint-disable-next-line no-alert
 const vprompt = str => prompt(`${ver}\n${str}`);
 const valert = str => hook.toast(`${ver}\n${str}`);
@@ -96,9 +97,16 @@ async function queryRandom() {
   const song = (await resS.json()).data;
   return getData([chart], song);
 }
-function getData(base, song) {
+async function getData(base, song) {
   console.log('getData::base', ...base);
   console.log('getData::song', song);
+  for (const chart of base) {
+    const resA = await fetch(getAssetsUrlByUUID(chart.id));
+    if (!resA.ok) throw new Error(`${resA.status} ${resA.statusText}`);
+    const assets = (await resA.json()).data || [];
+    if (assets.length) console.log('getData::assets', ...assets);
+    chart.assets = assets.map(a => ({ name: a.name, url: a.file }));
+  }
   return {
     charts: base.map(a => ({
       id: a.id,
@@ -119,7 +127,7 @@ async function readData(data) {
   const urls = [data.song, data.illustration];
   for (const chart of charts) {
     if (chart.chart) urls.push(chart.chart);
-    if (chart.assets) urls.push(chart.assets);
+    for (const asset of chart.assets) urls.push(asset.url);
   }
   const downloader = new Downloader();
   const dstr = str => decodeURIComponent(str.match(/[^/]+$/)[0]);
@@ -136,7 +144,7 @@ async function readData(data) {
   await xhr4(data.illustration, dstr(data.illustration));
   for (let i = 0; i < charts.length; i++) {
     const chart = charts[i];
-    if (chart.assets) await xhr4(chart.assets, dstr(chart.assets));
+    for (const asset of chart.assets) await xhr4(asset.url, asset.name);
     await xhr4(chart.chart, dstr(chart.chart));
     const encoder = new TextEncoder();
     const offset = getChartOffset(chart.id);

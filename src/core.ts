@@ -124,7 +124,7 @@ export class Renderer {
   public readonly tapholds: NoteExtends[];
   // 资源数据
   public chart: ChartExtends | null;
-  public bgMusic: AudioBuffer;
+  public bgMusic: AudioBuffer | null;
   public bgVideo: HTMLVideoElement | null;
   private _mirrorType: number;
   private initialized: boolean;
@@ -170,7 +170,7 @@ export class Renderer {
     this.enableVP = false;
     // chart
     this.chart = null;
-    this.bgMusic = null as unknown as AudioBuffer;
+    this.bgMusic = null;
     this.bgVideo = null;
     this.lines = [];
     this.notes = [];
@@ -200,6 +200,11 @@ export class Renderer {
     // event
     this._setLowResFactor(1);
     this.resizeCanvas();
+  }
+  public get duration(): number {
+    if (this.bgMusic) return this.bgMusic.duration;
+    if (this.chart) return this.chart.maxSeconds + 0.5;
+    throw new TypeError('Illegal state');
   }
   // config
   public setNoteScale(num = 1): void {

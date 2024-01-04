@@ -84,7 +84,7 @@ const video = {
   record() {
     const { audio: { actx }, app: { canvas } } = hook;
     if (!this.msdest) this.msdest = actx.createMediaStreamDestination();
-    hook.audio.dest = this.msdest;
+    hook.audio.msdest = this.msdest;
     const support = [
       'video/mp4;codecs=avc1',
       'video/mp4;codecs=mp4a',
@@ -211,6 +211,7 @@ function getMoveFn(div, evt, onmove) {
   return function(evt2) {
     /** @type {MouseEvent|Touch} */
     const evt3 = evt2.changedTouches ? evt2.changedTouches[0] : evt2;
+    if (!evt3.movementX && !evt3.movementY) return; // 踩坑：新版浏览器按下鼠标即使不移动也会定期触发mousemove事件
     const dx = sx + evt3.pageX - cx + dw;
     const dy = sy + evt3.pageY - cy + dh;
     const pw = dw / parent.offsetWidth * 100;

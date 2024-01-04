@@ -5,8 +5,8 @@ export default hook.define({
   description: 'Customize skin',
   contents: [
     {
-      type: 'command',
-      meta: ['/skin', skin]
+      type: 'script',
+      meta: [$ => fireTip($('#btn-play'))]
     }
   ]
 });
@@ -19,7 +19,7 @@ function skin() {
   zip.addEventListener('loadstart', () => hook.sendText('加载zip组件...'));
   zip.addEventListener('read', () => hook.handleFile(id, zip.total, null, done));
   const uid = Utils.randomUUID();
-  const div = hook.toast(`<a id="${uid}" href="#">点击此处打开文件选择器</a>`);
+  const div = hook.fireModal('<p>皮肤选择器</p>', `<p><a id="${uid}" href="#">点击此处上传文件</a></p>`);
   const input = Object.assign(document.createElement('input'), {
     type: 'file',
     accept: '',
@@ -32,9 +32,8 @@ function skin() {
       reader.onload = evt => {
         if (!evt.target || !(evt.target.result instanceof ArrayBuffer)) return;
         zip.read({
-          name: file.name,
-          buffer: evt.target.result,
-          path: file.webkitRelativePath || file.name
+          pathname: file.webkitRelativePath || file.name,
+          buffer: evt.target.result
         });
         div.dispatchEvent(new Event('custom-done'));
       };
@@ -68,7 +67,7 @@ function skin() {
     const entries = new Map();
     for (const [a, b] of Object.entries(alias)) {
       for (const i of b) {
-        const file = files.find(j => String(j.name).endsWith(i));
+        const file = files.find(j => String(j.pathname).endsWith(i));
         if (file) {
           entries.set(a, file);
           break;
@@ -149,9 +148,9 @@ function skin() {
 }
 /** @param {ByteData[]} files */
 function loadConfig(files = []) {
-  const config0 = files.find(i => String(i.name).endsWith('config.txt'));
+  const config0 = files.find(i => String(i.pathname).endsWith('config.txt'));
   if (config0) return parseYAML(stringify(config0.buffer), /;?\r?\n/);
-  const config1 = files.find(i => String(i.name).endsWith('info.yml'));
+  const config1 = files.find(i => String(i.pathname).endsWith('info.yml'));
   if (config1) return parseYAML(stringify(config1.buffer));
   hook.sendError('未找到config.txt或info.yml');
   return {};
@@ -172,4 +171,48 @@ function parseYAML(text = '', split = /\r?\n/) {
     if (i[key] === 'False') i[key] = false;
     return i;
   }, Object.create(null));
+}
+function fireTip(elem) {
+  /**
+   * @param {HTMLElement} elem1
+   * @param {()=>any} activeFn
+   * @param {()=>any} doneFn
+   */
+  function longPress(elem1, activeFn, doneFn, failFn) {
+    let timer = null;
+    elem1.addEventListener('mousedown', onrequest);
+    elem1.addEventListener('mouseup', oncancel);
+    elem1.addEventListener('mouseleave', oncancel);
+    elem1.addEventListener('touchstart', onrequest, { passive: true });
+    elem1.addEventListener('touchend', oncancel);
+    elem1.addEventListener('touchcancel', oncancel);
+    function onrequest() {
+      timer = requestAnimationFrame(onrequest);
+      if (activeFn()) {
+        cancelAnimationFrame(timer);
+        doneFn();
+        elem1.removeEventListener('mousedown', onrequest);
+        elem1.removeEventListener('mouseup', oncancel);
+        elem1.removeEventListener('mouseleave', oncancel);
+        elem1.removeEventListener('touchstart', onrequest);
+        elem1.removeEventListener('touchend', oncancel);
+        elem1.removeEventListener('touchcancel', oncancel);
+      }
+    }
+    function oncancel() {
+      cancelAnimationFrame(timer);
+      failFn();
+    }
+  }
+  (function helloworld() {
+    let pressTime = null;
+    longPress(elem, () => {
+      if (pressTime == null) pressTime = performance.now();
+      if (performance.now() - pressTime > 1000) return 1;
+      return 0;
+    }, () => {
+      skin();
+      helloworld();
+    }, () => pressTime = null);
+  }());
 }

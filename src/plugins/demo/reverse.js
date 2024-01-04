@@ -167,14 +167,14 @@ class Chart {
     this.judgeLineList = []; // Array.from(Array(24), () => new JudgeLine);
   }
 }
-/** @type {Map<AudioBuffer,boolean>|null} */
+/** @type {Map<AudioBuffer|null,boolean>|null} */
 let kfcFkXqsVw50 = null;
 hook.before.set('kfcFkXqsVw50', () => {
   if (!(kfcFkXqsVw50 instanceof Map)) return;
-  const /** @type {AudioBuffer} */ bgm = hook.bgms.get(hook.selectbgm.value).audio;
-  for (let i = 0; i < bgm.numberOfChannels; i++) bgm.getChannelData(i).reverse();
+  const /** @type {AudioBuffer|null} */ bgm = hook.bgms.get(hook.selectbgm.value).audio;
+  if (bgm != null) for (let i = 0; i < bgm.numberOfChannels; i++) bgm.getChannelData(i).reverse();
   kfcFkXqsVw50.set(bgm, hook.awawa = !kfcFkXqsVw50.get(bgm));
-  hook.modify = hook.awawa ? a => reverse(a, bgm.duration) : a => a;
+  hook.modify = hook.awawa ? a => reverse(a, hook.app.duration) : a => a;
 });
 /**
  *

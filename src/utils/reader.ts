@@ -54,7 +54,7 @@ export class ZipReader extends EventTarget {
     this.total = 0;
     this.handler = handler;
   }
-  public read(result0: ByteData): void {
+  public read(zipData: ByteData): void {
     if (!this.worker) {
       this.dispatchEvent(new CustomEvent('loadstart'));
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -70,7 +70,7 @@ export class ZipReader extends EventTarget {
       });
       this.worker = worker;
     }
-    this.worker.postMessage(result0, [result0.buffer]);
+    this.worker.postMessage(zipData, [zipData.buffer]);
   }
   public terminate(): void {
     if (this.worker) {
@@ -85,13 +85,13 @@ interface ReaderInit {
   type?: 'binary' | 'json' | 'text';
   mustMatch?: boolean;
   weight?: number;
-  read: (data: ByteData, path: string, options?: Record<string, unknown>) => Promise<ReaderData | null> | ReaderData | null;
+  read: (data: ByteData, options?: Record<string, unknown>) => Promise<ReaderData | null> | ReaderData | null;
 }
 function defineReader(readerInit: ReaderInit): ByteReader {
   const { pattern, type = 'binary', mustMatch = false, weight = 0, read } = readerInit;
   const reader = { pattern, type, mustMatch, weight, read };
   if (type === 'text') {
-    reader.read = async(i: ByteData, path: string) => {
+    reader.read = async(i: ByteData) => {
       if (i.isText == null) {
         try {
           i.text = stringify(i.buffer);
@@ -100,11 +100,11 @@ function defineReader(readerInit: ReaderInit): ByteReader {
           i.isText = false;
         }
       }
-      return i.isText ? read(i, path) : null;
+      return i.isText ? read(i) : null;
     };
   }
   if (type === 'json') {
-    reader.read = async(i: ByteData, path: string) => {
+    reader.read = async(i: ByteData) => {
       if (i.isText == null) {
         try {
           i.text = stringify(i.buffer);
@@ -121,7 +121,7 @@ function defineReader(readerInit: ReaderInit): ByteReader {
           i.isJSON = false;
         }
       }
-      return i.isJSON ? read(i, path) : null;
+      return i.isJSON ? read(i) : null;
     };
   }
   return reader;
@@ -129,7 +129,7 @@ function defineReader(readerInit: ReaderInit): ByteReader {
 const readerInit: ReaderInit[] = [
   {
     pattern: /\.(mp3|ogg|wav|mp4|webm|ogv|mpg|mpeg|avi|mov|flv|wmv|mkv)$/i,
-    async read(i: ByteData, _path, { createAudioBuffer }: Record<string, unknown> = {}) {
+    async read(i: ByteData, { createAudioBuffer }: Record<string, unknown> = {}): Promise<MediaReaderData> {
       return readMediaData(i, async(arraybuffer: ArrayBuffer) => {
         if (typeof createAudioBuffer === 'function') return createAudioBuffer(arraybuffer) as AudioBuffer;
         return defaultDecode(arraybuffer);
@@ -138,37 +138,39 @@ const readerInit: ReaderInit[] = [
   }, {
     pattern: /\.json$/i,
     type: 'json',
-    read(i: ByteData/* , path */) {
+    read(i: ByteData): ChartReaderData {
       const text = i.text!;
       const json = JSON.parse(text, (_, value) => typeof value === 'number' ? Math.fround(value) : value as unknown) as ChartPGS;
-      const { data: jsonData, messages } = structChart(json, i.name);
+      const { data: jsonData, messages } = structChart(json, i.pathname);
       const format = `PGS(${jsonData.formatVersion})`;
-      return { type: 'chart', name: i.name, md5: md5(text), data: jsonData, msg: messages, format };
+      return { pathname: i.pathname, type: 'chart', md5: md5(text), data: jsonData, msg: messages, format };
     }
   }, {
     pattern: /\.(png|jpg|jpeg|gif|bmp|webp|svg)$/i,
-    async read(i: ByteData) {
+    async read(i: ByteData): Promise<ImageReaderData> {
       const data = new Blob([i.buffer]);
       const imageData = await createImageBitmap(data);
-      return { type: 'image' as const, name: i.name, data: imageData };
+      return { pathname: i.pathname, type: 'image', data: imageData };
     }
   }, {
     pattern: /^line\.csv$/i,
     type: 'text',
     mustMatch: true,
-    read(i: ByteData, path: string) {
+    read(i: ByteData): ChartLineReaderData {
+      const { path } = splitPath(i.pathname);
       const data = i.text!;
       const chartLine = structLineData(parseCSV(data, true), path);
-      return { type: 'line' as const, data: chartLine };
+      return { pathname: i.pathname, type: 'line', data: chartLine };
     }
   }, {
     pattern: /^info\.csv$/i,
     type: 'text',
     mustMatch: true,
-    read(i: ByteData, path: string) {
+    read(i: ByteData): ChartInfoReaderData {
+      const { path } = splitPath(i.pathname);
       const data = i.text!;
       const chartInfo = structInfoData(parseCSV(data, true), path);
-      return { type: 'info' as const, data: chartInfo };
+      return { pathname: i.pathname, type: 'info', data: chartInfo };
     }
   }
 ];
@@ -188,7 +190,7 @@ function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {
   const readers = readerInit.map(define);
   return {
     async read(i: ByteData, options = {}): Promise<ReaderData> {
-      const { name, path } = splitPath(i.name);
+      const { name } = splitPath(i.pathname);
       const filtered = readers.filter(a => a.pattern.test(name) || !a.mustMatch);
       filtered.sort((a, b) => {
         if (a.pattern.test(name) && !b.pattern.test(name)) return -1;
@@ -203,13 +205,13 @@ function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {
       };
       for (const reader of filtered) {
         try {
-          const data = await reader.read(i, path, options);
+          const data = await reader.read(i, options);
           if (data) return data;
         } catch (err) {
           errorHandler(reader, err as Error);
         }
       }
-      return { type: 'unknown', name, data: errors.join('\n') }; // TODO: 完善错误信息
+      return { pathname: i.pathname, type: 'unknown', data: errors.join('\n') }; // TODO: 完善错误信息
     },
     use(reader: ReaderInit | ReaderInit[]) {
       if (Array.isArray(reader)) {
@@ -221,7 +223,7 @@ function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {
   } as const;
 }
 export const reader = createReader(defineReader);
-function splitPath(i: string) {
+export function splitPath(i: string): { name: string; path: string } {
   const j = i.lastIndexOf('/');
   const name = i.slice(j + 1);
   const path = ~j ? i.slice(0, j) : '';
@@ -235,10 +237,12 @@ async function readMediaData(i: ByteData, createAudioBuffer: (arraybuffer: Array
     videoElement.onloadedmetadata = resolve;
     videoElement.onerror = resolve;
   });
-  const { videoWidth: width, videoHeight: height } = videoElement;
-  const data = {
-    audio: await createAudioBuffer(i.buffer.slice(0)),
-    video: width && height ? videoElement : null
-  };
-  return { type: 'media' as const, name: i.name, data };
+  return {
+    pathname: i.pathname,
+    type: 'media',
+    data: {
+      audio: await createAudioBuffer(i.buffer.slice(0)),
+      video: videoElement.videoWidth && videoElement.videoHeight ? videoElement : null
+    }
+  } as MediaReaderData;
 }

@@ -50,7 +50,7 @@ brain.addTip('<ruby>奥拓普雷<rp>(</rp><rt>Autoplay</rt><rp>)</rp></ruby>先�
 brain.addTip('上传并选择视频文件播放可以将背景替换为视频！<br><sub>(需要浏览器支持)</sub>');
 brain.addTip('在【曲名】处输入“/pz”可以打开Phizone的对话框！');
 brain.addTip('在【曲名】处输入“/random”以加载随机歌曲！');
-brain.addTip('在【曲名】处输入“/skin”可以打开皮肤选择器！');
+brain.addTip('长按“播放”按钮可以打开皮肤选择器！');
 // brain.addTip('4.1 Hyperer Mode Released');
 // brain.addTip('4.1 Reverse Mode Released');
 // 闲聊类
@@ -58,7 +58,7 @@ brain.addTip('今天又是元气满满的一天~');
 brain.addTip('lchz\x68 is the best!');
 brain.addTip('<a href="https://afdian.net/a/lchz\x683\x3473"target="_blank">我很可爱，请给我钱</a>');
 // 彩蛋类
-brain.addTip('<p style="background-clip:text;-webkit-background-clip:text;color:transparent;background-image:linear-gradient(90deg,red,orange,lime,blue,magenta);width:fit-content;margin-left:auto;margin-right:auto;">这是一条彩虹色的Tip！</p>');
+brain.addTip('<b style="background-clip:text;-webkit-background-clip:text;color:transparent;background-image:linear-gradient(90deg,red,orange,lime,blue,magenta);width:fit-content;margin-left:auto;margin-right:auto;">这是一条彩虹色的Tip！</b>');
 brain.addTip('#锟斤拷锟叫凤拷锟斤拷锟脚碉拷也只锟斤拷Tips]');
 brain.addTip('flag{\x71w\x71}');
 brain.addTip('<img src="//wsrv.nl/?url=www.digital-typhoon.org/globe/color/1979/2048x2048/GMS179101209.globe.1.jpg"style="width:50vmin;clip-path:circle(49.5%)"/><br>1979-10-12 09:00 UTC');

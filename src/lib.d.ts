@@ -76,26 +76,8 @@ interface ResourceMap {
   LevelOver5: ImageBitmap;
 }
 interface MediaData {
-  audio: AudioBuffer;
+  audio: AudioBuffer | null;
   video: HTMLVideoElement | null;
-}
-interface ChartLineReaderData {
-  type: 'line';
-  data: ChartLineData[];
-}
-interface ChartInfoReaderData {
-  type: 'info';
-  data: ChartInfoData[];
-}
-interface ImageReaderData {
-  name: string;
-  type: 'image';
-  data: ImageBitmap;
-}
-interface MediaReaderData {
-  name: string;
-  type: 'media';
-  data: MediaData;
 }
 interface BetterMessage {
   host: string;
@@ -104,8 +86,28 @@ interface BetterMessage {
   message: string;
   target: string;
 }
-interface ChartReaderData {
-  name: string;
+interface ReaderData2 {
+  /** 包含相对路径和文件名 */
+  pathname: string;
+  type: string;
+}
+interface ChartLineReaderData extends ReaderData2 {
+  type: 'line';
+  data: ChartLineData[];
+}
+interface ChartInfoReaderData extends ReaderData2 {
+  type: 'info';
+  data: ChartInfoData[];
+}
+interface ImageReaderData extends ReaderData2 {
+  type: 'image';
+  data: ImageBitmap;
+}
+interface MediaReaderData extends ReaderData2 {
+  type: 'media';
+  data: MediaData;
+}
+interface ChartReaderData extends ReaderData2 {
   type: 'chart';
   data: Chart;
   format: string;
@@ -114,15 +116,14 @@ interface ChartReaderData {
   info?: ChartInfoData[];
   line?: ChartLineData[];
 }
-interface UnknownReaderData {
-  name: string;
+interface UnknownReaderData extends ReaderData2 {
   type: 'unknown';
   data: unknown;
 }
 type ReaderData = ChartInfoReaderData | ChartLineReaderData | ChartReaderData | ImageReaderData | MediaReaderData | UnknownReaderData;
 interface ByteData {
-  name: string;
-  path: string;
+  /** 包含相对路径和文件名 */
+  pathname: string;
   buffer: ArrayBuffer;
   text?: string;
   isText?: boolean;
@@ -134,7 +135,7 @@ interface ByteReader {
   type: string;
   mustMatch: boolean;
   weight: number;
-  read: (data: ByteData, path: string, options: Record<string, unknown>) => Promise<ReaderData | null> | ReaderData | null;
+  read: (data: ByteData, options: Record<string, unknown>) => Promise<ReaderData | null> | ReaderData | null;
 }
 interface ReaderOptions {
   handler: (data: ByteData) => Promise<unknown>;

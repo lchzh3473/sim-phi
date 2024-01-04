@@ -25,7 +25,7 @@ module.exports = {
     '@stylistic/multiline-ternary': ['error', 'never'],
     '@stylistic/newline-per-chained-call': 'off', // qwq
     '@stylistic/no-confusing-arrow': 'off', // qwq
-    '@stylistic/no-extra-parens': ['error', 'all', { enforceForSequenceExpressions: false }],
+    '@stylistic/no-extra-parens': ['error', 'all'],
     '@stylistic/no-mixed-operators': 'off', // qwq
     '@stylistic/no-multiple-empty-lines': ['error', { max: 0 }],
     '@stylistic/object-curly-spacing': ['error', 'always'],

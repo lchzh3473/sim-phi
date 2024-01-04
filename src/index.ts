@@ -17,7 +17,9 @@ import { checkSupport } from '@/utils/checkSupport';
 import { adjustSize } from '@/utils/adjustSize';
 import { fixme } from '@/utils/fixme';
 import { MessageHandler } from '@/components/MessageHandler';
-self._i = ['Phixos', version.split('.'), pubdate, lastupdate];
+import { AudioController } from './utils/AudioTools';
+const meta = ['Phixos', version.split('.'), pubdate, lastupdate] as typeof self._i;
+self._i = meta;
 const $id = (query: string): HTMLElement => document.getElementById(query) || (() => { throw new Error(`Cannot find element: ${query}`) })();
 const $ = (query: string) => document.body.querySelector(query);
 const $$ = (query: string) => document.body.querySelectorAll(query);
@@ -81,6 +83,7 @@ interface MainOptions {
   before: Map<string, () => Promise<void> | void>;
   now: Map<string, (time: number) => void>;
   after: Map<string, () => void>;
+  afterAll: Map<string, () => void>;
   end: Map<string, () => Promise<void> | void>;
   customDraw: ((ctx: CanvasRenderingContext2D) => void) | null;
   filter: ((ctx: CanvasRenderingContext2D, time: number, now: number) => CanvasImageSource) | null;
@@ -88,7 +91,7 @@ interface MainOptions {
   handleFile: (tag: string, total: number, promise: Promise<unknown>, oncomplete?: () => void) => Promise<unknown>;
   uploader: typeof uploader;
   awawa: boolean;
-  fireModal: (navHTML: string, contentHTML: string) => HTMLDivElement;
+  fireModal: (navHTML: HTMLElement | string, contentHTML: HTMLElement | string) => HTMLDivElement;
   toast: (msg: string) => HTMLDivElement;
   error: (msg?: string) => HTMLDivElement;
   define: (arg0: ModuleConfig) => ModuleConfig;
@@ -113,7 +116,6 @@ interface MainOptions {
   ZipReader: typeof ZipReader;
   status: typeof status;
   tmps: typeof tmps;
-  pause: unknown;
 }
 const main = {} as MainOptions;
 main.modify = a => a;
@@ -121,6 +123,7 @@ main.pressTime = 0;
 main.before = new Map();
 main.now = new Map();
 main.after = new Map();
+main.afterAll = new Map();
 main.end = new Map();
 main.filter = null;
 main.filterOptions = {};
@@ -229,7 +232,7 @@ class ImageStore {
   }
 }
 const bgs = new Map() as Map<string, ImageStore>;
-const bgms = new Map() as Map<string, { audio: AudioBuffer; video: HTMLVideoElement | null }>;
+const bgms = new Map() as Map<string, MediaData>;
 const charts = new Map() as Map<string, Chart>;
 const chartsMD5 = new Map() as Map<string, string>;
 const chartsFormat = new Map() as Map<string, string>;
@@ -339,7 +342,7 @@ const uploader = new FileEmitter();
     // console.log(evt);
     const { file: { name, webkitRelativePath: path }, buffer } = evt as ProgressEvent & { file: File; buffer: ArrayBuffer };
     const isZip = buffer.byteLength > 4 && new DataView(buffer).getUint32(0, false) === 0x504b0304;
-    const data = { name, buffer, path: path || name };
+    const data: ByteData = { pathname: path || name, buffer };
     const handler = async() => {
       fileTotal++;
       const result = await reader.read(data, options);
@@ -359,16 +362,16 @@ const uploader = new FileEmitter();
         chartInfoData.push(...data.data);
         break;
       case 'media': {
-        const basename = getUniqueName(data.name, bgms);
+        const basename = getUniqueName(data.pathname, bgms);
         bgms.set(basename, data.data);
-        selectbgm.appendChild(createOption(basename, data.name));
+        selectbgm.appendChild(createOption(basename, data.pathname));
         selectbgm.dispatchEvent(new Event('change'));
         break;
       }
       case 'image': {
-        const basename = getUniqueName(data.name, bgs);
+        const basename = getUniqueName(data.pathname, bgs);
         bgs.set(basename, new ImageStore(data.data));
-        selectbg.appendChild(createOption(basename, data.name));
+        selectbg.appendChild(createOption(basename, data.pathname));
         selectbg.dispatchEvent(new Event('change'));
         break;
       }
@@ -376,18 +379,18 @@ const uploader = new FileEmitter();
         if (data.msg) data.msg.forEach(v => sendWarning(v));
         if (data.info) chartInfoData.push(...data.info);
         if (data.line) chartLineData.push(...data.line);
-        const basename = getUniqueName(data.name, charts);
+        const basename = getUniqueName(data.pathname, charts);
         charts.set(basename, data.data);
         chartsMD5.set(basename, data.md5);
         chartsFormat.set(basename, data.format);
-        selectchart.appendChild(createOption(basename, data.name));
+        selectchart.appendChild(createOption(basename, data.pathname));
         selectchart.dispatchEvent(new Event('change'));
         break;
       }
       default:
-        console.warn(`Unsupported file: ${data.name}`);
+        console.warn(`Unsupported file: ${data.pathname}`);
         console.log(data.data);
-        sendWarning(`不支持的文件：${data.name}\n${data.data as string || 'Error: Unknown File Type'}`);
+        sendWarning(`不支持的文件：${data.pathname}\n${data.data as string || 'Error: Unknown File Type'}`);
     }
   }
   function createOption(value: string, innerhtml: string) {
@@ -411,7 +414,10 @@ const uploader = new FileEmitter();
   }
 }());
 main.uploader = uploader;
-import('@/plugins/demo/index.js').then(a => a.default());
+const isBeta = String(meta[1][3]).startsWith('b');
+const resLink = isBeta ? atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=') : '';
+// const resLink = 'local/ptres.json';
+import('@/plugins/demo/index.js').then(a => a.default(isBeta));
 // Hit start
 const hitManager = new HitManager();
 const exitFull = () => {
@@ -427,8 +433,8 @@ const timeEnd = new Timer();
 const specialClick = {
   time: [0, 0, 0, 0],
   func: [
-    async() => Promise.resolve().then(atPause),
-    async() => Promise.resolve().then(atStop).then(atStop),
+    async() => Promise.resolve().then(mainPause),
+    async() => Promise.resolve().then(mainPlay).then(mainPlay),
     async() => Promise.resolve().then(() => showStat.toggle()),
     async() => {
       const isFull = stage.getFull();
@@ -486,10 +492,12 @@ let isInEnd = false; // 开头过渡动画
 let isOutStart = false; // 结尾过渡动画
 let isOutEnd = false; // 临时变量
 // 必要组件
+const musicController = new AudioController();
+const soundController = new AudioController();
 const frameTimer = new FrameTimer();
 const frameAnimater = new FrameAnimater();
 frameAnimater.setCallback(mainLoop);
-const handlerHide = () => { if (document.visibilityState === 'hidden' && emitter.eq('play')) atPause(); };
+const handlerHide = () => { if (document.visibilityState === 'hidden' && emitter.eq('play')) mainPause(); };
 document.addEventListener('visibilitychange', handlerHide);
 document.addEventListener('pagehide', handlerHide); // 兼容Safari
 let isOutOver = false;
@@ -510,12 +518,12 @@ const tmps = {
   customForeDraw: null as ((ctx: CanvasRenderingContext2D) => void) | null,
   customBackDraw: null as ((ctx: CanvasRenderingContext2D) => void) | null
 };
-function playBgm(data: AudioBuffer, offset?: number) {
+function playBgm(data: AudioBuffer | null, offset?: number) {
   curTimeMS = performance.now();
-  tmps.bgMusicHack = audio.play(data, {
+  if (data == null) return;
+  tmps.bgMusicHack = musicController.play(data, {
     offset: (offset ?? 0) || 0,
     playbackrate: app.speed,
-    gainrate: app.musicVolume,
     interval: autoDelay.checked ? 1 : 0
   }) as (_: AudioBufferSourceNode) => void;
 }
@@ -617,7 +625,7 @@ const judgeManager = {
             break;
           }
         } else if (deltaTime < 0) {
-          audio.play(res.HitSong1, { gainrate: app.soundVolume });
+          soundController.play(res.HitSong1);
           hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
           stat.addCombo(4, 2);
           note.scored = true;
@@ -662,7 +670,7 @@ const judgeManager = {
             }
           }
         } else if (deltaTime < 0) {
-          audio.play(res.HitSong2, { gainrate: app.soundVolume });
+          soundController.play(res.HitSong2);
           hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
           stat.addCombo(4, 4);
           note.scored = true;
@@ -726,7 +734,7 @@ const judgeManager = {
           } else {
             const note1 = noteJudge;
             stat.addDisp(Math.max(deltaTime2, (-1 - note1.frameCount) * 0.04 || 0));
-            audio.play(res.HitSong0, { gainrate: app.soundVolume });
+            soundController.play(res.HitSong0);
             if (deltaTime2 > 0.08) {
               note1.holdStatus = 7; // console.log('Good(Early)', i.name);
               hitImageList.add(HitImage.good(note1.projectX, note1.projectY, note1));
@@ -844,7 +852,7 @@ interact.setTouchEvent({
     for (const i of evt.changedTouches) hitManager.deactivate('touch', i.identifier);
   },
   touchcancelCallback(evt: TouchEvent) {
-    // if (emitter.eq('play')) atPause(); TODO: 意外暂停提醒
+    // if (emitter.eq('play')) mainPause(); TODO: 意外暂停提醒
     for (const i of evt.changedTouches) hitManager.deactivate('touch', i.identifier);
   }
 });
@@ -900,8 +908,7 @@ window.addEventListener('load', (): void => {
       }
     })) return;
     await import('@/utils/reader-');
-    const raw = await loadResource(atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=')).catch(() => null) || {
-    // const raw = await loadResource('local/ptres.json').catch(() => null) || {
+    const raw = await loadResource(resLink).catch(() => null) || {
       image: {} as Record<string, string>,
       audio: {} as Record<string, string>,
       alternative: {} as Record<string, string>,
@@ -1065,7 +1072,7 @@ function mainLoop() {
     self.setTimeout(() => {
       if (!isOutOver) return; // 避免快速重开后直接结算
       const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(levelText.slice(0, 2).toLocaleLowerCase());
-      audio.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`] as AudioBuffer, { loop: true });
+      musicController.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`] as AudioBuffer, { loop: true });
       timeEnd.reset();
       timeEnd.play();
       stat.level = Number(/\d+$/.exec(levelText));
@@ -1081,13 +1088,14 @@ function mainLoop() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.globalAlpha = 1;
   ctx.drawImage(canvasfg, (canvas.width - canvasfg.width) / 2, 0);
+  for (const i of main.afterAll.values()) i();
   // Copyright
   ctx.globalCompositeOperation = 'difference';
   ctx.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
   ctx.fillStyle = '#fff';
   ctx.globalAlpha = 0.8;
   ctx.textAlign = 'right';
-  ctx.fillText(`${self._i[0]} v${self._i[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasfg.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
+  ctx.fillText(`${meta[0]} v${meta[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasfg.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
   ctx.globalCompositeOperation = 'source-over';
 }
 function loopNoCanvas() {
@@ -1130,15 +1138,15 @@ function loopNoCanvas() {
   // if (awawa && stat.good + stat.bad) {
   //   stat.level = Number(levelText.match(/\d+$/));
   //   stat.reset();
-  //   Promise.resolve().then(atStop).then(atStop);
+  //   Promise.resolve().then(mainPlay).then(mainPlay);
   // }
   tmps.bgImage = background.getImageBlur();
   tmps.bgVideo = app.bgVideo;
   tmps.progress = (main.awawa ? duration0 - timeBgm : timeBgm) / duration0;
   tmps.name = inputName.value || inputName.placeholder;
   tmps.artist = inputArtist.value;
-  tmps.illustrator = inputIllustrator.value || inputIllustrator.placeholder;
-  tmps.charter = inputCharter.value || inputCharter.placeholder;
+  tmps.illustrator = `Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`;
+  tmps.charter = `Level designed by ${inputCharter.value || inputCharter.placeholder}`;
   tmps.level = levelText;
   if (stat.combo > 2) {
     tmps.combo = `${stat.combo}`;
@@ -1163,8 +1171,7 @@ function loopCanvas() {
     ctxfg.drawImage(bgVideo, ...adjustSize({ width, height }, canvasfg, 1));
   }
   // if (awawa) ctxfg.filter = `hue-rotate(${stat.combo*360/7}deg)`;
-  if (timeIn.second >= 2.5 && !stat.lineStatus) drawLine(0, lineScale);
-  // 绘制判定线(背景后0)
+  if (timeIn.second >= 2.5 && !stat.lineStatus) drawLine(0, lineScale); // 绘制判定线(背景后0)
   // if (awawa) ctxfg.filter = 'none';
   ctxfg.resetTransform();
   ctxfg.fillStyle = '#000'; // 背景变暗
@@ -1172,8 +1179,7 @@ function loopCanvas() {
   ctxfg.fillRect(0, 0, canvasfg.width, canvasfg.height);
   if (timeIn.second >= 2.5 && tmps.customBackDraw != null) tmps.customBackDraw(ctxfg); // 自定义背景
   // if (awawa) ctxfg.filter = `hue-rotate(${stat.combo*360/7}deg)`;
-  if (timeIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1, lineScale);
-  // 绘制判定线(背景前1)
+  if (timeIn.second >= 2.5) drawLine(stat.lineStatus ? 2 : 1, lineScale); // 绘制判定线(背景前1)
   // if (awawa) ctxfg.filter = 'none';
   ctxfg.resetTransform();
   if (timeIn.second >= 3 && timeOut.second === 0) {
@@ -1224,8 +1230,8 @@ function loopCanvas() {
     // 曲名、曲师、曲绘和谱师
     fillTextNode(tmps.name, wlen, hlen * 0.75, lineScale * 1.1, canvasfg.width - lineScale * 1.5);
     fillTextNode(tmps.artist, wlen, hlen * 0.75 + lineScale * 1.25, lineScale * 0.55, canvasfg.width - lineScale * 1.5);
-    fillTextNode(`Illustration designed by ${tmps.illustrator}`, wlen, hlen * 1.25 + lineScale * 0.55, lineScale * 0.55, canvasfg.width - lineScale * 1.5);
-    fillTextNode(`Level designed by ${tmps.charter}`, wlen, hlen * 1.25 + lineScale * 1.4, lineScale * 0.55, canvasfg.width - lineScale * 1.5);
+    fillTextNode(tmps.illustrator, wlen, hlen * 1.25 + lineScale * 0.55, lineScale * 0.55, canvasfg.width - lineScale * 1.5);
+    fillTextNode(tmps.charter, wlen, hlen * 1.25 + lineScale * 1.4, lineScale * 0.55, canvasfg.width - lineScale * 1.5);
     // 判定线(装饰用)
     ctxfg.globalAlpha = 1;
     ctxfg.setTransform(1, 0, 0, 1, wlen, hlen);
@@ -1558,7 +1564,10 @@ selectVolume.addEventListener('change', evt => {
   const volume = Number((evt.target as HTMLInputElement).value);
   app.musicVolume = Math.min(1, 1 / volume);
   app.soundVolume = Math.min(1, volume);
-  Promise.resolve().then(atPause).then(atPause);
+  audio.test(() => {
+    musicController.gainNode.gain.value = app.musicVolume;
+    soundController.gainNode.gain.value = app.soundVolume;
+  });
 });
 status.reg('selectVolume', selectVolume);
 checkAutoPlay.addEventListener('change', evt => {
@@ -1608,7 +1617,7 @@ btnPlay.addEventListener('click', function(this: HTMLInputElement) {
   const handler = async() => {
     if (this.classList.contains('disabled')) return;
     this.classList.add('disabled');
-    await atStop();
+    await mainPlay();
     this.classList.remove('disabled');
   };
   handler();
@@ -1617,7 +1626,7 @@ btnPause.addEventListener('click', function(this: HTMLInputElement) {
   const handler = async() => {
     if (this.classList.contains('disabled')) return;
     this.classList.add('disabled');
-    await atPause();
+    await mainPause();
     this.classList.remove('disabled');
   };
   handler();
@@ -1631,29 +1640,29 @@ status2.reg(emitter, 'change', () => main.awawa ? 'Reversed' : ''); // TODO: 重
 status2.reg(selectflip, 'change', target => ['', 'FlipX', 'FlipY', 'FlipX&Y'][Number((target as HTMLSelectElement).value)]);
 status2.reg(selectspeed, 'change', target => (target as HTMLSelectElement).value);
 status2.reg(emitter, 'change', target => (target as Emitter).eq('pause') ? 'Paused' : '');
-async function atStop(): Promise<void> {
+async function mainPlay(): Promise<void> {
   if (emitter.eq('stop')) {
     if (!selectchart.value) {
       main.error('未选择任何谱面');
       return;
     }
     for (const i of main.before.values()) await i();
-    audio.play(res.mute, { loop: true, isOut: false }); // 播放空音频(避免音画不同步)
+    const bgm: MediaData = bgms.get(selectbgm.value) || { audio: null, video: null };
+    app.bgMusic = bgm.audio;
+    app.bgVideo = bgm.video;
     app.prerenderChart(main.modify(charts.get(selectchart.value)!));
     const md5 = chartsMD5.get(selectchart.value)!;
     const format = chartsFormat.get(selectchart.value)!;
     stat.level = Number(/\d+$/.exec(levelText));
     if (app.chart != null) stat.reset(app.chart.numOfNotes, md5, format, selectspeed.value);
     await loadLineData({ onwarn: sendWarning });
-    const bgm = bgms.get(selectbgm.value) || { audio: audio.mute(app.chart!.maxSeconds + 0.5), video: null };
-    app.bgMusic = bgm.audio;
-    app.bgVideo = bgm.video;
-    duration0 = app.bgMusic.duration / app.speed;
+    duration0 = app.duration / app.speed;
     isInEnd = false;
     isOutStart = false;
     isOutEnd = false;
     timeBgm = 0;
     if (!showTransition.checked) timeIn.addTime(3e3);
+    audio.play(res.mute, { loop: true }); // 播放空音频(避免音画不同步)
     frameAnimater.start();
     timeIn.play();
     interact.activate();
@@ -1723,7 +1732,7 @@ async function loadLineData({
     }
   }
 }
-async function atPause() {
+async function mainPause() {
   if (emitter.eq('stop') || isOutOver) return;
   if (emitter.eq('play')) {
     if (app.bgVideo != null) app.bgVideo.pause();
@@ -1731,7 +1740,7 @@ async function atPause() {
     if (showTransition.checked && isOutStart) timeOut.pause();
     curTime = timeBgm;
     audio.stop();
-    audio.play(res.mute, { loop: true, isOut: false }); // TODO: 重构
+    audio.play(res.mute, { loop: true }); // TODO: 重构
     emitter.emit('pause');
   } else {
     if (app.bgVideo != null) await playVideo(app.bgVideo, timeBgm * app.speed);
@@ -1767,10 +1776,12 @@ main.fireModal = function(navHTML = '', contentHTML = '') {
   container.classList.add('cover-view', 'fade');
   const nav = document.createElement('div');
   nav.classList.add('view-nav');
-  nav.innerHTML = navHTML;
+  if (typeof navHTML === 'string') nav.innerHTML = navHTML;
+  else nav.appendChild(navHTML);
   const content = document.createElement('div');
   content.classList.add('view-content');
-  content.innerHTML = contentHTML;
+  if (typeof contentHTML === 'string') content.innerHTML = contentHTML;
+  else content.appendChild(contentHTML);
   content.addEventListener('custom-done', () => cover.click());
   container.append(nav, content);
   requestAnimationFrame(() => {
@@ -1837,10 +1848,19 @@ main.ZipReader = ZipReader;
 main.status = status;
 main.tmps = tmps;
 main.awawa = false;
-main.pause = async() => emitter.eq('play') && atPause();
+// play
+interface MainOptions {
+  pause: typeof pause;
+  // play: typeof mainPlay;
+  // stop: typeof mainPlay;
+  playing: boolean;
+  time: number;
+}
+const pause = async() => emitter.eq('play') && mainPause();
+main.pause = pause;
 Object.defineProperty(main, 'playing', {
   get: () => emitter.eq('play')
-  // set: v => v ? atPause() : atPause()
+  // set: v => v ? mainPause() : mainPause()
 });
 Object.defineProperty(main, 'time', {
   get: () => timeBgm,
@@ -1848,7 +1868,7 @@ Object.defineProperty(main, 'time', {
     const handler = async() => {
       if (emitter.eq('stop') || isOutOver) return;
       const isPlaying = emitter.eq('play');
-      if (isPlaying) await atPause();
+      if (isPlaying) await mainPause();
       timeBgm = v / app.speed;
       curTime = timeBgm;
       app.seekLineEventIndex();
@@ -1856,9 +1876,47 @@ Object.defineProperty(main, 'time', {
       //   a.scored = 0;
       //   a.holdStatus = 1; });
       // stat.reset();
-      if (isPlaying) await atPause().catch(console.warn); // FIXME: video+gauge结算时会报错
+      if (isPlaying) await mainPause().catch(console.warn); // FIXME: video+gauge结算时会报错
     };
     handler();
+  }
+});
+// cover
+interface MainOptions {
+  cover: typeof cover;
+}
+const cover = {
+  color: 'black',
+  value: 0,
+  setValueCurve(...values: number[]) { // [time, value, ...]
+    if (!(values.length &= ~1)) return;
+    const lastTime = performance.now();
+    const lastValue = this.value;
+    requestAnimationFrame(function callback(t) {
+      const id = requestAnimationFrame(callback);
+      let time = (t - lastTime) * 1e-3;
+      if (time < 0) time = 0; // 实测有时会出现负数，可能计算出NaN导致闪屏
+      for (let i = 0; i < values.length; i += 2) {
+        if (time < values[i]) {
+          const start = i === 0 ? lastValue : values[i - 1];
+          const end = values[i + 1];
+          cover.value = start + (end - start) * time / values[i];
+          return;
+        } time -= values[i];
+      }
+      if (time >= 0) {
+        cover.value = values[values.length - 1];
+        cancelAnimationFrame(id);
+      }
+    });
+  }
+};
+main.cover = cover;
+main.afterAll.set('main::cover', () => {
+  if (cover.value > 0) {
+    ctx.fillStyle = cover.color;
+    ctx.globalAlpha = cover.value;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 });
 /* exported hook */

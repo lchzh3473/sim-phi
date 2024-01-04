@@ -64,7 +64,7 @@ function initGauge() {
   const { chart } = app;
   gauge.reset();
   factor = calcGaugeFactor(chart.numOfNotes, stat.level >= 16);
-  gauge.speedInit = -factor * chart.numOfNotes / (app.bgMusic.duration + 0.5);
+  gauge.speedInit = -factor * chart.numOfNotes / (app.duration + 0.5);
   console.log('initGauge');
   flags[0] = chart;
   for (let i = 1; i < 8; i++) flags[i] = stat.noteRank[i];
@@ -79,7 +79,7 @@ function calcGauge(time) {
         note.scored = true;
       }
     }
-    hook.time = app.bgMusic.duration;
+    hook.time = app.duration;
     // gauge.reset();
     return;
   }

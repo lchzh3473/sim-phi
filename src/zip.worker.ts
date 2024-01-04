@@ -9,13 +9,12 @@ let total = 0;
 // ];
 // for (const url of urls) try { importScripts(url); break } catch (e) continue;
 import { loadAsync } from 'jszip'; // 踩坑：linux文件名区分大小写，JSZip将报错
-interface Data { name: string; path: string; buffer: ArrayBuffer }
-function readZip(data: Data) { // JSZip
+function readZip(data: ByteData) { // JSZip
   loadAsync(data.buffer, { checkCRC32: true, decodeFileName: stringify as (bytes: Buffer | string[] | Uint8Array) => string }).then(zip => {
     console.debug(zip);
     const arr = Object.values(zip.files).filter(i => !i.dir);
     total += arr.length - 1;
-    for (const i of arr) i.async('arraybuffer').then(buffer => readZip({ name: i.name, path: `${data.path}/${i.name}`, buffer }));
+    for (const i of arr) i.async('arraybuffer').then(buffer => readZip({ pathname: `${data.pathname}/${i.name}`, buffer }));
   }, () => self.postMessage({ data, total }, [data.buffer]));
 }
 function stringify(bfs: BufferSource) {
@@ -27,4 +26,4 @@ function stringify(bfs: BufferSource) {
   }
   throw error;
 }
-self.addEventListener('message', (msg: Event & { data: Data }) => readZip((total++, msg.data)));
+self.addEventListener('message', (msg: Event & { data: ByteData }) => { total++; readZip(msg.data) });

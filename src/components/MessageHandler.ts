@@ -104,11 +104,11 @@ export abstract class MessageHandler {
     let timer = 0;
     msgbox.updateHTML = () => {
       clearTimeout(timer);
-      timer = self.setTimeout((() => {
+      timer = self.setTimeout(() => {
         const { pages } = page;
         if (page.page > pages) page.page = pages;
         const start = (page.page - 1) * page.size;
-        text.textContent = `${msgbox.code ? `${msgbox.host}: 检测到${msgbox.list.length}个${msgbox.name}\n` : ''}来自${msgbox.target}`;
+        text.textContent = `${msgbox.code ? `${msgbox.host}: 检测到 ${msgbox.list.length} 个 ${msgbox.name}\n` : ''}来自 ${msgbox.target}`;
         nodePageNum.textContent = String(page.page);
         nodePages.textContent = String(pages);
         for (const i of nodeBMsg.querySelectorAll('[bm-ctrl]')) (i as HTMLElement).classList.toggle('hide', pages <= 1);
@@ -131,7 +131,7 @@ export abstract class MessageHandler {
           div.append(`${i.name}: ${i.message}`, btnIgnore);
           nodeBMsg.appendChild(div);
         }
-      }));
+      });
     };
     this.betterMessageBoxes.push(msgbox);
     return msgbox;

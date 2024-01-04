@@ -2,7 +2,7 @@ import { ImgAny } from '@/utils/ImageTools';
 import { waitForElementById } from '@/utils/waitForElementById';
 const $ = query => document.body.querySelector(query);
 const flag0 = 'flag{\x71w\x71}';
-export default function() {
+export default function(isBeta = false) {
   (function() {
     const t = new Date();
     if (t.getDate() !== 1 || t.getMonth() !== 3) return;
@@ -22,7 +22,12 @@ export default function() {
       if (--tid) return;
       const uidDemo = Utils.randomUUID();
       const uidLegacy = Utils.randomUUID();
-      const div = hook.toast(`<a id="${uidDemo}" href="#">Demo</a><br><br><a id="${uidLegacy}" href="#">Legacy</a>`);
+      const uidPreview = Utils.randomUUID();
+      const div = hook.toast([
+        `<a id="${uidDemo}" href="#">demo.zip</a>`,
+        `<a id="${uidLegacy}" href="#">Legacy</a>`,
+        `<a id="${uidPreview}" href="#">${isBeta ? 'Normal' : 'Beta'}</a>`
+      ].join('<br><br>'));
       waitForElementById(uidDemo, elem => {
         elem.addEventListener('click', () => {
           const handler = img => hook.uploader.fireLoad({ name: 'demo.zip' }, ImgAny.decodeAlt(img));
@@ -38,6 +43,12 @@ export default function() {
       waitForElementById(uidLegacy, elem => {
         elem.addEventListener('click', () => {
           location.replace('/sim-phi-legacy');
+          div.dispatchEvent(new Event('custom-done'));
+        });
+      });
+      waitForElementById(uidPreview, elem => {
+        elem.addEventListener('click', () => {
+          location.replace(isBeta ? '/sim-phi' : '/sim-phi-vite');
           div.dispatchEvent(new Event('custom-done'));
         });
       });
