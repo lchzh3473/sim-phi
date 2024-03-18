@@ -17,7 +17,7 @@ import { checkSupport } from '@/utils/checkSupport';
 import { adjustSize } from '@/utils/adjustSize';
 import { fixme } from '@/utils/fixme';
 import { MessageHandler } from '@/components/MessageHandler';
-import { AudioController } from './utils/AudioTools';
+import { AudioController } from '@/utils/AudioTools';
 const meta = ['Phixos', version.split('.'), pubdate, lastupdate] as typeof self._i;
 self._i = meta;
 const $id = (query: string): HTMLElement => document.getElementById(query) || (() => { throw new Error(`Cannot find element: ${query}`) })();
@@ -128,18 +128,18 @@ main.end = new Map();
 main.filter = null;
 main.filterOptions = {};
 document.oncontextmenu = e => e.preventDefault();
-for (const i of viewNav.children) {
-  i.addEventListener('click', function(this: HTMLElement) {
-    for (const j of viewNav.children) j.classList.toggle('active', j === this);
+for (const thisElem of viewNav.children) {
+  thisElem.addEventListener('click', function(this: HTMLElement) {
+    for (const elem of viewNav.children) elem.classList.toggle('active', elem === this);
     // if (!viewDoc.src) { viewDoc.src = 'docs/use.html' } // 避免阻塞页面
     // viewDoc.classList.toggle('hide', this.id !== 'nav-use');
     viewCfg.classList.toggle('hide', this.id !== 'nav-cfg');
     viewMsg.classList.toggle('hide', this.id !== 'nav-msg');
   });
 }
-for (const i of viewNav2.children) {
-  i.addEventListener('click', function(this: HTMLElement) {
-    for (const j of viewNav2.children) j.classList.toggle('active', j === this);
+for (const thisElem of viewNav2.children) {
+  thisElem.addEventListener('click', function(this: HTMLElement) {
+    for (const elem of viewNav2.children) elem.classList.toggle('active', elem === this);
     viewRmg.classList.toggle('hide', this.id !== 'nav-rmg');
     viewExt.classList.toggle('hide', this.id !== 'nav-ext');
   });
@@ -236,8 +236,8 @@ const bgms = new Map() as Map<string, MediaData>;
 const charts = new Map() as Map<string, Chart>;
 const chartsMD5 = new Map() as Map<string, string>;
 const chartsFormat = new Map() as Map<string, string>;
-const chartLineData: ChartLineData[] = []; // Line.csv
-const chartInfoData: ChartInfoData[] = []; // Info.csv
+const chartLineDataList: ChartLineData[] = []; // line.csv
+const chartInfoDataList: ChartInfoData[] = []; // info.csv
 selectNoteScale.addEventListener('change', evt => app.setNoteScale(Number((evt.target as HTMLSelectElement).value)));
 selectAspectRatio.addEventListener('change', evt => stage.resize(Number((evt.target as HTMLSelectElement).value)));
 selectBackgroundDim.addEventListener('change', evt => app.brightness = Number((evt.target as HTMLSelectElement).value));
@@ -273,36 +273,36 @@ selectspeed.addEventListener('change', evt => {
 status.reg('selectSpeed', selectspeed);
 // 自动填写歌曲信息
 function adjustInfo() {
-  for (const i of chartInfoData) {
-    if (selectchart.value.trim() === i.chart) {
-      if (i.name != null) inputName.value = i.name;
-      if (i.artist != null) inputArtist.value = i.artist;
-      if (i.level != null) {
-        levelText = i.level;
+  for (const data of chartInfoDataList) {
+    if (selectchart.value.trim() === data.chart) {
+      if (data.name != null) inputName.value = data.name;
+      if (data.artist != null) inputArtist.value = data.artist;
+      if (data.level != null) {
+        levelText = data.level;
         const p = levelText.toLocaleUpperCase().split('LV.').map(a => a.trim());
         if (p[0]) selectDifficulty.value = p[0];
         if (p[1]) selectLevel.value = p[1];
       }
-      if (i.illustrator != null) inputIllustrator.value = i.illustrator;
-      if (i.charter != null) inputCharter.value = i.charter;
-      if (i.music != null && bgms.has(i.music)) selectbgm.value = i.music;
-      if (i.image != null && bgs.has(i.image)) {
-        selectbg.value = i.image;
+      if (data.illustrator != null) inputIllustrator.value = data.illustrator;
+      if (data.charter != null) inputCharter.value = data.charter;
+      if (data.music != null && bgms.has(data.music)) selectbgm.value = data.music;
+      if (data.image != null && bgs.has(data.image)) {
+        selectbg.value = data.image;
         selectbg.dispatchEvent(new Event('change'));
       }
-      if (i.aspectRatio != null) {
-        selectAspectRatio.value = i.aspectRatio.toString();
-        stage.resize(i.aspectRatio);
+      if (data.aspectRatio != null) {
+        selectAspectRatio.value = data.aspectRatio.toString();
+        stage.resize(data.aspectRatio);
       }
-      if (i.noteScale != null) {
-        selectNoteScale.value = i.noteScale.toString();
-        app.setNoteScale(i.noteScale);
+      if (data.noteScale != null) {
+        selectNoteScale.value = data.noteScale.toString();
+        app.setNoteScale(data.noteScale);
       }
-      if (i.backgroundDim != null) {
-        selectBackgroundDim.value = i.backgroundDim.toString();
-        app.brightness = i.backgroundDim;
+      if (data.backgroundDim != null) {
+        selectBackgroundDim.value = data.backgroundDim.toString();
+        app.brightness = data.backgroundDim;
       }
-      if (i.offset != null) inputOffset.value = i.offset.toString();
+      if (data.offset != null) inputOffset.value = data.offset.toString();
     }
   }
 }
@@ -356,10 +356,10 @@ const uploader = new FileEmitter();
     console.log(data);
     switch (data.type) {
       case 'line':
-        chartLineData.push(...data.data);
+        chartLineDataList.push(...data.data);
         break;
       case 'info':
-        chartInfoData.push(...data.data);
+        chartInfoDataList.push(...data.data);
         break;
       case 'media': {
         const basename = getUniqueName(data.pathname, bgms);
@@ -377,8 +377,8 @@ const uploader = new FileEmitter();
       }
       case 'chart': {
         if (data.msg) data.msg.forEach(v => sendWarning(v));
-        if (data.info) chartInfoData.push(...data.info);
-        if (data.line) chartLineData.push(...data.line);
+        if (data.info) chartInfoDataList.push(...data.info);
+        if (data.line) chartLineDataList.push(...data.line);
         const basename = getUniqueName(data.pathname, charts);
         charts.set(basename, data.data);
         chartsMD5.set(basename, data.md5);
@@ -572,24 +572,24 @@ const judgeManager = {
     list.length = 0;
     if (app.playMode === 1) {
       const dispTime = Math.min(frameTimer.disp, 0.04);
-      for (const i of notes) {
-        if (i.scored) continue;
-        const deltaTime = i.seconds - seconds;
-        if (i.type === 1) {
-          if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
-        } else if (i.type === 2) {
-          if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
-        } else if (i.type === 3) {
-          if (i.holdTapTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
-          else if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
-        } else if (i.type === 4) if (deltaTime < dispTime) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 3);
+      for (const note of notes) {
+        if (note.scored) continue;
+        const deltaTime = note.seconds - seconds;
+        if (note.type === 1) {
+          if (deltaTime < dispTime) list[list.length] = new JudgeEvent(note.offsetX, note.offsetY, 1);
+        } else if (note.type === 2) {
+          if (deltaTime < dispTime) list[list.length] = new JudgeEvent(note.offsetX, note.offsetY, 2);
+        } else if (note.type === 3) {
+          if (note.holdTapTime) list[list.length] = new JudgeEvent(note.offsetX, note.offsetY, 2);
+          else if (deltaTime < dispTime) list[list.length] = new JudgeEvent(note.offsetX, note.offsetY, 1);
+        } else if (note.type === 4) if (deltaTime < dispTime) list[list.length] = new JudgeEvent(note.offsetX, note.offsetY, 3);
       }
     } else if (emitter.eq('play')) {
-      for (const i of hitManager.list) {
-        if (!i.isTapped) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 1);
-        if (i.isActive) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 2);
-        if (i.type === 'keyboard') list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 3); // 以后加上Flick判断
-        if (i.flicking && !i.flicked) list[list.length] = new JudgeEvent(i.offsetX, i.offsetY, 3, i);
+      for (const evt of hitManager.list) {
+        if (!evt.isTapped) list[list.length] = new JudgeEvent(evt.offsetX, evt.offsetY, 1);
+        if (evt.isActive) list[list.length] = new JudgeEvent(evt.offsetX, evt.offsetY, 2);
+        if (evt.type === 'keyboard') list[list.length] = new JudgeEvent(evt.offsetX, evt.offsetY, 3); // 以后加上Flick判断
+        if (evt.flicking && !evt.flicked) list[list.length] = new JudgeEvent(evt.offsetX, evt.offsetY, 3, evt);
       // i.flicked = true; 不能在这里判断，因为可能会判定不到
       }
     }
@@ -836,24 +836,24 @@ self.addEventListener('blur', () => {
 // 兼容移动设备
 interact.setTouchEvent({
   touchstartCallback(evt: TouchEvent) {
-    for (const i of evt.changedTouches) {
-      const { x, y } = getPos(i);
-      hitManager.activate('touch', i.identifier, x, y);
+    for (const touch of evt.changedTouches) {
+      const { x, y } = getPos(touch);
+      hitManager.activate('touch', touch.identifier, x, y);
       specialClick.activate(x, y);
     }
   },
   touchmoveCallback(evt: TouchEvent) {
-    for (const i of evt.changedTouches) {
-      const { x, y } = getPos(i);
-      hitManager.moving('touch', i.identifier, x, y);
+    for (const touch of evt.changedTouches) {
+      const { x, y } = getPos(touch);
+      hitManager.moving('touch', touch.identifier, x, y);
     }
   },
   touchendCallback(evt: TouchEvent) {
-    for (const i of evt.changedTouches) hitManager.deactivate('touch', i.identifier);
+    for (const touch of evt.changedTouches) hitManager.deactivate('touch', touch.identifier);
   },
   touchcancelCallback(evt: TouchEvent) {
     // if (emitter.eq('play')) mainPause(); TODO: 意外暂停提醒
-    for (const i of evt.changedTouches) hitManager.deactivate('touch', i.identifier);
+    for (const touch of evt.changedTouches) hitManager.deactivate('touch', touch.identifier);
   }
 });
 function getPos(obj: MouseEvent | Touch) {
@@ -929,7 +929,7 @@ window.addEventListener('load', (): void => {
     const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL'];
     await fixme(raw, res);
     await Promise.all(entries.map(async i => noteRender.update(i, res[i] as ImageBitmap, 8080 / Number(raw.image[i].split('|')[1]))));
-    // for (const i of entries) await noteRender.update(i, res[i], 8080 / raw.image[i].split('|')[1]);
+    // for (const entry of entries) await noteRender.update(entry, res[entry], 8080 / raw.image[entry].split('|')[1]);
     await noteRender.updateFX(res.HitFXRaw, 8080 / Number(raw.image.HitFXRaw.split('|')[1]));
     res.NoImageBlack = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(0), 1, 1));
     res.NoImageWhite = await createImageBitmap(new ImageData(new Uint8ClampedArray(4).fill(255), 1, 1));
@@ -1055,7 +1055,7 @@ function mainLoop() {
   // 计算时间
   if (timeOut.second < 0.67) {
     loopNoCanvas();
-    for (const i of main.now.values()) i(timeBgm * app.speed);
+    for (const callback of main.now.values()) callback(timeBgm * app.speed);
     loopCanvas();
   } else if (!isOutOver) {
     isOutOver = true;
@@ -1088,7 +1088,7 @@ function mainLoop() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.globalAlpha = 1;
   ctx.drawImage(canvasfg, (canvas.width - canvasfg.width) / 2, 0);
-  for (const i of main.afterAll.values()) i();
+  for (const callback of main.afterAll.values()) callback();
   // Copyright
   ctx.globalCompositeOperation = 'difference';
   ctx.font = `${lineScale * 0.4}px Custom,Noto Sans SC`;
@@ -1119,11 +1119,11 @@ function loopNoCanvas() {
   hitFeedbackList.update();
   hitImageList.update();
   hitWordList.update();
-  for (const i of hitManager.list) {
-    if (i.type === 'keyboard') continue;
-    if (!i.isTapped) hitFeedbackList.add(HitFeedback.tap(i.offsetX, i.offsetY));
-    else if (i.isMoving) hitFeedbackList.add(HitFeedback.move(i.offsetX, i.offsetY));
-    else if (i.isActive) hitFeedbackList.add(HitFeedback.hold(i.offsetX, i.offsetY)); // TODO: 动态特效
+  for (const evt of hitManager.list) {
+    if (evt.type === 'keyboard') continue;
+    if (!evt.isTapped) hitFeedbackList.add(HitFeedback.tap(evt.offsetX, evt.offsetY));
+    else if (evt.isMoving) hitFeedbackList.add(HitFeedback.move(evt.offsetX, evt.offsetY));
+    else if (evt.isActive) hitFeedbackList.add(HitFeedback.hold(evt.offsetX, evt.offsetY)); // TODO: 动态特效
   }
   // 触发判定和播放打击音效
   if (isInEnd) {
@@ -1189,24 +1189,24 @@ function loopCanvas() {
       // 绘制定位点
       ctxfg.font = `${lineScale}px Custom,Noto Sans SC`;
       ctxfg.textAlign = 'center';
-      for (const i of app.linesReversed) {
-        ctxfg.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+      for (const line of app.linesReversed) {
+        ctxfg.setTransform(line.cosr, line.sinr, -line.sinr, line.cosr, line.offsetX, line.offsetY);
         ctxfg.globalAlpha = 1;
         ctxfg.fillStyle = 'violet';
         ctxfg.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
         ctxfg.fillStyle = 'yellow';
-        ctxfg.globalAlpha = (i.alpha + 0.5) / 1.5;
-        ctxfg.fillText(i.lineId.toString(), 0, -lineScale * 0.3);
+        ctxfg.globalAlpha = (line.alpha + 0.5) / 1.5;
+        ctxfg.fillText(line.lineId.toString(), 0, -lineScale * 0.3);
       }
-      for (const i of app.notesReversed) {
-        if (!i.visible) continue;
-        ctxfg.setTransform(i.cosr, i.sinr, -i.sinr, i.cosr, i.offsetX, i.offsetY);
+      for (const note of app.notesReversed) {
+        if (!note.visible) continue;
+        ctxfg.setTransform(note.cosr, note.sinr, -note.sinr, note.cosr, note.offsetX, note.offsetY);
         ctxfg.globalAlpha = 1;
         ctxfg.fillStyle = 'lime';
         ctxfg.fillRect(-lineScale * 0.2, -lineScale * 0.2, lineScale * 0.4, lineScale * 0.4);
         ctxfg.fillStyle = 'cyan';
-        ctxfg.globalAlpha = i.seconds > timeChart ? 1 : 0.5;
-        ctxfg.fillText(i.name, 0, -lineScale * 0.3);
+        ctxfg.globalAlpha = note.seconds > timeChart ? 1 : 0.5;
+        ctxfg.fillText(note.name, 0, -lineScale * 0.3);
       }
     }
   }
@@ -1220,7 +1220,7 @@ function loopCanvas() {
   ctxfg.drawImage(res.ProgressBar, tmps.progress * 1920 - 1920, 0);
   // 绘制文字
   ctxfg.resetTransform();
-  for (const i of main.after.values()) i();
+  for (const callback of main.after.values()) callback();
   ctxfg.fillStyle = '#fff';
   // 开头过渡动画
   if (timeIn.second < 3) {
@@ -1304,14 +1304,14 @@ function loopCanvas() {
 // 判定线函数，undefined/0:默认,1:非,2:恒成立
 function drawLine(bool: number, lineScale: number) {
   const tw = 1 - tween.easeOutSine(timeOut.second * 1.5);
-  for (const i of app.linesReversed) {
-    if (bool ^ Number(i.imageD) && timeOut.second < 0.67) {
-      ctxfg.globalAlpha = i.alpha;
-      ctxfg.setTransform(i.cosr * tw, i.sinr, -i.sinr * tw, i.cosr, app.wlen + (i.offsetX - app.wlen) * tw, i.offsetY); // Hiahiah
-      const imgS = (i.imageU ? lineScale * 18.75 : canvasfg.height) * i.imageS / 1080;
-      const imgW = imgS * i.imageW * i.imageA;
-      const imgH = imgS * i.imageH;
-      ctxfg.drawImage(i.imageL[i.imageC && lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
+  for (const line of app.linesReversed) {
+    if (bool ^ Number(line.imageD) && timeOut.second < 0.67) {
+      ctxfg.globalAlpha = line.alpha;
+      ctxfg.setTransform(line.cosr * tw, line.sinr, -line.sinr * tw, line.cosr, app.wlen + (line.offsetX - app.wlen) * tw, line.offsetY); // Hiahiah
+      const imgS = (line.imageU ? lineScale * 18.75 : canvasfg.height) * line.imageS / 1080;
+      const imgW = imgS * line.imageW * line.imageA;
+      const imgH = imgS * line.imageH;
+      ctxfg.drawImage(line.imageL[line.imageC && lineColor.checked ? stat.lineStatus : 0], -imgW / 2, -imgH / 2, imgW, imgH);
     }
   }
   ctxfg.globalAlpha = 1;
@@ -1427,10 +1427,10 @@ interface ScaledHitFX {
 }
 // 绘制Note
 function drawNotes() {
-  for (const i of app.holds) drawHold(i, timeChart);
-  for (const i of app.dragsReversed) drawDrag(i);
-  for (const i of app.tapsReversed) drawTap(i);
-  for (const i of app.flicksReversed) drawFlick(i);
+  for (const note of app.holds) drawHold(note, timeChart);
+  for (const note of app.dragsReversed) drawDrag(note);
+  for (const note of app.tapsReversed) drawTap(note);
+  for (const note of app.flicksReversed) drawFlick(note);
 }
 function drawTap(note: Renderer.Note) {
   const HL = note.isMulti && app.multiHint;
@@ -1610,7 +1610,7 @@ emitter.addEventListener('change', function(this: Emitter) {
   btnPlay.value = this.eq('stop') ? '播放' : '停止';
   btnPause.value = this.eq('pause') ? '继续' : '暂停';
   btnPause.classList.toggle('disabled', this.eq('stop'));
-  for (const i of $$('.disabled-when-playing')) i.classList.toggle('disabled', this.ne('stop'));
+  for (const elem of $$('.disabled-when-playing')) elem.classList.toggle('disabled', this.ne('stop'));
   // console.log(this);
 });
 btnPlay.addEventListener('click', function(this: HTMLInputElement) {
@@ -1646,7 +1646,7 @@ async function mainPlay(): Promise<void> {
       main.error('未选择任何谱面');
       return;
     }
-    for (const i of main.before.values()) await i();
+    for (const callback of main.before.values()) await callback();
     const bgm: MediaData = bgms.get(selectbgm.value) || { audio: null, video: null };
     app.bgMusic = bgm.audio;
     app.bgVideo = bgm.video;
@@ -1684,51 +1684,51 @@ async function mainPlay(): Promise<void> {
     curTime = 0;
     curTimeMS = 0;
     duration0 = 0;
-    for (const i of main.end.values()) await i();
+    for (const callback of main.end.values()) await callback();
   }
 }
 async function loadLineData({
   onwarn = (_: string) => {}
 } = {}) {
-  for (const i of app.lines) {
-    i.imageW = 6220.8; // 1920
-    i.imageH = 7.68; // 3
-    i.imageL = [res.JudgeLine, res.JudgeLineMP, null, res.JudgeLineFC];
-    i.imageS = 1; // 2.56
-    i.imageA = 1; // 1.5625
-    i.imageD = false;
-    i.imageC = true;
-    i.imageU = true;
+  for (const line of app.lines) {
+    line.imageW = 6220.8; // 1920
+    line.imageH = 7.68; // 3
+    line.imageL = [res.JudgeLine, res.JudgeLineMP, null, res.JudgeLineFC];
+    line.imageS = 1; // 2.56
+    line.imageA = 1; // 1.5625
+    line.imageD = false;
+    line.imageC = true;
+    line.imageU = true;
   }
-  for (const i of chartLineData) {
-    if (selectchart.value === i.chart) {
-      if (i.lineId == null) {
+  for (const data of chartLineDataList) {
+    if (selectchart.value === data.chart) {
+      if (data.lineId == null) {
         onwarn('未指定判定线id');
         continue;
       }
-      const line = app.lines[Number(i.lineId)] as Renderer.JudgeLine | null;
+      const line = app.lines[Number(data.lineId)] as Renderer.JudgeLine | null;
       if (line == null) {
-        onwarn(`指定id的判定线不存在：${i.lineId}`);
+        onwarn(`指定id的判定线不存在：${data.lineId}`);
         continue;
       }
-      let image = i.image == null ? null : bgs.get(i.image)?.base;
+      let image = data.image == null ? null : bgs.get(data.image)?.base;
       if (!image) {
-        if (i.image != null) onwarn(`图片不存在：${i.image}`);
+        if (data.image != null) onwarn(`图片不存在：${data.image}`);
         image = res.NoImageBlack;
       }
       line.imageW = image.width;
       line.imageH = image.height;
       const lineImage = updateLineImage(image);
       line.imageL = await Promise.all([image, lineImage.getMP(), lineImage.getAP(), lineImage.getFC()]);
-      if (i.scaleOld != null) { // Legacy
-        line.imageS = Math.abs(i.scaleOld) * 1080 / image.height;
-        line.imageU = i.scaleOld > 0;
+      if (data.scaleOld != null) { // Legacy
+        line.imageS = Math.abs(data.scaleOld) * 1080 / image.height;
+        line.imageU = data.scaleOld > 0;
       }
-      if (i.scale != null) line.imageS = i.scale;
-      if (i.aspect != null) line.imageA = i.aspect;
-      if (i.useBackgroundDim != null) line.imageD = i.useBackgroundDim;
-      if (i.useLineColor != null) line.imageC = i.useLineColor;
-      if (i.useLineScale != null) line.imageU = i.useLineScale;
+      if (data.scale != null) line.imageS = data.scale;
+      if (data.aspect != null) line.imageA = data.aspect;
+      if (data.useBackgroundDim != null) line.imageD = data.useBackgroundDim;
+      if (data.useLineColor != null) line.imageC = data.useLineColor;
+      if (data.useLineScale != null) line.imageU = data.useLineScale;
     }
   }
 }
@@ -1808,11 +1808,11 @@ main.error = (msg = '') => main.fireModal('<p>错误</p>', `<p style="white-spac
 main.define = a => a;
 main.use = async m => {
   const module = await m.then(n => n.default);
-  for (const i of module.contents) {
-    if (i.type === 'command') loadPlugin(i.meta[0], i.meta[1]);
-    else if (i.type === 'script') i.meta[0]($);
-    else if (i.type === 'config') appendCfg(i.meta[0], i.meta[1]);
-    else throw new TypeError(`Unknown Plugin Type: ${i.type}`);
+  for (const data of module.contents) {
+    if (data.type === 'command') loadPlugin(data.meta[0], data.meta[1]);
+    else if (data.type === 'script') data.meta[0]($);
+    else if (data.type === 'config') appendCfg(data.meta[0], data.meta[1]);
+    else throw new TypeError(`Unknown Plugin Type: ${data.type}`);
   }
   console.log(module);
   return module;

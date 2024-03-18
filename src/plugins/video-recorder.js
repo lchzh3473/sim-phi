@@ -211,7 +211,7 @@ function getMoveFn(div, evt, onmove) {
   return function(evt2) {
     /** @type {MouseEvent|Touch} */
     const evt3 = evt2.changedTouches ? evt2.changedTouches[0] : evt2;
-    if (!evt3.movementX && !evt3.movementY) return; // 踩坑：新版浏览器按下鼠标即使不移动也会定期触发mousemove事件
+    if (evt3.movementX === 0 && evt3.movementY === 0) return; // 踩坑：新版浏览器按下鼠标即使不移动也会定期触发mousemove事件
     const dx = sx + evt3.pageX - cx + dw;
     const dy = sy + evt3.pageY - cy + dh;
     const pw = dw / parent.offsetWidth * 100;

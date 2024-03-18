@@ -15,12 +15,12 @@ export class FileEmitter extends EventTarget {
       multiple: true,
       onchange: () => {
         this.fireChange(this.input.files);
-        for (const i of this.input.files || []) {
+        for (const file of this.input.files || []) {
           // 加载文件
           const reader = new FileReader();
-          reader.readAsArrayBuffer(i);
+          reader.readAsArrayBuffer(file);
           reader.onprogress = evt => this.fireProgress(evt.loaded, evt.total);
-          reader.onload = evt => evt.target && evt.target.result instanceof ArrayBuffer && this.fireLoad(i, evt.target.result);
+          reader.onload = evt => evt.target && evt.target.result instanceof ArrayBuffer && this.fireLoad(file, evt.target.result);
         }
         this.input.value = ''; // allow same file
       }
@@ -126,7 +126,7 @@ function defineReader(readerInit: ReaderInit): ByteReader {
   }
   return reader;
 }
-const readerInit: ReaderInit[] = [
+const readerInits: ReaderInit[] = [
   {
     pattern: /\.(mp3|ogg|wav|mp4|webm|ogv|mpg|mpeg|avi|mov|flv|wmv|mkv)$/i,
     async read(i: ByteData, { createAudioBuffer }: Record<string, unknown> = {}): Promise<MediaReaderData> {
@@ -187,7 +187,7 @@ async function defaultDecode(arraybuffer: ArrayBuffer) {
   });
 }
 function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {
-  const readers = readerInit.map(define);
+  const readers = readerInits.map(define);
   return {
     async read(i: ByteData, options = {}): Promise<ReaderData> {
       const { name } = splitPath(i.pathname);
@@ -213,11 +213,11 @@ function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {
       }
       return { pathname: i.pathname, type: 'unknown', data: errors.join('\n') }; // TODO: 完善错误信息
     },
-    use(reader: ReaderInit | ReaderInit[]) {
-      if (Array.isArray(reader)) {
-        for (const i of reader) this.use(i);
+    use(readerInit: ReaderInit | ReaderInit[]) {
+      if (Array.isArray(readerInit)) {
+        for (const reader of readerInit) this.use(reader);
       } else {
-        readers.push(define(reader));
+        readers.push(define(readerInit));
       }
     }
   } as const;

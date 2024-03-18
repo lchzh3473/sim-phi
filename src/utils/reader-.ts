@@ -7,8 +7,8 @@ reader.use({
   pattern: /\.(json|pec)$/i,
   type: 'json',
   read(i: ByteData): ChartReaderData {
-    const { path } = splitPath(i.pathname);
-    const rpeData = PEC.parseRPE(i.text!, i.pathname);
+    const { name, path } = splitPath(i.pathname);
+    const rpeData = PEC.parseRPE(i.text!, i.pathname, name);
     const { data, messages } = structChart(rpeData.data, i.pathname);
     const info = structInfoData([rpeData.info], path);
     const line = structLineData(rpeData.line, path);

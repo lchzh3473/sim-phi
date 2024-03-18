@@ -30,13 +30,13 @@ function chartify(json) {
     numOfNotes: json.numOfNotes,
     judgeLineList: []
   };
-  for (const i of json.judgeLineList) {
+  for (const line of json.judgeLineList) {
     /** @type {JudgeLinePGS} */
     const newLine = {
-      numOfNotes: i.numOfNotes,
-      numOfNotesAbove: i.numOfNotesAbove,
-      numOfNotesBelow: i.numOfNotesBelow,
-      bpm: i.bpm,
+      numOfNotes: line.numOfNotes,
+      numOfNotesAbove: line.numOfNotesAbove,
+      numOfNotesBelow: line.numOfNotesBelow,
+      bpm: line.bpm,
       speedEvents: [],
       notesAbove: [],
       notesBelow: [],
@@ -44,62 +44,62 @@ function chartify(json) {
       judgeLineMoveEvents: [],
       judgeLineRotateEvents: []
     };
-    for (const j of i.speedEvents) {
-      if (j.startTime === j.endTime) continue;
+    for (const evt of line.speedEvents) {
+      if (evt.startTime === evt.endTime) continue;
       const newEvent = {};
-      newEvent.startTime = j.startTime;
-      newEvent.endTime = j.endTime;
-      newEvent.value = frix(j.value);
-      newEvent.floorPosition = frix(j.floorPosition);
+      newEvent.startTime = evt.startTime;
+      newEvent.endTime = evt.endTime;
+      newEvent.value = frix(evt.value);
+      newEvent.floorPosition = frix(evt.floorPosition);
       newLine.speedEvents.push(newEvent);
     }
-    for (const j of i.notesAbove) {
+    for (const note of line.notesAbove) {
       const newNote = {};
-      newNote.type = j.type;
-      newNote.time = j.time;
-      newNote.positionX = frix(j.positionX);
-      newNote.holdTime = j.holdTime;
-      newNote.speed = frix(j.speed);
-      newNote.floorPosition = frix(j.floorPosition);
+      newNote.type = note.type;
+      newNote.time = note.time;
+      newNote.positionX = frix(note.positionX);
+      newNote.holdTime = note.holdTime;
+      newNote.speed = frix(note.speed);
+      newNote.floorPosition = frix(note.floorPosition);
       newLine.notesAbove.push(newNote);
     }
-    for (const j of i.notesBelow) {
+    for (const note of line.notesBelow) {
       const newNote = {};
-      newNote.type = j.type;
-      newNote.time = j.time;
-      newNote.positionX = frix(j.positionX);
-      newNote.holdTime = j.holdTime;
-      newNote.speed = frix(j.speed);
-      newNote.floorPosition = frix(j.floorPosition);
+      newNote.type = note.type;
+      newNote.time = note.time;
+      newNote.positionX = frix(note.positionX);
+      newNote.holdTime = note.holdTime;
+      newNote.speed = frix(note.speed);
+      newNote.floorPosition = frix(note.floorPosition);
       newLine.notesBelow.push(newNote);
     }
-    for (const j of i.judgeLineDisappearEvents) {
-      if (j.startTime === j.endTime) continue;
+    for (const evt of line.judgeLineDisappearEvents) {
+      if (evt.startTime === evt.endTime) continue;
       const newEvent = {};
-      newEvent.startTime = j.startTime;
-      newEvent.endTime = j.endTime;
-      newEvent.start = frix(j.start);
-      newEvent.end = frix(j.end);
+      newEvent.startTime = evt.startTime;
+      newEvent.endTime = evt.endTime;
+      newEvent.start = frix(evt.start);
+      newEvent.end = frix(evt.end);
       newLine.judgeLineDisappearEvents.push(newEvent);
     }
-    for (const j of i.judgeLineMoveEvents) {
-      if (j.startTime === j.endTime) continue;
+    for (const evt of line.judgeLineMoveEvents) {
+      if (evt.startTime === evt.endTime) continue;
       const newEvent = {};
-      newEvent.startTime = j.startTime;
-      newEvent.endTime = j.endTime;
-      newEvent.start = frix(j.start);
-      newEvent.end = frix(j.end);
-      newEvent.start2 = frix(j.start2);
-      newEvent.end2 = frix(j.end2);
+      newEvent.startTime = evt.startTime;
+      newEvent.endTime = evt.endTime;
+      newEvent.start = frix(evt.start);
+      newEvent.end = frix(evt.end);
+      newEvent.start2 = frix(evt.start2);
+      newEvent.end2 = frix(evt.end2);
       newLine.judgeLineMoveEvents.push(newEvent);
     }
-    for (const j of i.judgeLineRotateEvents) {
-      if (j.startTime === j.endTime) continue;
+    for (const evt of line.judgeLineRotateEvents) {
+      if (evt.startTime === evt.endTime) continue;
       const newEvent = {};
-      newEvent.startTime = j.startTime;
-      newEvent.endTime = j.endTime;
-      newEvent.start = frix(j.start);
-      newEvent.end = frix(j.end);
+      newEvent.startTime = evt.startTime;
+      newEvent.endTime = evt.endTime;
+      newEvent.start = frix(evt.start);
+      newEvent.end = frix(evt.end);
       newLine.judgeLineRotateEvents.push(newEvent);
     }
     newChart.judgeLineList.push(newLine);

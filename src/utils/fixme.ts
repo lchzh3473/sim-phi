@@ -1,6 +1,7 @@
 import createCtx from './createCtx';
 import { audio } from '@/external';
 export async function fixme(raw: Record<string, unknown>, res: Record<string, unknown>): Promise<void> {
+  throw new Error('Website is under maintenance');
   const entries = ['Tap', 'TapHL', 'Drag', 'DragHL', 'HoldHead', 'HoldHeadHL', 'Hold', 'HoldHL', 'HoldEnd', 'Flick', 'FlickHL', 'HitFXRaw'];
   if (raw.image == null) raw.image = {};
   const { image } = raw as { image: Record<string, string | null> };

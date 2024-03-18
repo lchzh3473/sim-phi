@@ -12,9 +12,9 @@ import { loadAsync } from 'jszip'; // 踩坑：linux文件名区分大小写，J
 function readZip(data: ByteData) { // JSZip
   loadAsync(data.buffer, { checkCRC32: true, decodeFileName: stringify as (bytes: Buffer | string[] | Uint8Array) => string }).then(zip => {
     console.debug(zip);
-    const arr = Object.values(zip.files).filter(i => !i.dir);
-    total += arr.length - 1;
-    for (const i of arr) i.async('arraybuffer').then(buffer => readZip({ pathname: `${data.pathname}/${i.name}`, buffer }));
+    const files = Object.values(zip.files).filter(i => !i.dir);
+    total += files.length - 1;
+    for (const file of files) file.async('arraybuffer').then(buffer => readZip({ pathname: `${data.pathname}/${file.name}`, buffer }));
   }, () => self.postMessage({ data, total }, [data.buffer]));
 }
 function stringify(bfs: BufferSource) {

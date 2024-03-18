@@ -255,15 +255,15 @@ export class Renderer {
     this.holds.length = 0;
     this.tapholds.length = 0;
     const chartNew = chart.duplicate() as ChartExtends;
-    for (const i of chartNew.judgeLineList) {
-      let y = Math.fround(i.speedEvents[0].startTime / i.bpm * 1.875);
+    for (const line of chartNew.judgeLineList) {
+      let y = Math.fround(line.speedEvents[0].startTime / line.bpm * 1.875);
       let y2 = y; // float32
-      for (const j of i.speedEvents) {
-        j.floorPosition = y;
-        j.floorPosition2 = y2;
-        const dy = (j.endTime - j.startTime) / i.bpm * 1.875;
-        y += dy * j.value;
-        y2 += Math.fround(Math.fround(dy) * j.value);
+      for (const evt of line.speedEvents) {
+        evt.floorPosition = y;
+        evt.floorPosition2 = y2;
+        const dy = (evt.endTime - evt.startTime) / line.bpm * 1.875;
+        y += dy * evt.value;
+        y2 += Math.fround(Math.fround(dy) * evt.value);
         y = Math.fround(y);
         y2 = Math.fround(y2);
       }
@@ -285,11 +285,11 @@ export class Renderer {
     };
     // 添加seconds
     const addSeconds = (events: EventSeconds[], bpm: number) => {
-      for (const i of events) {
-        i.startSeconds = i.startTime / bpm * 1.875;
-        i.endSeconds = i.endTime / bpm * 1.875;
-        if (i.startTime > 1 - 1e6) aniUpdate(i.startSeconds);
-        if (i.endTime < 1e9 && i.endTime !== events[events.length - 1].endTime) aniUpdate(i.endSeconds);
+      for (const evt of events) {
+        evt.startSeconds = evt.startTime / bpm * 1.875;
+        evt.endSeconds = evt.endTime / bpm * 1.875;
+        if (evt.startTime > 1 - 1e6) aniUpdate(evt.startSeconds);
+        if (evt.endTime < 1e9 && evt.endTime !== events[events.length - 1].endTime) aniUpdate(evt.endSeconds);
       }
     };
     // 获取note最大可见位置
@@ -332,29 +332,29 @@ export class Renderer {
     const sortNote = (a: NoteExtends, b: NoteExtends) => a.seconds - b.seconds || a.lineId - b.lineId || a.noteId - b.noteId;
     // 优化events
     chartNew.judgeLineList.forEach((i, lineId) => i.lineId = lineId);
-    for (const i of chartNew.judgeLineList) {
-      i.bpm *= this.speed;
-      i.offsetX = 0;
-      i.offsetY = 0;
-      i.alpha = 0;
-      i.rotation = 0;
-      i.positionY = 0; // 临时过渡用
-      i.positionY2 = 0;
-      // i.speedEvents = normalizeSpeedEvent(i.speedEvents) as SpeedEventExtends[];
-      // i.judgeLineDisappearEvents = normalizeLineEvent(i.judgeLineDisappearEvents) as LineEventExtends[];
-      // i.judgeLineMoveEvents = normalizeLineEvent(i.judgeLineMoveEvents) as LineEventExtends[];
-      // i.judgeLineRotateEvents = normalizeLineEvent(i.judgeLineRotateEvents) as LineEventExtends[];
-      i.disappearEventsIndex = 0;
-      i.moveEventsIndex = 0;
-      i.rotateEventsIndex = 0;
-      i.speedEventsIndex = 0;
-      addSeconds(i.speedEvents, i.bpm);
-      addSeconds(i.judgeLineDisappearEvents, i.bpm);
-      addSeconds(i.judgeLineMoveEvents, i.bpm);
-      addSeconds(i.judgeLineRotateEvents, i.bpm);
-      this.lines.push(i); // TODO: 可以定义新类避免函数在循环里定义
-      i.notesAbove.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i, noteId, true));
-      i.notesBelow.forEach((j, noteId) => addNote(j, 1.875 / i.bpm, i, noteId, false));
+    for (const line of chartNew.judgeLineList) {
+      line.bpm *= this.speed;
+      line.offsetX = 0;
+      line.offsetY = 0;
+      line.alpha = 0;
+      line.rotation = 0;
+      line.positionY = 0; // 临时过渡用
+      line.positionY2 = 0;
+      // line.speedEvents = normalizeSpeedEvent(line.speedEvents) as SpeedEventExtends[];
+      // line.judgeLineDisappearEvents = normalizeLineEvent(line.judgeLineDisappearEvents) as LineEventExtends[];
+      // line.judgeLineMoveEvents = normalizeLineEvent(line.judgeLineMoveEvents) as LineEventExtends[];
+      // line.judgeLineRotateEvents = normalizeLineEvent(line.judgeLineRotateEvents) as LineEventExtends[];
+      line.disappearEventsIndex = 0;
+      line.moveEventsIndex = 0;
+      line.rotateEventsIndex = 0;
+      line.speedEventsIndex = 0;
+      addSeconds(line.speedEvents, line.bpm);
+      addSeconds(line.judgeLineDisappearEvents, line.bpm);
+      addSeconds(line.judgeLineMoveEvents, line.bpm);
+      addSeconds(line.judgeLineRotateEvents, line.bpm);
+      this.lines.push(line); // TODO: 可以定义新类避免函数在循环里定义
+      line.notesAbove.forEach((j, noteId) => addNote(j, 1.875 / line.bpm, line, noteId, true));
+      line.notesBelow.forEach((j, noteId) => addNote(j, 1.875 / line.bpm, line, noteId, false));
     }
     this.notes.sort(sortNote);
     this.taps.sort(sortNote);
@@ -370,8 +370,8 @@ export class Renderer {
     this.tapholds.sort(sortNote);
     // 多押标记
     const timeOfMulti: Record<string, number> = {};
-    for (const i of this.notes) timeOfMulti[i.seconds.toFixed(6)] = timeOfMulti[i.seconds.toFixed(6)] ? 2 : 1;
-    for (const i of this.notes) i.isMulti = timeOfMulti[i.seconds.toFixed(6)] === 2;
+    for (const note of this.notes) timeOfMulti[note.seconds.toFixed(6)] = timeOfMulti[note.seconds.toFixed(6)] ? 2 : 1;
+    for (const note of this.notes) note.isMulti = timeOfMulti[note.seconds.toFixed(6)] === 2;
     // 分析邻近Note(0.01s内标记，用于预处理Flick,TapHold重叠判定)
     for (let i = 0; i < this.flicks.length; i++) {
       const note = this.flicks[i];
@@ -482,15 +482,15 @@ export class Renderer {
           } else i.alpha = Math.max(1 - (time - i.seconds) / 0.16, 0); // 过线后0.16s消失
         }
       };
-      for (const i of line.notesAbove) {
-        i.cosr = line.cosr;
-        i.sinr = line.sinr;
-        setAlpha(i, this.scaleX * i.positionX, this.scaleY * getBadY(i));
+      for (const note of line.notesAbove) {
+        note.cosr = line.cosr;
+        note.sinr = line.sinr;
+        setAlpha(note, this.scaleX * note.positionX, this.scaleY * getBadY(note));
       }
-      for (const i of line.notesBelow) {
-        i.cosr = -line.cosr;
-        i.sinr = -line.sinr;
-        setAlpha(i, -this.scaleX * i.positionX, this.scaleY * getBadY(i));
+      for (const note of line.notesBelow) {
+        note.cosr = -line.cosr;
+        note.sinr = -line.sinr;
+        setAlpha(note, -this.scaleX * note.positionX, this.scaleY * getBadY(note));
       }
     }
   }

@@ -111,14 +111,14 @@ export abstract class MessageHandler {
         text.textContent = `${msgbox.code ? `${msgbox.host}: 检测到 ${msgbox.list.length} 个 ${msgbox.name}\n` : ''}来自 ${msgbox.target}`;
         nodePageNum.textContent = String(page.page);
         nodePages.textContent = String(pages);
-        for (const i of nodeBMsg.querySelectorAll('[bm-ctrl]')) (i as HTMLElement).classList.toggle('hide', pages <= 1);
-        for (const i of nodeBMsg.querySelectorAll('[bm-cell]')) i.remove();
-        for (const i of msgbox.list.slice(start, start + page.size)) {
+        for (const elem of nodeBMsg.querySelectorAll('[bm-ctrl]')) elem.classList.toggle('hide', pages <= 1);
+        for (const elem of nodeBMsg.querySelectorAll('[bm-cell]')) elem.remove();
+        for (const bmsg of msgbox.list.slice(start, start + page.size)) {
           const btnIgnore = document.createElement('a');
           btnIgnore.innerText = '忽略';
           btnIgnore.classList.add('bm-rbtn');
           btnIgnore.onclick = () => {
-            msgbox.list.splice(msgbox.list.indexOf(i), 1);
+            msgbox.list.splice(msgbox.list.indexOf(bmsg), 1);
             msgbox.updateHTML();
             if (msgbox.list.length === 0) {
               this.removeBetterMessageBox(msgbox);
@@ -128,7 +128,7 @@ export abstract class MessageHandler {
           const div = document.createElement('div');
           div.setAttribute('bm-cell', '');
           div.classList.add('bm-item');
-          div.append(`${i.name}: ${i.message}`, btnIgnore);
+          div.append(`${bmsg.name}: ${bmsg.message}`, btnIgnore);
           nodeBMsg.appendChild(div);
         }
       });

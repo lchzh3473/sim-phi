@@ -37,6 +37,6 @@ $\text{Phi\color{red}x\color{green}os}=\color{red}\xcancel{\text{\color{black}Ph
 
 您因使用或修改代码所造成的一切后果由您自己承担；
 
-如有任何疑问请 [联系 lchz&#104;](mailto:lchz%683473@163.com?subject=[GitHub]lchz%683473/sim-phi) 。
+如有任何疑问请 [联系 lchz&#104;](mailto:lchz%683%3473@163.com?subject=[GitHub]lchz%683%3473/sim-phi) 。
 
 Copyright &copy; 2020-present, lchz&#104;3473

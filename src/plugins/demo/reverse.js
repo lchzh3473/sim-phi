@@ -114,38 +114,38 @@ class JudgeLine {
   updateSefp() {
     let y = 0;
     this.speedEvents.sort((a, b) => a.startTime - b.startTime);
-    for (const i of this.speedEvents) {
-      if (i.startTime < 0) i.startTime = 0;
-      i.floorPosition = y;
-      y += (i.endTime - i.startTime) * i.value / this.bpm * 1.875;
+    for (const evt of this.speedEvents) {
+      if (evt.startTime < 0) evt.startTime = 0;
+      evt.floorPosition = y;
+      y += (evt.endTime - evt.startTime) * evt.value / this.bpm * 1.875;
     }
     this.speedEvents[this.speedEvents.length - 1].endTime = 1e9;
-    for (const j of this.notesAbove) {
+    for (const note of this.notesAbove) {
       let owo = 0;
       let owo2 = 0;
       let owo3 = 0;
-      for (const k of this.speedEvents) {
-        if (j.time % 1e9 > k.endTime) continue;
-        if (j.time % 1e9 < k.startTime) break;
-        owo = k.floorPosition;
-        owo2 = k.value;
-        owo3 = j.time % 1e9 - k.startTime;
+      for (const evt of this.speedEvents) {
+        if (note.time % 1e9 > evt.endTime) continue;
+        if (note.time % 1e9 < evt.startTime) break;
+        owo = evt.floorPosition;
+        owo2 = evt.value;
+        owo3 = note.time % 1e9 - evt.startTime;
       }
-      j.floorPosition = owo + owo2 * owo3 / this.bpm * 1.875;
+      note.floorPosition = owo + owo2 * owo3 / this.bpm * 1.875;
       // if (j.type === 3) j.speed *= owo2;
     }
-    for (const j of this.notesBelow) {
+    for (const note of this.notesBelow) {
       let owo = 0;
       let owo2 = 0;
       let owo3 = 0;
-      for (const k of this.speedEvents) {
-        if (j.time % 1e9 > k.endTime) continue;
-        if (j.time % 1e9 < k.startTime) break;
-        owo = k.floorPosition;
-        owo2 = k.value;
-        owo3 = j.time % 1e9 - k.startTime;
+      for (const evt of this.speedEvents) {
+        if (note.time % 1e9 > evt.endTime) continue;
+        if (note.time % 1e9 < evt.startTime) break;
+        owo = evt.floorPosition;
+        owo2 = evt.value;
+        owo3 = note.time % 1e9 - evt.startTime;
       }
-      j.floorPosition = owo + owo2 * owo3 / this.bpm * 1.875;
+      note.floorPosition = owo + owo2 * owo3 / this.bpm * 1.875;
       // if (j.type === 3) j.speed *= owo2;
     }
   }
@@ -184,31 +184,31 @@ hook.before.set('kfcFkXqsVw50', () => {
 export function reverse(chart, duration) {
   const chartNew = new Chart();
   chartNew.offset = -chart.offset;
-  for (const i of chart.judgeLineList) {
+  for (const line of chart.judgeLineList) {
     const judgeLine = new JudgeLine();
-    const tb = duration * i.bpm / 1.875;
-    judgeLine.bpm = i.bpm;
-    for (const j of i.speedEvents) judgeLine.speedEvents.push(new SpeedEvent(j.value, tb - j.endTime, tb - j.startTime));
-    for (const j of i.notesAbove) {
-      if (j.type === 3) judgeLine.notesAbove.push(new Note(j.type, tb - j.time, j.positionX, 1, j.speed * j.holdTime));
-      else judgeLine.notesAbove.push(new Note(j.type, tb - j.time, j.positionX, j.holdTime, j.speed));
+    const tb = duration * line.bpm / 1.875;
+    judgeLine.bpm = line.bpm;
+    for (const evt of line.speedEvents) judgeLine.speedEvents.push(new SpeedEvent(evt.value, tb - evt.endTime, tb - evt.startTime));
+    for (const note of line.notesAbove) {
+      if (note.type === 3) judgeLine.notesAbove.push(new Note(note.type, tb - note.time, note.positionX, 1, note.speed * note.holdTime));
+      else judgeLine.notesAbove.push(new Note(note.type, tb - note.time, note.positionX, note.holdTime, note.speed));
       judgeLine.numOfNotesAbove++;
     }
-    for (const j of i.notesBelow) {
-      if (j.type === 3) judgeLine.notesBelow.push(new Note(j.type, tb - j.time, j.positionX, 1, j.speed * j.holdTime));
-      else judgeLine.notesBelow.push(new Note(j.type, tb - j.time, j.positionX, j.holdTime, j.speed));
+    for (const note of line.notesBelow) {
+      if (note.type === 3) judgeLine.notesBelow.push(new Note(note.type, tb - note.time, note.positionX, 1, note.speed * note.holdTime));
+      else judgeLine.notesBelow.push(new Note(note.type, tb - note.time, note.positionX, note.holdTime, note.speed));
       judgeLine.numOfNotesBelow++;
     }
     judgeLine.numOfNotes += judgeLine.numOfNotesAbove + judgeLine.numOfNotesBelow;
     chartNew.numOfNotes += judgeLine.numOfNotes;
     //
     judgeLine.updateSefp();
-    i.judgeLineDisappearEvents = arrangeLineEvent(i.judgeLineDisappearEvents);
-    i.judgeLineMoveEvents = arrangeLineEvent(i.judgeLineMoveEvents);
-    i.judgeLineRotateEvents = arrangeLineEvent(i.judgeLineRotateEvents);
-    for (const j of i.judgeLineDisappearEvents) judgeLine.judgeLineDisappearEvents.push(new JudgeLineEvent(j.end, j.start, j.end2, j.start2, tb - j.endTime, tb - j.startTime));
-    for (const j of i.judgeLineMoveEvents) judgeLine.judgeLineMoveEvents.push(new JudgeLineEvent(j.end, j.start, j.end2, j.start2, tb - j.endTime, tb - j.startTime));
-    for (const j of i.judgeLineRotateEvents) judgeLine.judgeLineRotateEvents.push(new JudgeLineEvent(j.end, j.start, j.end2, j.start2, tb - j.endTime, tb - j.startTime));
+    line.judgeLineDisappearEvents = arrangeLineEvent(line.judgeLineDisappearEvents);
+    line.judgeLineMoveEvents = arrangeLineEvent(line.judgeLineMoveEvents);
+    line.judgeLineRotateEvents = arrangeLineEvent(line.judgeLineRotateEvents);
+    for (const evt of line.judgeLineDisappearEvents) judgeLine.judgeLineDisappearEvents.push(new JudgeLineEvent(evt.end, evt.start, evt.end2, evt.start2, tb - evt.endTime, tb - evt.startTime));
+    for (const evt of line.judgeLineMoveEvents) judgeLine.judgeLineMoveEvents.push(new JudgeLineEvent(evt.end, evt.start, evt.end2, evt.start2, tb - evt.endTime, tb - evt.startTime));
+    for (const evt of line.judgeLineRotateEvents) judgeLine.judgeLineRotateEvents.push(new JudgeLineEvent(evt.end, evt.start, evt.end2, evt.start2, tb - evt.endTime, tb - evt.startTime));
     judgeLine.updateDe();
     chartNew.judgeLineList.push(judgeLine);
   }
