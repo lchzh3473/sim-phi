@@ -36,6 +36,7 @@ module.exports = {
     '@typescript-eslint/prefer-destructuring': 'off',
     '@typescript-eslint/prefer-nullish-coalescing': 'off',
     '@typescript-eslint/prefer-readonly-parameter-types': 'off',
+    '@typescript-eslint/prefer-optional-chain': ['error', { requireNullish: true }],
     'default-param-last': 'off', // qwq
     'no-invalid-this': 'off', // qwq
     'no-redeclare': 'off', // qwq

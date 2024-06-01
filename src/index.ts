@@ -18,6 +18,7 @@ import { adjustSize } from '@/utils/adjustSize';
 import { fixme } from '@/utils/fixme';
 import { MessageHandler } from '@/components/MessageHandler';
 import { AudioController } from '@/utils/AudioTools';
+import { LevelInfoHandler } from '@/components/InfoHandler';
 const meta = ['Phixos', version.split('.'), pubdate, lastupdate] as typeof self._i;
 self._i = meta;
 const $id = (query: string): HTMLElement => document.getElementById(query) || (() => { throw new Error(`Cannot find element: ${query}`) })();
@@ -64,6 +65,7 @@ const inputCharter = $id('input-charter') as HTMLInputElement;
 const inputIllustrator = $id('input-illustrator') as HTMLInputElement;
 const selectDifficulty = $id('select-difficulty') as HTMLSelectElement;
 const selectLevel = $id('select-level') as HTMLSelectElement;
+const levelInfoHandler = new LevelInfoHandler(selectDifficulty, selectLevel);
 const selectVolume = $id('select-volume') as HTMLSelectElement;
 const blockUploaderSelect = $id('uploader-select') as HTMLDivElement;
 const blockUpload = $id('uploader-upload') as HTMLInputElement;
@@ -210,7 +212,6 @@ const status2 = {
     this.text = arr.length === 0 ? '' : `(${arr.join('+')})`;
   }
 };
-let levelText = '';
 class ImageStore {
   public base: ImageBitmap;
   public width: number;
@@ -277,12 +278,7 @@ function adjustInfo() {
     if (selectchart.value.trim() === data.chart) {
       if (data.name != null) inputName.value = data.name;
       if (data.artist != null) inputArtist.value = data.artist;
-      if (data.level != null) {
-        levelText = data.level;
-        const p = levelText.toLocaleUpperCase().split('LV.').map(a => a.trim());
-        if (p[0]) selectDifficulty.value = p[0];
-        if (p[1]) selectLevel.value = p[1];
-      }
+      if (data.level != null) levelInfoHandler.updateLevelText(data.level);
       if (data.illustrator != null) inputIllustrator.value = data.illustrator;
       if (data.charter != null) inputCharter.value = data.charter;
       if (data.music != null && bgms.has(data.music)) selectbgm.value = data.music;
@@ -376,7 +372,12 @@ const uploader = new FileEmitter();
         break;
       }
       case 'chart': {
-        if (data.msg) data.msg.forEach(v => sendWarning(v));
+        if (data.msg) {
+          data.msg.forEach(v => {
+            if (typeof v === 'string') sendWarning(v);
+            else sendWarning({ ...v, target: data.pathname });
+          });
+        }
         if (data.info) chartInfoDataList.push(...data.info);
         if (data.line) chartLineDataList.push(...data.line);
         const basename = getUniqueName(data.pathname, charts);
@@ -455,9 +456,10 @@ const specialClick = {
   click(id: number) {
     const now = performance.now();
     if (now - this.time[id] < 300) {
-      this.func[id]().catch((err: Error) => {
-        console.warn(err);
-        main.toast(`按太多下了！(${err.message})`); // TODO: 忽略操作
+      this.func[id]().catch((e: unknown) => {
+        console.warn(e);
+        const msg = e instanceof Error ? e.message : String(e);
+        main.toast(`按太多下了！(${msg})`); // TODO: 忽略操作
       });
     }
     this.time[id] = now;
@@ -1010,18 +1012,19 @@ async function readResource(raw: {
         if (ext != null && ext.startsWith('m')) {
           const data = ImgAny.decode(img, Number(ext.slice(1)));
           img.close();
-          res[name] = await audio.decode(data).catch(async(_err: DOMException | Error) => {
+          res[name] = await audio.decode(data).catch(async(_e: unknown) => {
             const blob1 = await fetch(raw.alternative[name], {
               referrerPolicy: 'no-referrer'
             }).then(async i => i.blob());
-            return createImageBitmap(blob1).then(ImgAny.decodeAlt).then(async ab => audio.decode(ab)).catch((err: Error) => {
+            return createImageBitmap(blob1).then(ImgAny.decodeAlt).then(async ab => audio.decode(ab)).catch((e: unknown) => {
+              const err = e instanceof Error ? e : new Error('Unknown error');
               sendWarning(`音频加载存在问题，将导致以下音频无法正常播放：\n${name}(${err.message})\n如果多次刷新问题仍然存在，建议更换设备或浏览器。`);
               return audio.mute(1);
             });
           });
         } else res[name] = img;
         sendText(`加载资源：${Math.floor(loadedNum++ / res1.length * 100)}%`);
-      }).catch(err => {
+      }).catch((err: unknown) => {
         console.error(err);
         sendError(`错误：${errorNum++}个资源加载失败（点击查看详情）`, `资源加载失败，请检查您的网络连接然后重试：\n${new URL(url, location.toString()).toString()}`, true);
       });
@@ -1071,11 +1074,11 @@ function mainLoop() {
     ctxfg.fillRect(0, 0, canvasfg.width, canvasfg.height);
     self.setTimeout(() => {
       if (!isOutOver) return; // 避免快速重开后直接结算
-      const difficulty = ['ez', 'hd', 'in', 'at'].indexOf(levelText.slice(0, 2).toLocaleLowerCase());
+      const difficulty = levelInfoHandler.getDifficultyIndex();
       musicController.play(res[`LevelOver${difficulty < 0 ? 2 : difficulty}_v1`] as AudioBuffer, { loop: true });
       timeEnd.reset();
       timeEnd.play();
-      stat.level = Number(/\d+$/.exec(levelText));
+      stat.level = levelInfoHandler.getLevelNumber();
       tempStat = stat.getData(app.playMode === 1, selectspeed.value);
     }, 1e3);
   } // 只让它执行一次
@@ -1147,7 +1150,7 @@ function loopNoCanvas() {
   tmps.artist = inputArtist.value;
   tmps.illustrator = `Illustration designed by ${inputIllustrator.value || inputIllustrator.placeholder}`;
   tmps.charter = `Level designed by ${inputCharter.value || inputCharter.placeholder}`;
-  tmps.level = levelText;
+  tmps.level = levelInfoHandler.text;
   if (stat.combo > 2) {
     tmps.combo = `${stat.combo}`;
     tmps.combo2 = app.playMode === 1 ? 'Autoplay' : 'combo';
@@ -1351,7 +1354,7 @@ function atDraw3(statData: StatData) {
   ctxfg.fillStyle = '#fff';
   ctxfg.textAlign = 'left';
   fillTextNode(inputName.value || inputName.placeholder, 700 * tween.easeOutCubic(clip(timeEnd.second * 1.25)) - 320, 160, 80, 1500);
-  const textWidth = fillTextNode(levelText, 700 * tween.easeOutCubic(clip(timeEnd.second * 1.25)) - 317, 212, 30, 750);
+  const textWidth = fillTextNode(levelInfoHandler.text, 700 * tween.easeOutCubic(clip(timeEnd.second * 1.25)) - 317, 212, 30, 750);
   ctxfg.font = '30px Custom,Noto Sans SC';
   // Rank图标
   ctxfg.globalAlpha = clip((timeEnd.second - 1.87) * 3.75);
@@ -1536,30 +1539,6 @@ function bytefm(byte = 0) {
   if ((result /= 1024) < 1024) return `${result.toFixed(2)}YB`;
   result /= 1024; return `${result}BB`;
 }
-const updateLevelText = (type: number) => {
-  const table = { sp: [0, 0], ez: [1, 7], hd: [3, 12], in: [6, 15], at: [13, 16] } as Record<string, [number, number]>;
-  let diffStr = (selectDifficulty.value || 'SP').toLowerCase();
-  let levelNum = Number(selectLevel.value) | 0;
-  if (type === 0) {
-    const diff = table[diffStr];
-    if (levelNum < diff[0]) levelNum = diff[0];
-    if (levelNum > diff[1]) levelNum = diff[1];
-    selectLevel.value = levelNum.toString();
-    selectLevel.value = selectLevel.value;
-  } else if (type === 1) {
-    const keys = Object.keys(table);
-    if (table[diffStr][1] < levelNum) diffStr = keys.find(key => table[key][1] >= levelNum) ?? 'SP';
-    else if (table[diffStr][0] > levelNum) diffStr = keys.reverse().find(key => table[key][0] <= levelNum) ?? 'SP';
-    selectDifficulty.value = diffStr.toUpperCase();
-    selectDifficulty.value = selectDifficulty.value;
-  }
-  const diffString = selectDifficulty.value || 'SP';
-  const levelString = selectLevel.value || '?';
-  return [diffString, levelString].join('\u2002Lv.');
-};
-levelText = updateLevelText(-1);
-selectDifficulty.addEventListener('change', () => levelText = updateLevelText(0));
-selectLevel.addEventListener('change', () => levelText = updateLevelText(1));
 selectVolume.addEventListener('change', evt => {
   const volume = Number((evt.target as HTMLInputElement).value);
   app.musicVolume = Math.min(1, 1 / volume);
@@ -1653,7 +1632,7 @@ async function mainPlay(): Promise<void> {
     app.prerenderChart(main.modify(charts.get(selectchart.value)!));
     const md5 = chartsMD5.get(selectchart.value)!;
     const format = chartsFormat.get(selectchart.value)!;
-    stat.level = Number(/\d+$/.exec(levelText));
+    stat.level = levelInfoHandler.getLevelNumber();
     if (app.chart != null) stat.reset(app.chart.numOfNotes, md5, format, selectspeed.value);
     await loadLineData({ onwarn: sendWarning });
     duration0 = app.duration / app.speed;
@@ -1825,6 +1804,7 @@ main.use(import('@/plugins/export.js') as unknown as Promise<ModuleBase>);
 main.use(import('@/plugins/gauge.js') as unknown as Promise<ModuleBase>);
 main.use(import('@/plugins/dynamic-score.js') as unknown as Promise<ModuleBase>);
 main.use(import('@/plugins/video-recorder.js') as unknown as Promise<ModuleBase>);
+main.use(import('@/plugins/online.js') as unknown as Promise<ModuleBase>);
 // debug
 self.hook = main;
 export const hook = main;
@@ -1876,7 +1856,7 @@ Object.defineProperty(main, 'time', {
       //   a.scored = 0;
       //   a.holdStatus = 1; });
       // stat.reset();
-      if (isPlaying) await mainPause().catch(console.warn); // FIXME: video+gauge结算时会报错
+      if (isPlaying) await mainPause().catch((e: unknown) => console.error(e)); // FIXME: video+gauge结算时会报错
     };
     handler();
   }
@@ -1920,3 +1900,21 @@ main.afterAll.set('main::cover', () => {
   }
 });
 /* exported hook */
+if (new URLSearchParams(location.search).has('iframe')) {
+  document.body.classList.add('iframe');
+  stage.setFull(true);
+  stage.resize();
+  specialClick.func[3] = async() => Promise.resolve(window.parent.postMessage('full', '*'));
+}
+self.onmessage = evt => {
+  console.log('onmessage', evt);
+  if (evt.data instanceof File) {
+    const reader1 = new FileReader();
+    reader1.readAsArrayBuffer(evt.data);
+    reader1.onload = () => {
+      uploader.fireLoad(evt.data as File, reader1.result as ArrayBuffer);
+    };
+  } else if (evt.data === 'play') {
+    mainPlay();
+  }
+};

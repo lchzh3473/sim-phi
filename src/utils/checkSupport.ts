@@ -32,9 +32,11 @@ export async function checkSupport({
     const errmsg1 = `错误：${name}组件加载失败（点击查看详情）`;
     const errmsg2 = `${name}组件加载失败，请检查您的网络连接然后重试：`;
     const errmsg3 = `${name}组件加载失败，请检查浏览器兼容性`;
-    const errCatch = (e: Error) => errorCallback(errmsg1, e.message.replace(/.+/, errmsg2), true);
     messageCallback(`加载${name}组件...`);
-    await loadJS(urls).catch(errCatch);
+    await loadJS(urls).catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      errorCallback(errmsg1, msg.replace(/.+/, errmsg2), true);
+    });
     if (!check()) return true;
     errorCallback(errmsg1, errmsg3, true);
     return false;

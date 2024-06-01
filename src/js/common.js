@@ -185,6 +185,18 @@ export const isUndefined = name => self[name] === undefined;
       }
     });
   }
+  // Array.prototype.findLast polyfill
+  if (Array.prototype.findLast === undefined) {
+    // eslint-disable-next-line no-extend-native
+    Object.defineProperty(Array.prototype, 'findLast', {
+      value(predicate, thisArg) {
+        for (let i = this.length - 1; i >= 0; i--) {
+          if (predicate.call(thisArg, this[i], i, this)) return this[i];
+        }
+        return undefined;
+      }
+    });
+  }
   // Array.prototype.toReversed polyfill
   if (Array.prototype.toReversed === undefined) {
     // eslint-disable-next-line no-extend-native

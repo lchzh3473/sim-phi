@@ -66,7 +66,7 @@ export class ZipReader extends EventTarget {
           const result = await this.handler(data.data);
           this.dispatchEvent(new CustomEvent('read', { detail: result }));
         };
-        handler().catch((err: Error) => this.dispatchEvent(new CustomEvent('error', { detail: err })));
+        handler().catch((e: unknown) => this.dispatchEvent(new CustomEvent('error', { detail: e })));
       });
       this.worker = worker;
     }
@@ -181,9 +181,9 @@ async function defaultDecode(arraybuffer: ArrayBuffer) {
   return new Promise((resolve: (value: AudioBuffer) => void, reject) => {
     const a = actx.decodeAudioData(arraybuffer, resolve, reject);
     if (a instanceof Promise) a.then(resolve, reject);
-  }).catch(err => {
-    if (err == null) throw new DOMException('Unable to decode audio data', 'EncodingError');
-    throw err;
+  }).catch((e: unknown) => {
+    if (e instanceof Error) throw e;
+    throw new DOMException('Unable to decode audio data', 'EncodingError');
   });
 }
 function createReader(define: ((readerInit: ReaderInit) => ByteReader)) {

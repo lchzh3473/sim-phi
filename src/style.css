@@ -268,3 +268,11 @@ body {
 .bm-item:last-child > .bm-rbtn {
   padding-bottom: 0;
 }
+
+body.iframe {
+  visibility: hidden;
+}
+
+body.iframe #stage {
+  visibility: visible;
+}

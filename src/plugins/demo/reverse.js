@@ -64,108 +64,74 @@ function arrangeLineEvent(events) {
   }
   return JSON.parse(JSON.stringify(newEvents2));
 }
-class JudgeLineEvent {
-  constructor(start, end, start2, end2, startTime, endTime) {
-    this.startTime = startTime;
-    this.endTime = endTime;
-    this.start = start;
-    this.end = end;
-    this.start2 = start2;
-    this.end2 = end2;
+function reverseLineEvent(evt, tb) {
+  const start = evt.end;
+  evt.end = evt.start;
+  evt.start = start;
+  const start2 = evt.end2;
+  evt.end2 = evt.start2;
+  evt.start2 = start2;
+  const startTime = tb - evt.endTime;
+  evt.endTime = tb - evt.startTime;
+  evt.startTime = startTime;
+}
+function reverseNote(note, tb) {
+  note.time = tb - note.time;
+  if (note.type === 3) {
+    note.speed *= note.holdTime;
+    note.holdTime = 1;
   }
 }
-class Note {
-  constructor(type, time, positionX, holdTime, speed) {
-    this.type = type;
-    this.time = time;
-    this.positionX = positionX;
-    this.holdTime = holdTime;
-    this.speed = speed;
-    this.floorPosition = 0;
-  }
+function reverseSpeedEvent(evt, tb) {
+  const startTime = tb - evt.endTime;
+  evt.endTime = tb - evt.startTime;
+  evt.startTime = startTime;
 }
-class SpeedEvent {
-  constructor(value, startTime, endTime) {
-    this.startTime = startTime;
-    this.endTime = endTime;
-    this.floorPosition = 0;
-    this.value = value;
+function updateSefp(line) {
+  let y = 0;
+  line.speedEvents.sort((a, b) => a.startTime - b.startTime);
+  for (const evt of line.speedEvents) {
+    if (evt.startTime < 0) evt.startTime = 0;
+    evt.floorPosition = y;
+    y += (evt.endTime - evt.startTime) * evt.value / line.bpm * 1.875;
   }
-}
-class JudgeLine {
-  constructor() {
-    this.numOfNotes = 0;
-    this.numOfNotesAbove = 0;
-    this.numOfNotesBelow = 0;
-    this.bpm = 120;
-    /** @type {SpeedEvent[]} */
-    this.speedEvents = [];
-    /** @type {Note[]} */
-    this.notesAbove = [];
-    /** @type {Note[]} */
-    this.notesBelow = [];
-    /** @type {JudgeLineEvent[]} */
-    this.judgeLineDisappearEvents = [];
-    /** @type {JudgeLineEvent[]} */
-    this.judgeLineMoveEvents = [];
-    /** @type {JudgeLineEvent[]} */
-    this.judgeLineRotateEvents = [];
-  }
-  updateSefp() {
-    let y = 0;
-    this.speedEvents.sort((a, b) => a.startTime - b.startTime);
-    for (const evt of this.speedEvents) {
-      if (evt.startTime < 0) evt.startTime = 0;
-      evt.floorPosition = y;
-      y += (evt.endTime - evt.startTime) * evt.value / this.bpm * 1.875;
+  line.speedEvents[line.speedEvents.length - 1].endTime = 1e9;
+  for (const note of line.notesAbove) {
+    let owo = 0;
+    let owo2 = 0;
+    let owo3 = 0;
+    for (const evt of line.speedEvents) {
+      if (note.time % 1e9 > evt.endTime) continue;
+      if (note.time % 1e9 < evt.startTime) break;
+      owo = evt.floorPosition;
+      owo2 = evt.value;
+      owo3 = note.time % 1e9 - evt.startTime;
     }
-    this.speedEvents[this.speedEvents.length - 1].endTime = 1e9;
-    for (const note of this.notesAbove) {
-      let owo = 0;
-      let owo2 = 0;
-      let owo3 = 0;
-      for (const evt of this.speedEvents) {
-        if (note.time % 1e9 > evt.endTime) continue;
-        if (note.time % 1e9 < evt.startTime) break;
-        owo = evt.floorPosition;
-        owo2 = evt.value;
-        owo3 = note.time % 1e9 - evt.startTime;
-      }
-      note.floorPosition = owo + owo2 * owo3 / this.bpm * 1.875;
-      // if (j.type === 3) j.speed *= owo2;
-    }
-    for (const note of this.notesBelow) {
-      let owo = 0;
-      let owo2 = 0;
-      let owo3 = 0;
-      for (const evt of this.speedEvents) {
-        if (note.time % 1e9 > evt.endTime) continue;
-        if (note.time % 1e9 < evt.startTime) break;
-        owo = evt.floorPosition;
-        owo2 = evt.value;
-        owo3 = note.time % 1e9 - evt.startTime;
-      }
-      note.floorPosition = owo + owo2 * owo3 / this.bpm * 1.875;
-      // if (j.type === 3) j.speed *= owo2;
-    }
+    note.floorPosition = owo + owo2 * owo3 / line.bpm * 1.875;
+    // if (j.type === 3) j.speed *= owo2;
   }
-  updateDe() {
-    this.judgeLineDisappearEvents.sort((a, b) => a.startTime - b.startTime);
-    this.judgeLineMoveEvents.sort((a, b) => a.startTime - b.startTime);
-    this.judgeLineRotateEvents.sort((a, b) => a.startTime - b.startTime);
-    this.judgeLineDisappearEvents = arrangeLineEvent(this.judgeLineDisappearEvents);
-    this.judgeLineMoveEvents = arrangeLineEvent(this.judgeLineMoveEvents);
-    this.judgeLineRotateEvents = arrangeLineEvent(this.judgeLineRotateEvents);
+  for (const note of line.notesBelow) {
+    let owo = 0;
+    let owo2 = 0;
+    let owo3 = 0;
+    for (const evt of line.speedEvents) {
+      if (note.time % 1e9 > evt.endTime) continue;
+      if (note.time % 1e9 < evt.startTime) break;
+      owo = evt.floorPosition;
+      owo2 = evt.value;
+      owo3 = note.time % 1e9 - evt.startTime;
+    }
+    note.floorPosition = owo + owo2 * owo3 / line.bpm * 1.875;
+    // if (j.type === 3) j.speed *= owo2;
   }
 }
-class Chart {
-  constructor() {
-    this.formatVersion = 3;
-    this.offset = 0;
-    this.numOfNotes = 0;
-    /** @type {JudgeLine[]} */
-    this.judgeLineList = []; // Array.from(Array(24), () => new JudgeLine);
-  }
+function updateDe(line) {
+  line.judgeLineDisappearEvents.sort((a, b) => a.startTime - b.startTime);
+  line.judgeLineMoveEvents.sort((a, b) => a.startTime - b.startTime);
+  line.judgeLineRotateEvents.sort((a, b) => a.startTime - b.startTime);
+  line.judgeLineDisappearEvents = arrangeLineEvent(line.judgeLineDisappearEvents);
+  line.judgeLineMoveEvents = arrangeLineEvent(line.judgeLineMoveEvents);
+  line.judgeLineRotateEvents = arrangeLineEvent(line.judgeLineRotateEvents);
 }
 /** @type {Map<AudioBuffer|null,boolean>|null} */
 let kfcFkXqsVw50 = null;
@@ -177,42 +143,27 @@ hook.before.set('kfcFkXqsVw50', () => {
   hook.modify = hook.awawa ? a => reverse(a, hook.app.duration) : a => a;
 });
 /**
- *
- * @param {Chart} chart json
+ * @param {import('@/utils/Chart').Chart} chart json
  * @param {number} duration time/s
  */
 export function reverse(chart, duration) {
-  const chartNew = new Chart();
-  chartNew.offset = -chart.offset;
-  for (const line of chart.judgeLineList) {
-    const judgeLine = new JudgeLine();
+  const chartNew = chart.duplicate();
+  chartNew.offset = -chartNew.offset;
+  for (const line of chartNew.judgeLineList) {
     const tb = duration * line.bpm / 1.875;
-    judgeLine.bpm = line.bpm;
-    for (const evt of line.speedEvents) judgeLine.speedEvents.push(new SpeedEvent(evt.value, tb - evt.endTime, tb - evt.startTime));
-    for (const note of line.notesAbove) {
-      if (note.type === 3) judgeLine.notesAbove.push(new Note(note.type, tb - note.time, note.positionX, 1, note.speed * note.holdTime));
-      else judgeLine.notesAbove.push(new Note(note.type, tb - note.time, note.positionX, note.holdTime, note.speed));
-      judgeLine.numOfNotesAbove++;
-    }
-    for (const note of line.notesBelow) {
-      if (note.type === 3) judgeLine.notesBelow.push(new Note(note.type, tb - note.time, note.positionX, 1, note.speed * note.holdTime));
-      else judgeLine.notesBelow.push(new Note(note.type, tb - note.time, note.positionX, note.holdTime, note.speed));
-      judgeLine.numOfNotesBelow++;
-    }
-    judgeLine.numOfNotes += judgeLine.numOfNotesAbove + judgeLine.numOfNotesBelow;
-    chartNew.numOfNotes += judgeLine.numOfNotes;
-    //
-    judgeLine.updateSefp();
+    for (const evt of line.speedEvents) reverseSpeedEvent(evt, tb);
+    for (const note of line.notesAbove) reverseNote(note, tb);
+    for (const note of line.notesBelow) reverseNote(note, tb);
+    updateSefp(line);
     line.judgeLineDisappearEvents = arrangeLineEvent(line.judgeLineDisappearEvents);
     line.judgeLineMoveEvents = arrangeLineEvent(line.judgeLineMoveEvents);
     line.judgeLineRotateEvents = arrangeLineEvent(line.judgeLineRotateEvents);
-    for (const evt of line.judgeLineDisappearEvents) judgeLine.judgeLineDisappearEvents.push(new JudgeLineEvent(evt.end, evt.start, evt.end2, evt.start2, tb - evt.endTime, tb - evt.startTime));
-    for (const evt of line.judgeLineMoveEvents) judgeLine.judgeLineMoveEvents.push(new JudgeLineEvent(evt.end, evt.start, evt.end2, evt.start2, tb - evt.endTime, tb - evt.startTime));
-    for (const evt of line.judgeLineRotateEvents) judgeLine.judgeLineRotateEvents.push(new JudgeLineEvent(evt.end, evt.start, evt.end2, evt.start2, tb - evt.endTime, tb - evt.startTime));
-    judgeLine.updateDe();
-    chartNew.judgeLineList.push(judgeLine);
+    for (const evt of line.judgeLineDisappearEvents) reverseLineEvent(evt, tb);
+    for (const evt of line.judgeLineMoveEvents) reverseLineEvent(evt, tb);
+    for (const evt of line.judgeLineRotateEvents) reverseLineEvent(evt, tb);
+    updateDe(line);
   }
-  return JSON.parse(JSON.stringify(chartNew)); // 规范判定线事件
+  return chartNew.duplicate(); // 规范判定线事件
 }
 /**
  * @param {HTMLElement} elem
