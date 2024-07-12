@@ -416,7 +416,7 @@ const uploader = new FileEmitter();
 }());
 main.uploader = uploader;
 const isBeta = String(meta[1][3]).startsWith('b');
-const resLink = isBeta ? atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=') : '';
+const resLink = atob('aHR0cHM6Ly9sY2h6aC5uZXQvZGF0YS9wYWNrLmpzb24=');
 // const resLink = 'local/ptres.json';
 import('@/plugins/demo/index.js').then(a => a.default(isBeta));
 // Hit start
