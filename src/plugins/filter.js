@@ -117,7 +117,7 @@ Filter.prototype.getImage = function(time, now, obj = {}) {
     const { type, name } = gl.getActiveUniform(this.program, i);
     const location = gl.getUniformLocation(this.program, name);
     switch (name) {
-      case 'u_name':
+      case 'u_time':
         gl.uniform1f(location, time);
         break;
       case 'u_now':
