@@ -116,7 +116,7 @@ export const isUndefined = name => self[name] === undefined;
   // EventTarget.constructor polyfill for Safari 14-
   try {
     Reflect.construct(EventTarget, []);
-  } catch (e) {
+  } catch (ignoreErr) {
     self.EventTarget = function() {
       this.listeners = {};
     };

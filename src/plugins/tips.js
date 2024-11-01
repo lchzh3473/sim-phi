@@ -56,7 +56,7 @@ brain.addTip('长按“播放”按钮可以打开皮肤选择器！');
 // 闲聊类
 brain.addTip('今天又是元气满满的一天~');
 brain.addTip('lchz\x68 is the best!');
-brain.addTip('<a href="https://afdian.net/a/lchz\x683\x3473"target="_blank">我很可爱，请给我钱</a>');
+brain.addTip('<a href="https://afdian.com/a/lchz\x683\x3473"target="_blank">我很可爱，请给我钱</a>');
 // 彩蛋类
 brain.addTip('<b style="background-clip:text;-webkit-background-clip:text;color:transparent;background-image:linear-gradient(90deg,red,orange,lime,blue,magenta);width:fit-content;margin-left:auto;margin-right:auto;">这是一条彩虹色的Tip！</b>');
 brain.addTip('#锟斤拷锟叫凤拷锟斤拷锟脚碉拷也只锟斤拷Tips]');

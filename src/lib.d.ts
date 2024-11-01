@@ -39,6 +39,7 @@ interface Event {
   readonly target: EventTarget;
 }
 interface EventTarget {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   dispatchEvent: <K extends keyof CustomEventMap>(event: CustomEventMap[K]) => boolean;
   addEventListener: <K extends keyof CustomEventMap>(type: K, listener: (this: EventTarget, ev: CustomEventMap[K]) => unknown, options?: AddEventListenerOptions | boolean) => void;
   removeEventListener: <K extends keyof CustomEventMap>(type: K, listener: (this: EventTarget, ev: CustomEventMap[K]) => unknown, options?: AddEventListenerOptions | boolean) => void;
@@ -213,4 +214,4 @@ declare const Utils: {
   escapeHTML: (str: string) => string;
   addFont: (name: string, alt?: FontOptions) => Promise<unknown>;
   randomUUID: () => string;
-} = {};
+};

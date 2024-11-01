@@ -160,7 +160,7 @@ function parseYAML(text = '', split = /\r?\n/) {
   const parse = value => {
     try {
       return JSON.parse(value);
-    } catch (e) {
+    } catch (ignoreErr) {
       return value;
     }
   };

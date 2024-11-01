@@ -1,14 +1,14 @@
 {
   "name": "sim-phi-vite",
   "private": true,
-  "version": "1.5.9",
+  "version": "1.5.9.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && node scripts/build.js",
     "preview": "vite preview",
-    "eslint:check": "eslint --ext .js,.ts src",
-    "eslint:format": "eslint --fix \"src/**/*.{js,ts}\""
+    "eslint:check": "eslint src",
+    "eslint:format": "eslint --fix src"
   },
   "dependencies": {
     "@sim-phi/extends": "^0.3.4",
@@ -17,20 +17,20 @@
     "stackblur-canvas": "^2.7.0"
   },
   "devDependencies": {
-    "@babel/plugin-transform-nullish-coalescing-operator": "^7.24.1",
+    "@babel/plugin-transform-nullish-coalescing-operator": "^7.25.9",
+    "@eslint/js": "^9.13.0",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-terser": "^0.4.4",
-    "@stylistic/eslint-plugin": "^1.7.0",
-    "@types/eslint": "^8.56.9",
+    "@stylistic/eslint-plugin": "^2.10.0",
+    "@types/eslint": "^9.6.1",
     "@types/md5": "^2.3.5",
     "@types/prompts": "^2.4.9",
-    "@typescript-eslint/eslint-plugin": "^7.6.0",
-    "@typescript-eslint/parser": "^7.6.0",
-    "eslint": "^8.57.0",
-    "eslint-plugin-rulesdir": "^0.2.2",
-    "picocolors": "^1.0.0",
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0",
+    "picocolors": "^1.1.1",
     "prompts": "^2.4.2",
-    "typescript": "^5.4.5",
-    "vite": "^5.2.8"
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.12.2",
+    "vite": "^5.4.10"
   }
 }

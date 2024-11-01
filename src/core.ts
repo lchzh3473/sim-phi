@@ -138,7 +138,7 @@ export class Renderer {
     this.ctxfg = this.canvasfg.getContext('2d') || fail();
     this.stage.appendChild(this.canvas);
     this.canvas.style.cssText = ';position:absolute;top:0px;left:0px;right:0px;bottom:0px';
-    console.log('Hello, Phixos!');
+    console.log('Hello, Phi\x67ros Simulator!');
     // config
     this.speed = 1;
     this.lineScale = 57.6;

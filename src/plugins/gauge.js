@@ -119,7 +119,7 @@ function clip(num) {
   return num;
 }
 function calcGaugeFactor(numOfNotes, isHard) {
-  let speed = 0;
+  let speed;
   if (numOfNotes < 400) speed = 80 / numOfNotes + 0.2;
   else if (numOfNotes < 600) speed = 32 / numOfNotes + 0.2;
   else speed = 96 / numOfNotes + 0.08;

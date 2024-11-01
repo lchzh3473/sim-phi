@@ -29,12 +29,12 @@ export function parseCSV(rawText: string, isObject: boolean): Record<string, str
     }
     if (!isQuot) {
       row.push(rowText);
-      rowText = '';
+      // rowText = '';
     } else if (beforeQuot) {
       row.push(rowText);
-      rowText = '';
-      isQuot = false;
-      beforeQuot = false;
+      // rowText = '';
+      // isQuot = false;
+      // beforeQuot = false;
     } else throw new SyntaxError('Unexpected token , (-2)');
     rows.push(row);
   }

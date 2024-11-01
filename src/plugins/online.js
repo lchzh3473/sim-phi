@@ -90,7 +90,7 @@ async function getContentLength(url) {
     const length = res.headers.get('content-length'); // 踩坑：这里的length是字符串
     if (length == null) throw new Error('No Content-Length Header');
     if (res.ok) return Number(length);
-  } catch (_) {
+  } catch (ignoreErr) {
     const res = await fetch(url, { method: 'GET' }).catch(() => {
       throw Object.assign(new Error(), { url, status: 0, statusText: 'Network Error' });
     });

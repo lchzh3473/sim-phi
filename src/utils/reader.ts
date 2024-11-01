@@ -96,7 +96,7 @@ function defineReader(readerInit: ReaderInit): ByteReader {
         try {
           i.text = stringify(i.buffer);
           i.isText = true;
-        } catch (error) {
+        } catch (ignoreErr) {
           i.isText = false;
         }
       }
@@ -109,7 +109,7 @@ function defineReader(readerInit: ReaderInit): ByteReader {
         try {
           i.text = stringify(i.buffer);
           i.isText = true;
-        } catch (error) {
+        } catch (ignoreErr) {
           i.isText = false;
         }
       }
@@ -117,7 +117,7 @@ function defineReader(readerInit: ReaderInit): ByteReader {
         try {
           i.data = JSON.parse(i.text!);
           i.isJSON = true;
-        } catch (error) {
+        } catch (ignoreErr) {
           i.isJSON = false;
         }
       }
@@ -131,6 +131,7 @@ const readerInits: ReaderInit[] = [
     pattern: /\.(mp3|ogg|wav|mp4|webm|ogv|mpg|mpeg|avi|mov|flv|wmv|mkv)$/i,
     async read(i: ByteData, { createAudioBuffer }: Record<string, unknown> = {}): Promise<MediaReaderData> {
       return readMediaData(i, async(arraybuffer: ArrayBuffer) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         if (typeof createAudioBuffer === 'function') return createAudioBuffer(arraybuffer) as AudioBuffer;
         return defaultDecode(arraybuffer);
       });
@@ -178,7 +179,7 @@ async function defaultDecode(arraybuffer: ArrayBuffer) {
   const actx: AudioContext = new self.AudioContext();
   await actx.close();
   // return actx.decodeAudioData(arraybuffer);
-  return new Promise((resolve: (value: AudioBuffer) => void, reject) => {
+  return new Promise((resolve: (value: AudioBuffer) => void, reject: (e: unknown) => void) => {
     const a = actx.decodeAudioData(arraybuffer, resolve, reject);
     if (a instanceof Promise) a.then(resolve, reject);
   }).catch((e: unknown) => {

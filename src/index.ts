@@ -19,7 +19,7 @@ import { fixme } from '@/utils/fixme';
 import { MessageHandler } from '@/components/MessageHandler';
 import { AudioController } from '@/utils/AudioTools';
 import { LevelInfoHandler } from '@/components/InfoHandler';
-const meta = ['Phixos', version.split('.'), pubdate, lastupdate] as typeof self._i;
+const meta = ['Phi\x67ros模拟器', version.split('.'), pubdate, lastupdate] as typeof self._i;
 self._i = meta;
 const $id = (query: string): HTMLElement => document.getElementById(query) || (() => { throw new Error(`Cannot find element: ${query}`) })();
 const $ = (query: string) => document.body.querySelector(query);
@@ -388,6 +388,7 @@ const uploader = new FileEmitter();
         selectchart.dispatchEvent(new Event('change'));
         break;
       }
+      case 'unknown': // fallthrough
       default:
         console.warn(`Unsupported file: ${data.pathname}`);
         console.log(data.data);
@@ -535,8 +536,7 @@ async function playVideo(data: HTMLVideoElement, offset?: number) {
   data.muted = true;
   await data.play();
 }
-const hitImageList = new HitEvents({
-  // 存放点击特效
+const hitImageList = new HitEvents({ // 存放点击特效
   updateCallback: (i: HitImage) => nowTimeMS >= i.time + i.duration,
   iterateCallback(i: HitImage) {
     const tick = (nowTimeMS - i.time) / i.duration;
@@ -554,8 +554,7 @@ const hitImageList = new HitEvents({
     }
   }
 });
-const hitWordList = new HitEvents({
-  // 存放点击特效
+const hitWordList = new HitEvents({ // 存放点击特效
   updateCallback: (i: HitWord) => nowTimeMS >= i.time + i.duration,
   iterateCallback(i: HitWord) {
     const tick = (nowTimeMS - i.time) / i.duration;
@@ -603,14 +602,12 @@ const judgeManager = {
       const deltaTime = note.seconds - seconds;
       if (deltaTime > 0.2) break; // 跳过判定范围外的Note
       if (note.type !== 1 && deltaTime > 0.16) continue;
-      if (deltaTime < -0.16 && note.frameCount > 4 && !note.holdStatus) {
-        // 超时且不为Hold拖判，判为Miss
+      if (deltaTime < -0.16 && note.frameCount > 4 && !note.holdStatus) { // 超时且不为Hold拖判，判为Miss
         // console.log('Miss', i.name);
         note.status = 2;
         stat.addCombo(2, note.type);
         note.scored = true;
-      } else if (note.type === 2) {
-        // Drag音符
+      } else if (note.type === 2) { // Drag音符
         if (deltaTime > 0) {
           for (const judgeEvent of list) {
             if (judgeEvent.type !== 1) continue; // 跳过非Tap判定
@@ -632,20 +629,17 @@ const judgeManager = {
           stat.addCombo(4, 2);
           note.scored = true;
         }
-      } else if (note.type === 4) {
-        // Flick音符
+      } else if (note.type === 4) { // Flick音符
         if (deltaTime > 0 || note.status !== 4) {
           for (const judgeEvent of list) {
-            if (judgeEvent.type !== 1) continue;
-            // 跳过非Tap判定
+            if (judgeEvent.type !== 1) continue; // 跳过非Tap判定
             if (getJudgeOffset(judgeEvent, note) > width) continue;
             judgeEvent.preventBad = true;
           }
         }
         if (note.status !== 4) {
           for (const judgeEvent of list) {
-            if (judgeEvent.type !== 3) continue;
-            // 跳过非Move判定
+            if (judgeEvent.type !== 3) continue; // 跳过非Move判定
             if (getJudgeOffset(judgeEvent, note) > width) continue;
             let distance = getJudgeDistance(judgeEvent, note);
             let noteJudge = note;
@@ -677,12 +671,9 @@ const judgeManager = {
           stat.addCombo(4, 4);
           note.scored = true;
         }
-      } else {
-        // Hold音符
-        if (note.type === 3 && note.holdTapTime) {
-          // 是否触发头判
-          if ((performance.now() - note.holdTapTime) * note.holdTime >= 1.6e4 * note.holdSeconds) {
-            // 间隔时间与bpm成反比
+      } else { // Hold音符
+        if (note.type === 3 && note.holdTapTime) { // 是否触发头判
+          if ((performance.now() - note.holdTapTime) * note.holdTime >= 1.6e4 * note.holdSeconds) { // 间隔时间与bpm成反比
             if (note.holdStatus % 4 === 0) hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
             else if (note.holdStatus % 4 === 1) hitImageList.add(HitImage.perfect(note.projectX, note.projectY, note));
             else if (note.holdStatus % 4 === 3) hitImageList.add(HitImage.good(note.projectX, note.projectY, note));
@@ -696,8 +687,7 @@ const judgeManager = {
           note.holdBroken = true; // 若1帧内未按住并使其转为false，则判定为Miss
         }
         for (const judgeEvent of list) {
-          if (note.holdTapTime) {
-            // 头判
+          if (note.holdTapTime) { // 头判
             if (judgeEvent.type !== 2) continue;
             if (getJudgeOffset(judgeEvent, note) <= width) {
               note.holdBroken = false;
@@ -705,10 +695,8 @@ const judgeManager = {
             }
             continue;
           }
-          if (judgeEvent.type !== 1) continue;
-          // 跳过非Tap判定
-          if (judgeEvent.judged) continue;
-          // 跳过已触发的判定
+          if (judgeEvent.type !== 1) continue; // 跳过非Tap判定
+          if (judgeEvent.judged) continue; // 跳过已触发的判定
           if (getJudgeOffset(judgeEvent, note) > width) continue;
           let deltaTime2 = deltaTime;
           let distance = getJudgeDistance(judgeEvent, note);
@@ -779,8 +767,7 @@ const judgeManager = {
     }
   }
 };
-const hitFeedbackList = new HitEvents({
-  // 存放点击特效
+const hitFeedbackList = new HitEvents({ // 存放点击特效
   updateCallback: (i: HitFeedback) => i.time++ > 0,
   iterateCallback(i: HitFeedback) {
     ctxfg.globalAlpha = 0.85;
@@ -1098,7 +1085,7 @@ function mainLoop() {
   ctx.fillStyle = '#fff';
   ctx.globalAlpha = 0.8;
   ctx.textAlign = 'right';
-  ctx.fillText(`${meta[0]} v${meta[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasfg.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
+  ctx.fillText(`Phi\x67ros Simulator v${meta[1].join('.')} - Code by lchz\x683\x3473`, (canvas.width + canvasfg.width) / 2 - lineScale * 0.1, canvas.height - lineScale * 0.1);
   ctx.globalCompositeOperation = 'source-over';
 }
 function loopNoCanvas() {
@@ -1442,8 +1429,7 @@ function drawTap(note: Renderer.Note) {
   ctxfg.setTransform(nsr * note.cosr, nsr * note.sinr, -nsr * note.sinr, nsr * note.cosr, note.offsetX, note.offsetY);
   if (note.badTime == null) {
     ctxfg.globalAlpha = note.alpha || (note.showPoint && showPoint.checked ? 0.45 : 0);
-    if (main.awawa) ctxfg.globalAlpha *= Math.max(1 + (timeChart - note.seconds) / 1.5, 0);
-    // 过线前1.5s出现
+    if (main.awawa) ctxfg.globalAlpha *= Math.max(1 + (timeChart - note.seconds) / 1.5, 0); // 过线前1.5s出现
     noteRender.note[HL ? 'TapHL' : 'Tap'].full(ctxfg);
   } else {
     ctxfg.globalAlpha = 1 - clip((performance.now() - note.badTime) / 500);
