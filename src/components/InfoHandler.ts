@@ -1,4 +1,4 @@
-const table = { sp: [0, 0], ez: [1, 8], hd: [3, 13], in: [7, 15], at: [13, 16] } as const;
+const table = { sp: [0, 0], ez: [1, 8], hd: [3, 13], in: [7, 16], at: [13, 17] } as const;
 const keys = ['ez', 'hd', 'in', 'at'] as const;
 type DifficultyLowerCase = keyof typeof table;
 type Difficulty = Uppercase<DifficultyLowerCase | ''>;
